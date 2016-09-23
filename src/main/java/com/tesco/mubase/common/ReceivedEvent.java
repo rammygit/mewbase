@@ -1,9 +1,13 @@
 package com.tesco.mubase.common;
 
+import com.tesco.mubase.bson.BsonObject;
+
 /**
  * Created by tim on 22/09/16.
  */
-public interface EventHolder {
+public interface ReceivedEvent {
+
+    // Metadata for event
 
     String streamName();
 
@@ -11,9 +15,12 @@ public interface EventHolder {
 
     long timeStamp();
 
-    long subID(); // TODO Perhaps hide this?
+    long sequenceNumber();
+
+
 
     BsonObject event();
+
 
     void acknowledge();
 

@@ -1,6 +1,5 @@
 package com.tesco.mubase.client;
 
-import com.tesco.mubase.common.BsonObject;
 import com.tesco.mubase.common.DocQuerier;
 import com.tesco.mubase.common.SubDescriptor;
 

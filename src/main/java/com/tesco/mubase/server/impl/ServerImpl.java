@@ -1,6 +1,6 @@
 package com.tesco.mubase.server.impl;
 
-import com.tesco.mubase.common.EventHolder;
+import com.tesco.mubase.common.ReceivedEvent;
 import com.tesco.mubase.common.FunctionContext;
 import com.tesco.mubase.common.SubDescriptor;
 import com.tesco.mubase.server.Server;
@@ -12,7 +12,7 @@ import java.util.function.BiConsumer;
  */
 public class ServerImpl implements Server {
     @Override
-    public void installFunction(String functionName, SubDescriptor descriptor, BiConsumer<FunctionContext, EventHolder> function) {
+    public void installFunction(String functionName, SubDescriptor descriptor, BiConsumer<FunctionContext, ReceivedEvent> function) {
 
     }
 
@@ -23,6 +23,11 @@ public class ServerImpl implements Server {
 
     @Override
     public void start() {
+
+    }
+
+    @Override
+    public void createBinder(String binderName) {
 
     }
 }

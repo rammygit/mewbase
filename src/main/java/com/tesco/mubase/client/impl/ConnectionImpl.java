@@ -1,10 +1,10 @@
 package com.tesco.mubase.client.impl;
 
+import com.tesco.mubase.bson.BsonObject;
 import com.tesco.mubase.client.Connection;
 import com.tesco.mubase.client.Producer;
 import com.tesco.mubase.client.QueryResult;
 import com.tesco.mubase.client.Subscription;
-import com.tesco.mubase.common.BsonObject;
 import com.tesco.mubase.common.SubDescriptor;
 
 import java.util.concurrent.CompletableFuture;
@@ -26,6 +26,11 @@ public class ConnectionImpl implements Connection {
 
     @Override
     public CompletableFuture<QueryResult> query(String binderName, BsonObject matcher) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<BsonObject> queryOne(String binderName, BsonObject matcher) {
         return null;
     }
 

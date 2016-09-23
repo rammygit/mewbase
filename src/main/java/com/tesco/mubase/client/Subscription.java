@@ -1,6 +1,6 @@
 package com.tesco.mubase.client;
 
-import com.tesco.mubase.common.EventHolder;
+import com.tesco.mubase.common.ReceivedEvent;
 
 import java.util.function.Consumer;
 
@@ -9,7 +9,7 @@ import java.util.function.Consumer;
  */
 public interface Subscription {
 
-    void setHandler(Consumer<EventHolder> handler);
+    void setHandler(Consumer<ReceivedEvent> handler);
 
     // TODO also provide RxJava Observable?
 
