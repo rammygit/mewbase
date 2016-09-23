@@ -17,6 +17,4 @@ public interface EventHolder {
 
     void acknowledge();
 
-
-
 }
