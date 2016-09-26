@@ -21,7 +21,6 @@ public interface ReceivedEvent {
 
     BsonObject event();
 
-
     void acknowledge();
 
 }

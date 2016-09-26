@@ -13,5 +13,6 @@ public interface Subscription {
 
     // TODO also provide RxJava Observable?
 
+    // TODO return CompletableFuture<Void> ?
     void unsubscribe();
 }

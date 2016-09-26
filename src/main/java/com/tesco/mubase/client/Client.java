@@ -9,4 +9,6 @@ public interface Client {
 
     CompletableFuture<Connection> connect(ConnectionOptions connectionOptions);
 
+    void close();
+
 }

@@ -10,6 +10,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Producer extends Transactional {
 
-    CompletableFuture<Boolean> emit(String eventType, BsonObject event);
+    CompletableFuture<Void> emit(String eventType, BsonObject event);
 
 }
