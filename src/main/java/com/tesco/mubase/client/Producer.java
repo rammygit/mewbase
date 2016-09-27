@@ -12,4 +12,6 @@ public interface Producer extends Transactional {
 
     CompletableFuture<Void> emit(String eventType, BsonObject event);
 
+    // TODO should also support flow control on emits. WriteStream? Reactive Streams?
+
 }

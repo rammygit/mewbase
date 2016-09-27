@@ -23,9 +23,9 @@ import java.util.concurrent.CompletableFuture;
  * Created by tim on 26/09/16.
  */
 @RunWith(VertxUnitRunner.class)
-public class ClientTest {
+public class EmitSubTest {
 
-    private final static Logger log = LoggerFactory.getLogger(ClientTest.class);
+    private final static Logger log = LoggerFactory.getLogger(EmitSubTest.class);
 
     private static final String TEST_STREAM1 = "com.tesco.basket";
     private static final String TEST_EVENT_TYPE1 = "addItem";
@@ -43,7 +43,7 @@ public class ClientTest {
 
     @After
     public void after(TestContext context) throws Exception {
-        client.close();
+        client.close().get();
         server.stop().get();
     }
 

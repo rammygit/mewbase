@@ -9,6 +9,12 @@ public interface Client {
 
     CompletableFuture<Connection> connect(ConnectionOptions connectionOptions);
 
-    void close();
+    CompletableFuture<Void> close();
+
+    // Also provide a sync API
+
+    Connection connectSync(ConnectionOptions connectionOptions);
+
+    void closeSync();
 
 }

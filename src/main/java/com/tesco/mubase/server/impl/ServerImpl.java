@@ -3,6 +3,9 @@ package com.tesco.mubase.server.impl;
 import com.tesco.mubase.common.FunctionContext;
 import com.tesco.mubase.common.ReceivedEvent;
 import com.tesco.mubase.common.SubDescriptor;
+import com.tesco.mubase.log.Log;
+import com.tesco.mubase.log.LogManager;
+import com.tesco.mubase.log.impl.inmem.InMemoryLogManager;
 import com.tesco.mubase.server.Server;
 import com.tesco.mubase.server.ServerOptions;
 import io.vertx.core.Vertx;
@@ -30,10 +33,12 @@ public class ServerImpl implements Server {
     private final Map<String, StreamProcessor> streamProcessors = new ConcurrentHashMap<>();
     private final Set<ServerConnectionImpl> connections = new ConcurrentHashSet<>();
     private final Set<NetServer> netServers = new ConcurrentHashSet<>();
+    private final LogManager logManager;
 
     public ServerImpl(Vertx vertx, ServerOptions serverOptions) {
         this.vertx = vertx;
         this.serverOptions = serverOptions;
+        this.logManager = new InMemoryLogManager();
     }
 
     public ServerImpl(ServerOptions serverOptions) {
@@ -43,7 +48,6 @@ public class ServerImpl implements Server {
     @Override
     public synchronized CompletableFuture<Void> start() {
         int procs = Runtime.getRuntime().availableProcessors(); // TODO make this configurable
-        //procs = 1;
         log.trace("Starting " + procs + " instances");
         CompletableFuture[] all = new CompletableFuture[procs];
         for (int i = 0; i < procs; i++) {
@@ -60,8 +64,7 @@ public class ServerImpl implements Server {
             netServers.add(netServer);
             all[i] = cf;
         }
-        CompletableFuture<Void> tot = CompletableFuture.allOf(all);
-        return tot;
+        return CompletableFuture.allOf(all);
     }
 
     @Override
@@ -82,8 +85,7 @@ public class ServerImpl implements Server {
         streamProcessors.clear();
         connections.clear();
         netServers.clear();
-        CompletableFuture<Void> tot = CompletableFuture.allOf(all);
-        return tot;
+        return CompletableFuture.allOf(all);
     }
 
     @Override
@@ -109,7 +111,7 @@ public class ServerImpl implements Server {
     protected StreamProcessor getStreamProcessor(String streamName) {
         StreamProcessor processor = streamProcessors.get(streamName);
         if (processor == null) {
-            processor = new StreamProcessor(streamName);
+            processor = new StreamProcessor(streamName, getLog(streamName));
             StreamProcessor old = streamProcessors.putIfAbsent(streamName, processor);
             if (old != null) {
                 processor = old;
@@ -120,6 +122,10 @@ public class ServerImpl implements Server {
 
     protected void removeConnection(ServerConnectionImpl connection) {
         connections.remove(connection);
+    }
+
+    protected Log getLog(String streamName) {
+        return logManager.getLog(streamName);
     }
 
 }

@@ -47,11 +47,31 @@ public class ClientImpl implements Client {
     }
 
     @Override
-    public void close() {
+    public CompletableFuture<Void> close() {
         netClient.close();
+        CompletableFuture<Void> cf = new CompletableFuture<>();
         if (ownVertx) {
-            vertx.close();
+            vertx.close(ar -> {
+                if (ar.succeeded()) {
+                    cf.complete(null);
+                } else {
+                    cf.completeExceptionally(ar.cause());
+                }
+            });
+        } else {
+            cf.complete(null);
         }
+        return cf;
+    }
+
+    @Override
+    public Connection connectSync(ConnectionOptions connectionOptions) {
+        return null;
+    }
+
+    @Override
+    public void closeSync() {
+
     }
 
 }

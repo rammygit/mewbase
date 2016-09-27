@@ -1,6 +1,7 @@
 package com.tesco.mubase.server.impl;
 
 import com.tesco.mubase.bson.BsonObject;
+import com.tesco.mubase.log.Log;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -115,7 +116,9 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         int subID = subSeq++;
         checkWrap(subSeq);
         StreamProcessor processor = server.getStreamProcessor(streamName);
-        SubscriptionImpl subscription = new SubscriptionImpl(processor, this, subID);
+        Log log = server.getLog(streamName);
+        SubscriptionImpl subscription =
+                new SubscriptionImpl(processor, this, subID, log, startSeq == null ? -1 : startSeq);
         subscriptionMap.put(subID, subscription);
         processor.addSubScription(subscription);
         BsonObject resp = new BsonObject();
@@ -146,6 +149,22 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleAckEv(BsonObject frame) {
         checkAuthorised();
+        String subID = frame.getString("subID");
+        if (subID == null) {
+            logAndClose("No subID in ACKEV");
+            return;
+        }
+        Integer bytes = frame.getInteger("bytes");
+        if (bytes == null) {
+            logAndClose("No bytes in ACKEV");
+            return;
+        }
+        SubscriptionImpl subscription = subscriptionMap.get(subID);
+        if (subscription == null) {
+            logAndClose("Invalid subID in ACKEV");
+            return;
+        }
+        subscription.handleAckEv(bytes);
     }
 
     @Override
@@ -163,7 +182,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         checkAuthorised();
     }
 
-    protected void writeNonResponse(String frameName, BsonObject frame) {
+    protected Buffer writeNonResponse(String frameName, BsonObject frame) {
         Buffer buff = Codec.encodeFrame(frameName, frame);
         // TODO compare performance of writing directly in all cases and via context
         Context curr = Vertx.currentContext();
@@ -172,6 +191,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         } else {
             socket.write(buff);
         }
+        return buff;
     }
 
     protected void writeResponse(String frameName, BsonObject frame, long order) {

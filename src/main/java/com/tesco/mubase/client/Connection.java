@@ -17,4 +17,8 @@ public interface Connection extends DocQuerier {
     CompletableFuture<Subscription> subscribe(SubDescriptor descriptor);
 
     CompletableFuture<Void> close();
+
+    // Also provide sync API
+
+    // TODO
 }
