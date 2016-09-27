@@ -2,7 +2,6 @@ package com.tesco.mubase.client.impl;
 
 import com.tesco.mubase.bson.BsonObject;
 import com.tesco.mubase.client.Producer;
-import io.vertx.core.net.NetSocket;
 
 import java.util.concurrent.CompletableFuture;
 

@@ -7,17 +7,17 @@ import com.tesco.mubase.common.SubDescriptor;
 import com.tesco.mubase.server.Server;
 import com.tesco.mubase.server.ServerOptions;
 import com.tesco.mubase.server.impl.ServerImpl;
-import io.vertx.core.http.HttpClient;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by tim on 26/09/16.
@@ -30,21 +30,29 @@ public class ClientTest {
     private static final String TEST_STREAM1 = "com.tesco.basket";
     private static final String TEST_EVENT_TYPE1 = "addItem";
 
-    @Test
-    public void testSimpleEmitSubscribe(TestContext context) throws Exception {
-        Server server = new ServerImpl(new ServerOptions());
+    private Server server;
+    private Client client;
+
+    @Before
+    public void before(TestContext context) throws Exception {
+        server = new ServerImpl(new ServerOptions());
         CompletableFuture<Void> cfStart = server.start();
         cfStart.get();
-        Client client = new ClientImpl();
-        CompletableFuture<Connection> cfConn = client.connect(new ConnectionOptions());
-        CompletableFuture<Subscription> cfSub = cfConn.thenCompose(connection -> {
-            SubDescriptor descriptor = new SubDescriptor();
-            descriptor.setStreamName(TEST_STREAM1);
-            CompletableFuture<Subscription> subCf = connection.subscribe(descriptor);
-            return subCf;
-        });
-        Connection conn = cfConn.get();
-        Subscription sub = cfSub.get();
+        client = new ClientImpl();
+    }
+
+    @After
+    public void after(TestContext context) throws Exception {
+        client.close();
+        server.stop().get();
+    }
+
+    @Test
+    public void testSimpleEmitSubscribe(TestContext context) throws Exception {
+        Connection conn = client.connect(new ConnectionOptions()).get();
+        SubDescriptor descriptor = new SubDescriptor();
+        descriptor.setStreamName(TEST_STREAM1);
+        Subscription sub = conn.subscribe(descriptor).get();
         Producer prod = conn.createProducer(TEST_STREAM1);
         Async async = context.async();
         long now = System.currentTimeMillis();
@@ -58,7 +66,6 @@ public class ClientTest {
             context.assertEquals(sent, event);
             async.complete();
         });
-        CompletableFuture<Void> cfEmit = prod.emit(TEST_EVENT_TYPE1, sent);
-        cfEmit.get();
+        prod.emit(TEST_EVENT_TYPE1, sent).get();
     }
 }

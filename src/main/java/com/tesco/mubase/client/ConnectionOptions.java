@@ -1,7 +1,5 @@
 package com.tesco.mubase.client;
 
-import com.tesco.mubase.server.ServerOptions;
-
 /**
  * Created by tim on 22/09/16.
  */

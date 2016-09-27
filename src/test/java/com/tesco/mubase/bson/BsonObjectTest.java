@@ -19,7 +19,6 @@ package com.tesco.mubase.bson;
 import com.tesco.mubase.TestUtils;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.DecodeException;
-
 import org.junit.Before;
 import org.junit.Test;
 

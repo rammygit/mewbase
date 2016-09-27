@@ -1,9 +1,7 @@
 package com.tesco.mubase.server.impl;
 
-import com.tesco.mubase.bson.BsonObject;
-import com.tesco.mubase.common.FrameHandler;
-import com.tesco.mubase.common.ReceivedEvent;
 import com.tesco.mubase.common.FunctionContext;
+import com.tesco.mubase.common.ReceivedEvent;
 import com.tesco.mubase.common.SubDescriptor;
 import com.tesco.mubase.server.Server;
 import com.tesco.mubase.server.ServerOptions;
@@ -14,8 +12,6 @@ import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -47,7 +43,7 @@ public class ServerImpl implements Server {
     @Override
     public synchronized CompletableFuture<Void> start() {
         int procs = Runtime.getRuntime().availableProcessors(); // TODO make this configurable
-        procs = 1;
+        //procs = 1;
         log.trace("Starting " + procs + " instances");
         CompletableFuture[] all = new CompletableFuture[procs];
         for (int i = 0; i < procs; i++) {

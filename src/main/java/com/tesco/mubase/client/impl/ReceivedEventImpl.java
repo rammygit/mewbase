@@ -1,7 +1,6 @@
 package com.tesco.mubase.client.impl;
 
 import com.tesco.mubase.bson.BsonObject;
-import com.tesco.mubase.client.impl.SubscriptionImpl;
 import com.tesco.mubase.common.ReceivedEvent;
 
 /**
