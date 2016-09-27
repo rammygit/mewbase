@@ -16,7 +16,7 @@ public interface ReceivedEvent {
     long timeStamp();
 
     long sequenceNumber();
-    
+
 
     BsonObject event();
 

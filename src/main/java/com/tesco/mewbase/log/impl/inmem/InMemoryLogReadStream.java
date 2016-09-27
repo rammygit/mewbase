@@ -2,7 +2,6 @@ package com.tesco.mewbase.log.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.log.LogReadStream;
-import com.tesco.mewbase.server.impl.ServerConnectionImpl;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;

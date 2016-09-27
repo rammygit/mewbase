@@ -1,7 +1,6 @@
 package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.log.Log;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
