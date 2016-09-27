@@ -39,7 +39,7 @@ public class ClientTest {
         });
         Connection conn = cfConn.get();
         Subscription sub = cfSub.get();
-        Producer prod = conn.createProducer(TEST_STREAM1;
+        Producer prod = conn.createProducer(TEST_STREAM1);
         CountDownLatch latch = new CountDownLatch(1);
         sub.setHandler(re -> {
             latch.countDown();
