@@ -14,8 +14,11 @@ import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
@@ -42,24 +45,49 @@ public class ServerImpl implements Server {
     }
 
     @Override
-    public synchronized void start() {
+    public synchronized CompletableFuture<Void> start() {
         int procs = Runtime.getRuntime().availableProcessors(); // TODO make this configurable
+        procs = 1;
+        log.trace("Starting " + procs + " instances");
+        CompletableFuture[] all = new CompletableFuture[procs];
         for (int i = 0; i < procs; i++) {
             NetServer netServer = vertx.createNetServer();
             netServer.connectHandler(this::connectHandler);
-            netServer.listen(serverOptions.getPort(), serverOptions.getHost());
+            CompletableFuture<Void> cf = new CompletableFuture<>();
+            netServer.listen(serverOptions.getPort(), serverOptions.getHost(), ar -> {
+                if (ar.succeeded()) {
+                    cf.complete(null);
+                } else {
+                    cf.completeExceptionally(ar.cause());
+                }
+            });
             netServers.add(netServer);
+            all[i] = cf;
         }
+        CompletableFuture<Void> tot = CompletableFuture.allOf(all);
+        return tot;
     }
 
     @Override
-    public synchronized void stop() {
+    public synchronized CompletableFuture<Void> stop() {
+        CompletableFuture[] all = new CompletableFuture[netServers.size()];
+        int i = 0;
         for (NetServer server: netServers) {
-            server.close();
+            CompletableFuture<Void> cf = new CompletableFuture<>();
+            server.close(ar -> {
+                if (ar.succeeded()) {
+                    cf.complete(null);
+                } else {
+                    cf.completeExceptionally(ar.cause());
+                }
+            });
+            all[i++] = cf;
         }
         streamProcessors.clear();
         connections.clear();
         netServers.clear();
+        CompletableFuture<Void> tot = CompletableFuture.allOf(all);
+        return tot;
     }
 
     @Override

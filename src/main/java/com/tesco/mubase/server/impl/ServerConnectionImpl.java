@@ -66,10 +66,9 @@ public class ServerConnectionImpl implements ServerFrameHandler {
             logAndClose("No event in EMIT");
             return;
         }
-        String sessID = frame.getString("sessID");
         StreamProcessor processor = server.getStreamProcessor(streamName);
         long order = getWriteSeq();
-        CompletableFuture<Void> cf = processor.handleEmit(eventType, event, sessID);
+        CompletableFuture<Void> cf = processor.handleEmit(eventType, event);
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();
@@ -106,11 +105,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         String streamName = frame.getString("streamName");
         String eventType = frame.getString("eventType");
         if (streamName == null) {
-            logAndClose("No streamName in EMIT");
-            return;
-        }
-        if (eventType == null) {
-            logAndClose("No eventType in EMIT");
+            logAndClose("No streamName in SUBSCRIBE");
             return;
         }
         Long startSeq = frame.getLong("startSeq");
@@ -120,7 +115,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         int subID = subSeq++;
         checkWrap(subSeq);
         StreamProcessor processor = server.getStreamProcessor(streamName);
-        SubscriptionImpl subscription = new SubscriptionImpl(processor, this);
+        SubscriptionImpl subscription = new SubscriptionImpl(processor, this, subID);
         subscriptionMap.put(subID, subscription);
         processor.addSubScription(subscription);
         BsonObject resp = new BsonObject();

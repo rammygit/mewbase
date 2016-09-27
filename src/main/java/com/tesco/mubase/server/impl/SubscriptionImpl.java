@@ -7,12 +7,15 @@ import com.tesco.mubase.bson.BsonObject;
  */
 public class SubscriptionImpl {
 
+
     private final StreamProcessor streamProcessor;
     private final ServerConnectionImpl connection;
+    private final int idPerConn;
 
-    public SubscriptionImpl(StreamProcessor streamProcessor, ServerConnectionImpl connection) {
+    public SubscriptionImpl(StreamProcessor streamProcessor, ServerConnectionImpl connection, int idPerConn) {
         this.streamProcessor = streamProcessor;
         this.connection = connection;
+        this.idPerConn = idPerConn;
     }
 
     protected void close() {
@@ -20,6 +23,8 @@ public class SubscriptionImpl {
     }
 
     protected void sendEvent(BsonObject frame) {
+        frame = frame.copy();
+        frame.put("subID", idPerConn);
         connection.writeNonResponse("RECEV", frame);
     }
 }

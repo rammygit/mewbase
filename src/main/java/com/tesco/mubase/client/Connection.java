@@ -14,7 +14,7 @@ public interface Connection extends DocQuerier {
 
     // Subscription
 
-    CompletableFuture<Subscription> subscribe(String serverURL, SubDescriptor descriptor);
+    CompletableFuture<Subscription> subscribe(SubDescriptor descriptor);
 
     CompletableFuture<Void> close();
 }

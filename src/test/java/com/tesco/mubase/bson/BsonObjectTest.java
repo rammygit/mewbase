@@ -1181,6 +1181,14 @@ public class BsonObjectTest {
   }
 
   @Test
+  public void testEncodeSize() throws Exception {
+    bsonObject.put("foo", "bar");
+    Buffer encoded = bsonObject.encode();
+    int length = encoded.getIntLE(0);
+    assertEquals(encoded.length(), length);
+  }
+
+  @Test
   public void testInvalidJson() {
     Buffer invalid = Buffer.buffer(TestUtils.randomByteArray(100));
     try {

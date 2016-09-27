@@ -4,6 +4,7 @@ import com.tesco.mubase.common.ReceivedEvent;
 import com.tesco.mubase.common.FunctionContext;
 import com.tesco.mubase.common.SubDescriptor;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 
 /**
@@ -19,9 +20,9 @@ public interface Server {
 
     // Indexes
 
-    void start();
+    CompletableFuture<Void> start();
 
-    void stop();
+    CompletableFuture<Void> stop();
 
     void createBinder(String binderName);
 

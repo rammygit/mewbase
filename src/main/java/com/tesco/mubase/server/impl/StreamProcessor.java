@@ -20,7 +20,7 @@ public class StreamProcessor {
         this.streamName = streamName;
     }
 
-    protected synchronized CompletableFuture<Void> handleEmit(String eventType, BsonObject event, String sessID) {
+    protected synchronized CompletableFuture<Void> handleEmit(String eventType, BsonObject event) {
         // TODO persist event
         CompletableFuture<Void> cf = new CompletableFuture<>();
         cf.complete(null);

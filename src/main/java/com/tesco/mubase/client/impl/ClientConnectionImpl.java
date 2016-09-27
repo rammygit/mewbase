@@ -5,9 +5,12 @@ import com.tesco.mubase.client.*;
 import com.tesco.mubase.common.SubDescriptor;
 import com.tesco.mubase.server.impl.Codec;
 import com.tesco.mubase.common.FrameHandler;
+import com.tesco.mubase.server.impl.ServerConnectionImpl;
 import com.tesco.mubase.server.impl.ServerFrameHandler;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Queue;
@@ -21,6 +24,9 @@ import java.util.function.Consumer;
  * Created by tim on 22/09/16.
  */
 public class ClientConnectionImpl implements Connection, ClientFrameHandler {
+
+    private final static Logger log = LoggerFactory.getLogger(ClientConnectionImpl.class);
+
 
     private final AtomicInteger sessionSeq = new AtomicInteger();
     private final NetSocket netSocket;
@@ -43,14 +49,11 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
     }
 
     @Override
-    public CompletableFuture<Subscription> subscribe(String serverURL, SubDescriptor descriptor) {
+    public CompletableFuture<Subscription> subscribe(SubDescriptor descriptor) {
         CompletableFuture<Subscription> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
         if (descriptor.getStreamName() == null) {
-            throw new IllegalArgumentException("No StreamName in SubDescriptor");
-        }
-        if (descriptor.getEventType() == null) {
-            throw new IllegalArgumentException("No EventType in SubDescriptor");
+            throw new IllegalArgumentException("No streamName in SubDescriptor");
         }
         frame.put("streamName", descriptor.getStreamName());
         frame.put("eventType", descriptor.getEventType());
@@ -58,7 +61,8 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
         frame.put("startTimestamp", descriptor.getStartTimestamp());
         frame.put("durableID", descriptor.getDurableID());
         frame.put("matcher", descriptor.getMatcher());
-        Buffer buffer = Codec.encodeFrame("EMIT", frame);
+        Buffer buffer = Codec.encodeFrame("SUBSCRIBE", frame);
+        log.trace("Writing subscribe");
         write(buffer, resp -> {
             boolean ok = resp.getBoolean("ok");
             if (ok) {
@@ -135,6 +139,7 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
     protected synchronized void write(Buffer buff, Consumer<BsonObject> respHandler) {
         respQueue.add(respHandler);
         netSocket.write(buff);
+        log.trace("Client writing buff of length " + buff.length());
     }
 
 
@@ -150,6 +155,9 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
         BsonObject frame = new BsonObject();
         frame.put("version", "0.1");
         Buffer buffer = Codec.encodeFrame("CONNECT", frame);
+        int len = buffer.getInt(0);
+        log.trace("Length of connect buffer is " + len);
+
         write(buffer, resp -> {
             boolean ok = resp.getBoolean("ok");
             if (ok) {

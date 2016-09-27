@@ -31,11 +31,12 @@ public class Codec {
             int size = -1;
             public void handle(Buffer buff) {
                 if (size == -1) {
-                    size = buff.getInt(0);
+                    size = buff.getIntLE(0) - 4;
                     parser.fixedSizeMode(size);
                 } else {
                     handleFrame(size, buff);
                     parser.fixedSizeMode(4);
+                    size = -1;
                 }
             }
         };
@@ -46,7 +47,7 @@ public class Codec {
     private void handleFrame(int size, Buffer buffer) {
         // TODO bit clunky - need to add size back in so it can be decoded, improve this!
         Buffer buff2 = Buffer.buffer(buffer.length() + 4);
-        buff2.appendInt(size).appendBuffer(buffer);
+        buff2.appendIntLE(size  + 4).appendBuffer(buffer);
         BsonObject bson = new BsonObject(buff2);
         handleBson(bson);
     }

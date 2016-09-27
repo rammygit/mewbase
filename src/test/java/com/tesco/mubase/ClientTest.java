@@ -21,32 +21,31 @@ public class ClientTest {
 
     private final static Logger log = LoggerFactory.getLogger(ClientTest.class);
 
+    private static final String TEST_STREAM1 = "com.tesco.basket";
+    private static final String TEST_EVENT_TYPE1 = "addItem";
+
     @Test
     public void testSimpleSubscribe() throws Exception {
         Server server = new ServerImpl(new ServerOptions());
-        server.start();
-
-        Thread.sleep(1000);
-
+        CompletableFuture<Void> cfStart = server.start();
+        cfStart.get();
         Client client = new ClientImpl();
         CompletableFuture<Connection> cfConn = client.connect(new ConnectionOptions());
         CompletableFuture<Subscription> cfSub = cfConn.thenCompose(connection -> {
             SubDescriptor descriptor = new SubDescriptor();
-            descriptor.setStreamName("somestream");
-            CompletableFuture<Subscription> subCf = connection.subscribe("someurl??", descriptor);
+            descriptor.setStreamName(TEST_STREAM1);
+            CompletableFuture<Subscription> subCf = connection.subscribe(descriptor);
             return subCf;
         });
         Connection conn = cfConn.get();
         Subscription sub = cfSub.get();
-        Producer prod = conn.createProducer("somestream");
+        Producer prod = conn.createProducer(TEST_STREAM1;
         CountDownLatch latch = new CountDownLatch(1);
         sub.setHandler(re -> {
-            log.trace("Got received event: " + re);
             latch.countDown();
         });
-
         BsonObject event = new BsonObject().put("foo", "bar");
-        CompletableFuture<Void> cfEmit = prod.emit("someventtype", event);
+        CompletableFuture<Void> cfEmit = prod.emit(TEST_EVENT_TYPE1, event);
         cfEmit.get();
         latch.await();
     }
