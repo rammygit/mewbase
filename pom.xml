@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.tesco</groupId>
-    <artifactId>mubase</artifactId>
+    <artifactId>mewbase</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <dependencies>
