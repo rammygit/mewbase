@@ -6,11 +6,15 @@ import com.tesco.mewbase.log.LogReadStream;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by tim on 26/09/16.
  */
 public class SubscriptionImpl {
+
+    private final static Logger logger = LoggerFactory.getLogger(SubscriptionImpl.class);
 
     private static final int MAX_UNACKED_BYTES = 4 * 1024 * 1024; // TODO make configurable
 
@@ -27,12 +31,13 @@ public class SubscriptionImpl {
     private final Context ctx;
 
     public SubscriptionImpl(StreamProcessor streamProcessor, ServerConnectionImpl connection, int idPerConn,
-                            Log log, long startSeq) {
+                            Log log, long startSeq, long streamSeq) {
         this.streamProcessor = streamProcessor;
         this.connection = connection;
         this.idPerConn = idPerConn;
         this.log = log;
         this.ctx = Vertx.currentContext();
+        this.streamSeq = streamSeq;
         if (startSeq != -1) {
             openReadStream(startSeq);
         }
@@ -53,6 +58,7 @@ public class SubscriptionImpl {
     }
 
     private void handleEvent0(long seq, BsonObject frame) {
+        logger.trace("sub for streamName {} id {} handling event with seq {}", streamProcessor.getStreamName(), idPerConn, seq);
         checkContext();
         frame = frame.copy();
         frame.put("subID", idPerConn);
@@ -65,7 +71,7 @@ public class SubscriptionImpl {
                 readStream.pause();
             }
         }
-        if (deliveredSeq == streamSeq && retro) {
+        if (retro && streamSeq == deliveredSeq) {
             readStream.close();
             retro = false;
         }

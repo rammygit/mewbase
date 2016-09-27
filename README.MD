@@ -168,13 +168,13 @@ Fields
 * `streamName` - mandatory - string. The name of the stream to subscribe to, e.g. `com.tesco.basket`
 * `eventType` - optional - string. The name of a specific event to subscrive to. If omitted all types of events in the
 stream will be subscribed to
-* `startSequence` - optional - int64. The sequence number of events in the stream to start from subscribing from.
+* `startSeq` - optional - int64. The sequence number of events in the stream to start from subscribing from.
 * `startTimestamp` - optional - int64. The earliest timestamp of events in the stream to start from subscribing from.
 * `durableID` - optional - string. Unique id for a durable subscription. If provided then the server will look-up and
 resume an existing subscription for that name, otherwise a new durable subscription for that name will be created.
 * `matcher` - optional BSONObject. Object to match on the event fields. Non matching events will be filtered out.
  
-if `startSequence` or `startTimestamp` are omitted then only events starting from when the subscription was created will
+if `startSeq` or `startTimestamp` are omitted then only events starting from when the subscription was created will
  be received.
  
 ### SUBRESPONSE

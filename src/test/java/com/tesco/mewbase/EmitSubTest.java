@@ -18,6 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by tim on 26/09/16.
@@ -67,5 +69,37 @@ public class EmitSubTest {
             async.complete();
         });
         prod.emit(TEST_EVENT_TYPE1, sent).get();
+    }
+
+    @Test
+    public void testSubscribeRetro(TestContext context) throws Exception {
+        Connection conn = client.connect(new ConnectionOptions()).get();
+        Producer prod = conn.createProducer(TEST_STREAM1);
+        int numEvents = 10;
+        for (int i = 0; i < numEvents; i++) {
+            BsonObject event = new BsonObject().put("foo", "bar").put("num", i);
+            CompletableFuture<Void> cf = prod.emit(TEST_EVENT_TYPE1, event);
+            if (i == numEvents - 1) {
+                cf.get();
+            }
+        }
+        SubDescriptor descriptor = new SubDescriptor();
+        descriptor.setStreamName(TEST_STREAM1);
+        descriptor.setStartSeq(0);
+        Subscription sub = conn.subscribe(descriptor).get();
+        Async async = context.async();
+        AtomicLong cnt = new AtomicLong();
+        sub.setHandler(re -> {
+            context.assertEquals(TEST_STREAM1, re.streamName());
+            context.assertEquals(TEST_EVENT_TYPE1, re.eventType());
+            long c = cnt.getAndIncrement();
+            context.assertEquals(c, re.sequenceNumber());
+            BsonObject event = re.event();
+            context.assertEquals(c, (long)event.getInteger("num"));
+            if (c == numEvents - 1) {
+                async.complete();
+            }
+        });
+
     }
 }

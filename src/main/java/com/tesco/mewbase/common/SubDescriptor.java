@@ -10,7 +10,7 @@ public class SubDescriptor {
     private String durableID;
     private String streamName;
     private String eventType;
-    private Long startSequence;
+    private Long startSeq;
     private long startTimestamp;
     private BsonObject matcher;
 
@@ -41,12 +41,12 @@ public class SubDescriptor {
         return this;
     }
 
-    public Long getStartSequence() {
-        return startSequence;
+    public Long getStartSeq() {
+        return startSeq;
     }
 
-    public SubDescriptor setStartSequence(Long startSequence) {
-        this.startSequence = startSequence;
+    public SubDescriptor setStartSeq(long startSeq) {
+        this.startSeq = startSeq;
         return this;
     }
 
@@ -79,7 +79,7 @@ public class SubDescriptor {
         if (durableID != null ? !durableID.equals(that.durableID) : that.durableID != null) return false;
         if (streamName != null ? !streamName.equals(that.streamName) : that.streamName != null) return false;
         if (eventType != null ? !eventType.equals(that.eventType) : that.eventType != null) return false;
-        if (startSequence != null ? !startSequence.equals(that.startSequence) : that.startSequence != null)
+        if (startSeq != null ? !startSeq.equals(that.startSeq) : that.startSeq != null)
             return false;
         return matcher != null ? matcher.equals(that.matcher) : that.matcher == null;
 
@@ -90,7 +90,7 @@ public class SubDescriptor {
         int result = durableID != null ? durableID.hashCode() : 0;
         result = 31 * result + (streamName != null ? streamName.hashCode() : 0);
         result = 31 * result + (eventType != null ? eventType.hashCode() : 0);
-        result = 31 * result + (startSequence != null ? startSequence.hashCode() : 0);
+        result = 31 * result + (startSeq != null ? startSeq.hashCode() : 0);
         result = 31 * result + (int) (startTimestamp ^ (startTimestamp >>> 32));
         result = 31 * result + (matcher != null ? matcher.hashCode() : 0);
         return result;
@@ -102,7 +102,7 @@ public class SubDescriptor {
                 "durableID='" + durableID + '\'' +
                 ", streamName='" + streamName + '\'' +
                 ", eventType='" + eventType + '\'' +
-                ", startSequence=" + startSequence +
+                ", startSeq=" + startSeq +
                 ", startTimestamp=" + startTimestamp +
                 ", matcher=" + matcher +
                 '}';

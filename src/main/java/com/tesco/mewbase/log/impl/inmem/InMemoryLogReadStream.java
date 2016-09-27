@@ -2,9 +2,12 @@ package com.tesco.mewbase.log.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.log.LogReadStream;
+import com.tesco.mewbase.server.impl.ServerConnectionImpl;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.function.Consumer;
@@ -14,21 +17,17 @@ import java.util.function.Consumer;
  */
 public class InMemoryLogReadStream implements LogReadStream {
 
+    private final static Logger log = LoggerFactory.getLogger(InMemoryLogReadStream.class);
+
+
     private Consumer<BsonObject> handler;
     private boolean paused;
     private Iterator<BsonObject> iter;
     private Context ctx;
 
-    public InMemoryLogReadStream(long seqNo, Iterator<BsonObject> iter) {
+    public InMemoryLogReadStream(Iterator<BsonObject> iter) {
         this.iter = iter;
         this.ctx = Vertx.currentContext();
-        while (iter.hasNext()) {
-            BsonObject obj = iter.next();
-            long seq = obj.getLong("seqNo");
-            if (seq == seqNo) {
-                break;
-            }
-        }
     }
 
     private void deliverOnContext() {
@@ -60,6 +59,7 @@ public class InMemoryLogReadStream implements LogReadStream {
 
     @Override
     public void pause() {
+        log.trace("Pausing readstream");
         paused = true;
     }
 
@@ -71,6 +71,7 @@ public class InMemoryLogReadStream implements LogReadStream {
 
     @Override
     public void close() {
+        log.trace("Closing readstream");
         paused = true;
     }
 }

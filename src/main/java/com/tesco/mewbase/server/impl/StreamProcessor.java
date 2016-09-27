@@ -23,6 +23,10 @@ public class StreamProcessor {
         this.log = log;
     }
 
+    public String getStreamName() {
+        return streamName;
+    }
+
     protected CompletableFuture<Void> handleEmit(String eventType, BsonObject event) {
         BsonObject frame = new BsonObject();
         frame.put("eventType", eventType);
@@ -48,6 +52,10 @@ public class StreamProcessor {
 
     protected void addSubScription(SubscriptionImpl subscription) {
         subscriptions.add(subscription);
+    }
+
+    protected SubscriptionImpl createSubscription(ServerConnectionImpl conn, int idPerConn, long startSeq) {
+        return new SubscriptionImpl(this, conn, idPerConn, log, startSeq, eventSeq.get());
     }
 
     protected void removeSubScription(SubscriptionImpl subscription) {

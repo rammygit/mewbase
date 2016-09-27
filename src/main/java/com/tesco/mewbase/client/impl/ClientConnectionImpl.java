@@ -4,6 +4,8 @@ import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.*;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.server.impl.Codec;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
@@ -31,10 +33,12 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
     private final Map<Integer, ProducerImpl> producerMap = new ConcurrentHashMap<>();
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final Queue<Consumer<BsonObject>> respQueue = new ConcurrentLinkedQueue<>();
+    private final Context context;
 
     public ClientConnectionImpl(NetSocket netSocket) {
         this.netSocket = netSocket;
         this.codec = new Codec(netSocket, this);
+        this.context = Vertx.currentContext();
     }
 
     @Override
@@ -54,7 +58,7 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
         }
         frame.put("streamName", descriptor.getStreamName());
         frame.put("eventType", descriptor.getEventType());
-        frame.put("startSequence", descriptor.getStartSequence());
+        frame.put("startSeq", descriptor.getStartSeq());
         frame.put("startTimestamp", descriptor.getStartTimestamp());
         frame.put("durableID", descriptor.getDurableID());
         frame.put("matcher", descriptor.getMatcher());

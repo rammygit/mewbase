@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Log {
 
-    LogReadStream openReadStream(long seqNumber);
+    LogReadStream openReadStream(long mewbase);
 
     LogWriteStream openWriteStream();
 

@@ -4,7 +4,10 @@ import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.log.LogWriteStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.Queue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -14,18 +17,32 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class InMemoryLog implements Log {
 
+    private final static Logger log = LoggerFactory.getLogger(InMemoryLog.class);
+
     private final Queue<BsonObject> queue = new ConcurrentLinkedQueue<>();
 
     public CompletableFuture<Void> append(BsonObject obj) {
         queue.add(obj);
         CompletableFuture<Void> cf= new CompletableFuture<>();
         cf.complete(null);
+        log.trace("Appended obj {}", obj);
+
         return cf;
     }
 
     @Override
-    public LogReadStream openReadStream(long seqNumber) {
-        return new InMemoryLogReadStream(seqNumber, queue.iterator());
+    public LogReadStream openReadStream(long mewbase) {
+        BsonObject top = queue.element();
+        Iterator<BsonObject> iter = queue.iterator();
+        if (top.getLong("seqNo") < mewbase) {
+            while (iter.hasNext()) {
+                BsonObject obj = iter.next();
+                if (obj.getLong("seqNo") == mewbase - 1) {
+                    break;
+                }
+            }
+        }
+        return new InMemoryLogReadStream(iter);
     }
 
     @Override

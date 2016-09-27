@@ -116,15 +116,14 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         int subID = subSeq++;
         checkWrap(subSeq);
         StreamProcessor processor = server.getStreamProcessor(streamName);
-        Log log = server.getLog(streamName);
-        SubscriptionImpl subscription =
-                new SubscriptionImpl(processor, this, subID, log, startSeq == null ? -1 : startSeq);
+        SubscriptionImpl subscription = processor.createSubscription(this, subID, startSeq == null ? -1 : startSeq);
         subscriptionMap.put(subID, subscription);
         processor.addSubScription(subscription);
         BsonObject resp = new BsonObject();
         resp.put("ok", true);
         resp.put("subID", subID);
         writeResponse("SUBRESPONSE", resp, getWriteSeq());
+        ServerConnectionImpl.log.trace("Subscribed streamName: {} startSeq {}", streamName, startSeq);
     }
 
     @Override
