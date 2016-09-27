@@ -7,7 +7,12 @@ import com.tesco.mubase.common.SubDescriptor;
 import com.tesco.mubase.server.Server;
 import com.tesco.mubase.server.ServerOptions;
 import com.tesco.mubase.server.impl.ServerImpl;
+import io.vertx.core.http.HttpClient;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * Created by tim on 26/09/16.
  */
+@RunWith(VertxUnitRunner.class)
 public class ClientTest {
 
     private final static Logger log = LoggerFactory.getLogger(ClientTest.class);
@@ -25,7 +31,7 @@ public class ClientTest {
     private static final String TEST_EVENT_TYPE1 = "addItem";
 
     @Test
-    public void testSimpleSubscribe() throws Exception {
+    public void testSimpleEmitSubscribe(TestContext context) throws Exception {
         Server server = new ServerImpl(new ServerOptions());
         CompletableFuture<Void> cfStart = server.start();
         cfStart.get();
@@ -40,13 +46,19 @@ public class ClientTest {
         Connection conn = cfConn.get();
         Subscription sub = cfSub.get();
         Producer prod = conn.createProducer(TEST_STREAM1);
-        CountDownLatch latch = new CountDownLatch(1);
+        Async async = context.async();
+        long now = System.currentTimeMillis();
+        BsonObject sent = new BsonObject().put("foo", "bar");
         sub.setHandler(re -> {
-            latch.countDown();
+            context.assertEquals(TEST_STREAM1, re.streamName());
+            context.assertEquals(TEST_EVENT_TYPE1, re.eventType());
+            context.assertEquals(0l, re.sequenceNumber());
+            context.assertTrue(re.timeStamp() >= now);
+            BsonObject event = re.event();
+            context.assertEquals(sent, event);
+            async.complete();
         });
-        BsonObject event = new BsonObject().put("foo", "bar");
-        CompletableFuture<Void> cfEmit = prod.emit(TEST_EVENT_TYPE1, event);
+        CompletableFuture<Void> cfEmit = prod.emit(TEST_EVENT_TYPE1, sent);
         cfEmit.get();
-        latch.await();
     }
 }
