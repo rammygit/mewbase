@@ -56,23 +56,23 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
         if (descriptor.getStreamName() == null) {
             throw new IllegalArgumentException("No streamName in SubDescriptor");
         }
-        frame.put("streamName", descriptor.getStreamName());
-        frame.put("eventType", descriptor.getEventType());
-        frame.put("startSeq", descriptor.getStartSeq());
-        frame.put("startTimestamp", descriptor.getStartTimestamp());
-        frame.put("durableID", descriptor.getDurableID());
-        frame.put("matcher", descriptor.getMatcher());
-        Buffer buffer = Codec.encodeFrame("SUBSCRIBE", frame);
+        frame.put(Codec.SUBSCRIBE_STREAMNAME, descriptor.getStreamName());
+        frame.put(Codec.SUBSCRIBE_EVENTTYPE, descriptor.getEventType());
+        frame.put(Codec.SUBSCRIBE_STARTSEQ, descriptor.getStartSeq());
+        frame.put(Codec.SUBSCRIBE_STARTTIMESTAMP, descriptor.getStartTimestamp());
+        frame.put(Codec.SUBSCRIBE_DURABLEID, descriptor.getDurableID());
+        frame.put(Codec.SUBSCRIBE_MATCHER, descriptor.getMatcher());
+        Buffer buffer = Codec.encodeFrame(Codec.SUBSCRIBE_FRAME, frame);
         log.trace("Writing subscribe");
         write(buffer, resp -> {
-            boolean ok = resp.getBoolean("ok");
+            boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
             if (ok) {
-                int subID = resp.getInteger("subID");
+                int subID = resp.getInteger(Codec.SUBRESPONSE_SUBID);
                 SubscriptionImpl sub = new SubscriptionImpl(subID, descriptor.getStreamName(), this);
                 subscriptionMap.put(subID, sub);
                 cf.complete(sub);
             } else {
-                cf.completeExceptionally(new MuException(resp.getString("errMsg"), resp.getString("errCode")));
+                cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
         });
         return cf;
@@ -98,7 +98,7 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
 
     @Override
     public void handleRecev(BsonObject frame) {
-        int subID = frame.getInteger("subID");
+        int subID = frame.getInteger(Codec.RECEV_SUBID);
         SubscriptionImpl sub = subscriptionMap.get(subID);
         if (sub == null) {
             // No subscription for this - maybe closed - ignore
@@ -128,7 +128,7 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
     }
 
     @Override
-    public synchronized void handleResponse(BsonObject frame) {
+    public void handleResponse(BsonObject frame) {
         Consumer<BsonObject> respHandler = respQueue.poll();
         if (respHandler == null) {
             throw new IllegalStateException("Unexpected response");
@@ -148,48 +148,49 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
         subscriptionMap.remove(subID);
         BsonObject frame = new BsonObject();
         frame.put("SubID", subID);
-        Buffer buffer = Codec.encodeFrame("UNSUBSCRIBE", frame);
+        Buffer buffer = Codec.encodeFrame(Codec.UNSUBSCRIBE_FRAME, frame);
         netSocket.write(buffer);
     }
 
     protected synchronized void doConnect(CompletableFuture<Connection> cf) {
         BsonObject frame = new BsonObject();
-        frame.put("version", "0.1");
-        Buffer buffer = Codec.encodeFrame("CONNECT", frame);
+        frame.put(Codec.CONNECT_VERSION, "0.1");
+        Buffer buffer = Codec.encodeFrame(Codec.CONNECT_FRAME, frame);
         int len = buffer.getInt(0);
         log.trace("Length of connect buffer is " + len);
 
         write(buffer, resp -> {
-            boolean ok = resp.getBoolean("ok");
+            boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
             if (ok) {
                 cf.complete(ClientConnectionImpl.this);
             } else {
-                cf.completeExceptionally(new MuException(resp.getString("errMsg"), resp.getString("errCode")));
+                cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
         });
     }
 
-    protected void doAckEv(int subID) {
+    protected void doAckEv(int subID, int sizeBytes) {
         BsonObject frame = new BsonObject();
-        frame.put("SubID", subID);
-        Buffer buffer = Codec.encodeFrame("ACKEV", frame);
+        frame.put(Codec.ACKEV_SUBID, subID);
+        frame.put(Codec.ACKEV_BYTES, sizeBytes);
+        Buffer buffer = Codec.encodeFrame(Codec.ACKEV_FRAME, frame);
         netSocket.write(buffer);
     }
 
     protected CompletableFuture<Void> doEmit(String streamName, int producerID, String eventType, BsonObject event) {
         CompletableFuture<Void> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
-        frame.put("streamName", streamName);
-        frame.put("eventType", eventType);
-        frame.put("sessID", producerID);
-        frame.put("event", event);
-        Buffer buffer = Codec.encodeFrame("EMIT", frame);
+        frame.put(Codec.EMIT_STREAMNAME, streamName);
+        frame.put(Codec.EMIT_EVENTTYPE, eventType);
+        frame.put(Codec.EMIT_SESSID, producerID);
+        frame.put(Codec.EMIT_EVENT, event);
+        Buffer buffer = Codec.encodeFrame(Codec.EMIT_FRAME, frame);
         write(buffer, resp -> {
-            boolean ok = resp.getBoolean("ok");
+            boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
             if (ok) {
                 cf.complete(null);
             } else {
-                cf.completeExceptionally(new MuException(resp.getString("errMsg"), resp.getString("errCode")));
+                cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
         });
         return cf;

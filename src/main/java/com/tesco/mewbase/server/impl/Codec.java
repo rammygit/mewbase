@@ -20,6 +20,69 @@ import org.slf4j.LoggerFactory;
  */
 public class Codec {
 
+    // Frame types
+
+    public static final String RESPONSE_FRAME = "RESPONSE";
+    public static final String CONNECT_FRAME = "CONNECT";
+    public static final String EMIT_FRAME = "EMIT";
+    public static final String STARTTX_FRAME = "STARTTX";
+    public static final String COMMITTX_FRAME = "COMMITTX";
+    public static final String ABORTTX_FRAME = "ABORTTX";
+    public static final String SUBSCRIBE_FRAME = "SUBSCRIBE";
+    public static final String UNSUBSCRIBE_FRAME = "UNSUBSCRIBE";
+    public static final String SUBRESPONSE_FRAME = "SUBRESPONSE";
+    public static final String RECEV_FRAME = "RECEV";
+    public static final String ACKEV_FRAME = "ACKEV";
+    public static final String QUERY_FRAME = "QUERY";
+    public static final String QUERYRESPONSE_FRAME = "QUERYRESPONSE";
+    public static final String QUERYRESULT_FRAME = "QUERYRESULT";
+    public static final String QUERYACK_FRAME = "QUERYACK";
+    public static final String PING_FRAME = "PING";
+
+    // Frame fields
+
+    public static final String RESPONSE_OK = "ok";
+    public static final String RESPONSE_ERRMSG = "errMsg";
+    public static final String RESPONSE_ERRCODE = "errCode";
+
+    public static final String SUBRESPONSE_SUBID = "subID";
+
+    public static final String CONNECT_USERNAME = "username";
+    public static final String CONNECT_PASSWORD = "password";
+    public static final String CONNECT_VERSION = "version";
+
+    public static final String EMIT_STREAMNAME = "streamName";
+    public static final String EMIT_EVENTTYPE = "eventType";
+    public static final String EMIT_EVENT = "event";
+    public static final String EMIT_SESSID = "sessID";
+
+    public static final String STARTTX_SESSID = "sessID";
+
+    public static final String COMMITTX_SESSID = "sessID";
+
+    public static final String ABORTTX_SESSID = "sessID";
+
+    public static final String SUBSCRIBE_STREAMNAME = "streamName";
+    public static final String SUBSCRIBE_EVENTTYPE = "eventType";
+    public static final String SUBSCRIBE_STARTSEQ = "startSeq";
+    public static final String SUBSCRIBE_STARTTIMESTAMP = "startTimestamp";
+    public static final String SUBSCRIBE_DURABLEID = "durableID";
+    public static final String SUBSCRIBE_MATCHER = "matcher";
+
+    public static final String UNSUBSCRIBE_SUBID = "subID";
+
+    public static final String RECEV_SUBID = "subID";
+    public static final String RECEV_EVENTTYPE = "eventType";
+    public static final String RECEV_TIMESTAMP = "timestamp";
+    public static final String RECEV_SEQNO = "seqNo";
+    public static final String RECEV_EVENT = "event";
+
+    public static final String ACKEV_SUBID = "subID";
+    public static final String ACKEV_BYTES = "bytes";
+
+    // Query stuff TODO
+
+
     private final static Logger log = LoggerFactory.getLogger(Codec.class);
 
     private final FrameHandler frameHandler;
@@ -56,49 +119,52 @@ public class Codec {
         String type = bson.getString("type");
         BsonObject frame = bson.getBsonObject("frame");
         switch (type) {
-            case "RESPONSE":
+            case RESPONSE_FRAME:
                 frameHandler.handleResponse(frame);
                 break;
-            case "CONNECT":
+            case CONNECT_FRAME:
                 frameHandler.handleConnect(frame);
                 break;
-            case "EMIT":
+            case EMIT_FRAME:
                 frameHandler.handleEmit(frame);
                 break;
-            case "STARTTX":
+            case STARTTX_FRAME:
                 frameHandler.handleStartTx(frame);
                 break;
-            case "COMMITTX":
+            case COMMITTX_FRAME:
                 frameHandler.handleCommitTx(frame);
                 break;
-            case "ABORTTX":
+            case ABORTTX_FRAME:
                 frameHandler.handleAbortTx(frame);
                 break;
-            case "SUBSCRIBE":
+            case SUBSCRIBE_FRAME:
                 frameHandler.handleSubscribe(frame);
                 break;
-            case "SUBRESPONSE":
+            case UNSUBSCRIBE_FRAME:
+                frameHandler.handleUnsubscribe(frame);
+                break;
+            case SUBRESPONSE_FRAME:
                 frameHandler.handleSubResponse(frame);
                 break;
-            case "RECEV":
+            case RECEV_FRAME:
                 frameHandler.handleRecev(frame);
                 break;
-            case "ACKEV":
+            case ACKEV_FRAME:
                 frameHandler.handleAckEv(frame);
                 break;
-            case "QUERY":
+            case QUERY_FRAME:
                 frameHandler.handleQuery(frame);
                 break;
-            case "QUERYRESPONSE":
+            case QUERYRESPONSE_FRAME:
                 frameHandler.handleQueryResponse(frame);
                 break;
-            case "QUERYRESULT":
+            case QUERYRESULT_FRAME:
                 frameHandler.handleQueryResult(frame);
                 break;
-            case "QUERYACK":
+            case QUERYACK_FRAME:
                 frameHandler.handleQueryAck(frame);
                 break;
-            case "PING":
+            case PING_FRAME:
                 frameHandler.handlePing(frame);
                 break;
             default:
@@ -112,3 +178,5 @@ public class Codec {
         return env.encode();
     }
 }
+
+

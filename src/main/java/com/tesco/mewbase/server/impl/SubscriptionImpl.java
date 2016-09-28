@@ -61,8 +61,8 @@ public class SubscriptionImpl {
         logger.trace("sub for streamName {} id {} handling event with seq {}", streamProcessor.getStreamName(), idPerConn, seq);
         checkContext();
         frame = frame.copy();
-        frame.put("subID", idPerConn);
-        Buffer buff = connection.writeNonResponse("RECEV", frame);
+        frame.put(Codec.RECEV_SUBID, idPerConn);
+        Buffer buff = connection.writeNonResponse(Codec.RECEV_FRAME, frame);
         deliveredSeq = seq;
         unackedBytes += buff.length();
         if (unackedBytes > MAX_UNACKED_BYTES) {
@@ -95,7 +95,7 @@ public class SubscriptionImpl {
     private void openReadStream(long seqNo) {
         readStream = log.openReadStream(seqNo);
         retro = true;
-        readStream.handler(bson -> handleEvent0(bson.getLong("seqNo"), bson));
+        readStream.handler(bson -> handleEvent0(bson.getLong(Codec.RECEV_SEQNO), bson));
     }
 
     // Sanity check - this should always be executed using the connection's context

@@ -14,14 +14,17 @@ public class ReceivedEventImpl implements ReceivedEvent {
     private final long timestamp;
     private final long sequenceNumber;
     private final BsonObject event;
+    private final int sizeBytes;
 
-    public ReceivedEventImpl(SubscriptionImpl sub, String streamName, String eventType, long timestamp, long sequenceNumber, BsonObject event) {
+    public ReceivedEventImpl(SubscriptionImpl sub, String streamName, String eventType, long timestamp, long sequenceNumber, BsonObject event,
+                             int sizeBytes) {
         this.sub = sub;
         this.streamName = streamName;
         this.eventType = eventType;
         this.timestamp = timestamp;
         this.sequenceNumber = sequenceNumber;
         this.event = event;
+        this.sizeBytes = sizeBytes;
     }
 
     @Override
@@ -51,6 +54,6 @@ public class ReceivedEventImpl implements ReceivedEvent {
 
     @Override
     public void acknowledge() {
-        sub.acknowledge();
+        sub.acknowledge(sizeBytes);
     }
 }

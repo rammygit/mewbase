@@ -3,6 +3,7 @@ package com.tesco.mewbase.client.impl;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Subscription;
 import com.tesco.mewbase.common.ReceivedEvent;
+import com.tesco.mewbase.server.impl.Codec;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -55,8 +56,9 @@ public class SubscriptionImpl implements Subscription {
 
     protected synchronized void handleRecevFrame(BsonObject frame) {
         checkContext();
-        ReceivedEvent re = new ReceivedEventImpl(this, streamName, frame.getString("eventType"), frame.getLong("timestamp"),
-                frame.getLong("seqNo"), frame.getBsonObject("event"));
+        int sizeBytes = 1234; // FIXME
+        ReceivedEvent re = new ReceivedEventImpl(this, streamName, frame.getString(Codec.RECEV_EVENTTYPE), frame.getLong(Codec.RECEV_TIMESTAMP),
+                frame.getLong(Codec.RECEV_SEQNO), frame.getBsonObject(Codec.RECEV_EVENT), sizeBytes);
         Consumer<ReceivedEvent> h = handler; // Copy ref to avoid race if handler is unregistered
         if (h == null || !buffered.isEmpty()) {
             buffered.add(re);
@@ -65,8 +67,8 @@ public class SubscriptionImpl implements Subscription {
         }
     }
 
-    protected void acknowledge() {
-        conn.doAckEv(id);
+    protected void acknowledge(int sizeBytes) {
+        conn.doAckEv(id, sizeBytes);
     }
 
     // Sanity check - this should always be executed using the connection's context

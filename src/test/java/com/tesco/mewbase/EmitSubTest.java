@@ -36,6 +36,7 @@ public class EmitSubTest {
 
     @Before
     public void before(TestContext context) throws Exception {
+        log.trace("in before");
         server = new ServerImpl(new ServerOptions());
         CompletableFuture<Void> cfStart = server.start();
         cfStart.get();
@@ -44,6 +45,7 @@ public class EmitSubTest {
 
     @After
     public void after(TestContext context) throws Exception {
+        log.trace("in after");
         client.close().get();
         server.stop().get();
     }

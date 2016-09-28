@@ -44,16 +44,16 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         // TODO version checking
         authorised = true;
         BsonObject resp = new BsonObject();
-        resp.put("ok", true);
-        writeResponse("RESPONSE", resp, getWriteSeq());
+        resp.put(Codec.RESPONSE_OK, true);
+        writeResponse(Codec.RESPONSE_FRAME, resp, getWriteSeq());
     }
 
     @Override
     public void handleEmit(BsonObject frame) {
         checkAuthorised();
-        String streamName = frame.getString("streamName");
-        String eventType = frame.getString("eventType");
-        BsonObject event = frame.getBsonObject("event");
+        String streamName = frame.getString(Codec.EMIT_STREAMNAME);
+        String eventType = frame.getString(Codec.EMIT_EVENTTYPE);
+        BsonObject event = frame.getBsonObject(Codec.EMIT_EVENT);
         if (streamName == null) {
             logAndClose("No streamName in EMIT");
             return;
@@ -73,12 +73,12 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();
             if (ex == null) {
-                resp.put("ok", true);
+                resp.put(Codec.RESPONSE_OK, true);
             } else {
                 // TODO error code
-                resp.put("ok", false).put("errMsg", "Failed to persist");
+                resp.put(Codec.RESPONSE_OK, false).put(Codec.RESPONSE_ERRMSG, "Failed to persist");
             }
-            writeResponse("RESPONSE", resp, order);
+            writeResponse(Codec.RESPONSE_FRAME, resp, order);
             return null;
         });
 
@@ -102,16 +102,16 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleSubscribe(BsonObject frame) {
         checkAuthorised();
-        String streamName = frame.getString("streamName");
-        String eventType = frame.getString("eventType");
+        String streamName = frame.getString(Codec.SUBSCRIBE_STREAMNAME);
+        String eventType = frame.getString(Codec.SUBSCRIBE_EVENTTYPE);
         if (streamName == null) {
             logAndClose("No streamName in SUBSCRIBE");
             return;
         }
-        Long startSeq = frame.getLong("startSeq");
-        Long startTimestamp = frame.getLong("startTimestamp");
-        String durableID = frame.getString("durableID");
-        BsonObject matcher = frame.getBsonObject("matcher");
+        Long startSeq = frame.getLong(Codec.SUBSCRIBE_STARTSEQ);
+        Long startTimestamp = frame.getLong(Codec.SUBSCRIBE_STARTTIMESTAMP);
+        String durableID = frame.getString(Codec.SUBSCRIBE_DURABLEID);
+        BsonObject matcher = frame.getBsonObject(Codec.SUBSCRIBE_MATCHER);
         int subID = subSeq++;
         checkWrap(subSeq);
         StreamProcessor processor = server.getStreamProcessor(streamName);
@@ -119,16 +119,16 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         subscriptionMap.put(subID, subscription);
         processor.addSubScription(subscription);
         BsonObject resp = new BsonObject();
-        resp.put("ok", true);
-        resp.put("subID", subID);
-        writeResponse("SUBRESPONSE", resp, getWriteSeq());
+        resp.put(Codec.RESPONSE_OK, true);
+        resp.put(Codec.SUBRESPONSE_SUBID, subID);
+        writeResponse(Codec.SUBRESPONSE_FRAME, resp, getWriteSeq());
         ServerConnectionImpl.log.trace("Subscribed streamName: {} startSeq {}", streamName, startSeq);
     }
 
     @Override
     public void handleUnsubscribe(BsonObject frame) {
         checkAuthorised();
-        String subID = frame.getString("subID");
+        String subID = frame.getString(Codec.UNSUBSCRIBE_SUBID);
         if (subID == null) {
             logAndClose("No subID in UNSUBSCRIBE");
             return;
@@ -140,19 +140,19 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         }
         subscription.close();
         BsonObject resp = new BsonObject();
-        resp.put("ok", true);
-        writeResponse("RESPONSE", resp, getWriteSeq());
+        resp.put(Codec.RESPONSE_OK, true);
+        writeResponse(Codec.RESPONSE_FRAME, resp, getWriteSeq());
     }
 
     @Override
     public void handleAckEv(BsonObject frame) {
         checkAuthorised();
-        String subID = frame.getString("subID");
+        String subID = frame.getString(Codec.ACKEV_SUBID);
         if (subID == null) {
             logAndClose("No subID in ACKEV");
             return;
         }
-        Integer bytes = frame.getInteger("bytes");
+        Integer bytes = frame.getInteger(Codec.ACKEV_BYTES);
         if (bytes == null) {
             logAndClose("No bytes in ACKEV");
             return;

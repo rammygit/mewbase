@@ -194,7 +194,7 @@ Unsubscribe a subscription
 
 Fields
 
-* `SubID` - mandatory - int32. The id of the subscription to unsubscribe
+* `subID` - mandatory - int32. The id of the subscription to unsubscribe
 
 ### RECEV
  
