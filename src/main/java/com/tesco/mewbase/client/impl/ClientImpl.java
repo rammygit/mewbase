@@ -37,7 +37,7 @@ public class ClientImpl implements Client {
         CompletableFuture<Connection> cf = new CompletableFuture<>();
         netClient.connect(connectionOptions.getPort(), connectionOptions.getHost(), ar -> {
             if (ar.succeeded()) {
-                ClientConnectionImpl conn = new ClientConnectionImpl(ar.result());
+                ClientConnection conn = new ClientConnection(ar.result());
                 conn.doConnect(cf);
             } else {
                 cf.completeExceptionally(ar.cause());

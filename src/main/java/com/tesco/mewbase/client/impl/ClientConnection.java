@@ -22,9 +22,9 @@ import java.util.function.Consumer;
 /**
  * Created by tim on 22/09/16.
  */
-public class ClientConnectionImpl implements Connection, ClientFrameHandler {
+public class ClientConnection implements Connection, ClientFrameHandler {
 
-    private final static Logger log = LoggerFactory.getLogger(ClientConnectionImpl.class);
+    private final static Logger log = LoggerFactory.getLogger(ClientConnection.class);
 
 
     private final AtomicInteger sessionSeq = new AtomicInteger();
@@ -35,7 +35,7 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
     private final Queue<Consumer<BsonObject>> respQueue = new ConcurrentLinkedQueue<>();
     private final Context context;
 
-    public ClientConnectionImpl(NetSocket netSocket) {
+    public ClientConnection(NetSocket netSocket) {
         this.netSocket = netSocket;
         this.codec = new Codec(netSocket, this);
         this.context = Vertx.currentContext();
@@ -79,12 +79,17 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
     }
 
     @Override
-    public CompletableFuture<QueryResult> query(String binderName, BsonObject matcher) {
+    public CompletableFuture<BsonObject> getByID(String binderName, String id) {
         return null;
     }
 
     @Override
-    public CompletableFuture<BsonObject> queryOne(String binderName, BsonObject matcher) {
+    public CompletableFuture<BsonObject> getByMatch(String binderName, String id) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<QueryResult> getAllMatching(String binderName, BsonObject matcher) {
         return null;
     }
 
@@ -162,7 +167,7 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
         write(buffer, resp -> {
             boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
             if (ok) {
-                cf.complete(ClientConnectionImpl.this);
+                cf.complete(ClientConnection.this);
             } else {
                 cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
@@ -195,7 +200,5 @@ public class ClientConnectionImpl implements Connection, ClientFrameHandler {
         });
         return cf;
     }
-
-
 
 }

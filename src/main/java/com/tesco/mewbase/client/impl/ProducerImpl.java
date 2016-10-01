@@ -10,11 +10,11 @@ import java.util.concurrent.CompletableFuture;
  */
 public class ProducerImpl implements Producer {
 
-    private final ClientConnectionImpl connection;
+    private final ClientConnection connection;
     private final String streamName;
     private final int id;
 
-    public ProducerImpl(ClientConnectionImpl connection, String streamName, int id) {
+    public ProducerImpl(ClientConnection connection, String streamName, int id) {
         this.connection = connection;
         this.streamName = streamName;
         this.id = id;

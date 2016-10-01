@@ -18,12 +18,12 @@ public class SubscriptionImpl implements Subscription {
 
     private final int id;
     private final String streamName;
-    private final ClientConnectionImpl conn;
+    private final ClientConnection conn;
     private final Queue<ReceivedEvent> buffered = new LinkedList<>();
     private Consumer<ReceivedEvent> handler;
     private final Context ctx;
 
-    public SubscriptionImpl(int id, String streamName, ClientConnectionImpl conn) {
+    public SubscriptionImpl(int id, String streamName, ClientConnection conn) {
         this.id = id;
         this.streamName = streamName;
         this.conn = conn;

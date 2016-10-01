@@ -1,8 +1,9 @@
 package com.tesco.mewbase.server;
 
-import com.tesco.mewbase.common.FunctionContext;
+import com.tesco.mewbase.client.Connection;
 import com.tesco.mewbase.common.ReceivedEvent;
 import com.tesco.mewbase.common.SubDescriptor;
+import com.tesco.mewbase.function.FunctionManager;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
@@ -10,20 +11,12 @@ import java.util.function.BiConsumer;
 /**
  * Created by tim on 21/09/16.
  */
-public interface Server {
-
-    // Functions
-
-    void installFunction(String functionName, SubDescriptor descriptor, BiConsumer<FunctionContext, ReceivedEvent> function);
-
-    void uninstallFunction(String functionName);
+public interface Server extends FunctionManager {
 
     // Indexes
 
     CompletableFuture<Void> start();
 
     CompletableFuture<Void> stop();
-
-    void createBinder(String binderName);
 
 }

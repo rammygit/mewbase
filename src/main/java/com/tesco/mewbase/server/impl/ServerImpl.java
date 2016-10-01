@@ -1,8 +1,14 @@
 package com.tesco.mewbase.server.impl;
 
-import com.tesco.mewbase.common.FunctionContext;
+import com.tesco.mewbase.client.Connection;
+import com.tesco.mewbase.client.impl.ClientImpl;
 import com.tesco.mewbase.common.ReceivedEvent;
 import com.tesco.mewbase.common.SubDescriptor;
+import com.tesco.mewbase.doc.DocManager;
+import com.tesco.mewbase.doc.impl.inmem.InMemoryDocManager;
+import com.tesco.mewbase.function.FunctionContext;
+import com.tesco.mewbase.function.FunctionManager;
+import com.tesco.mewbase.function.impl.FunctionManagerImpl;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
 import com.tesco.mewbase.log.impl.inmem.InMemoryLogManager;
@@ -34,11 +40,15 @@ public class ServerImpl implements Server {
     private final Set<ServerConnectionImpl> connections = new ConcurrentHashSet<>();
     private final Set<NetServer> netServers = new ConcurrentHashSet<>();
     private final LogManager logManager;
+    private final DocManager docManager;
+    private final FunctionManager functionManager;
 
     public ServerImpl(Vertx vertx, ServerOptions serverOptions) {
         this.vertx = vertx;
         this.serverOptions = serverOptions;
         this.logManager = new InMemoryLogManager();
+        this.docManager = new InMemoryDocManager();
+        this.functionManager = new FunctionManagerImpl(docManager);
     }
 
     public ServerImpl(ServerOptions serverOptions) {
@@ -89,18 +99,14 @@ public class ServerImpl implements Server {
     }
 
     @Override
-    public void installFunction(String functionName, SubDescriptor descriptor, BiConsumer<FunctionContext, ReceivedEvent> function) {
-
+    public boolean installFunction(String functionName, SubDescriptor descriptor,
+                                BiConsumer<FunctionContext, ReceivedEvent> function) {
+        return functionManager.installFunction(functionName, descriptor, function);
     }
 
     @Override
-    public void uninstallFunction(String functionName) {
-
-    }
-
-    @Override
-    public void createBinder(String binderName) {
-
+    public boolean deleteFunction(String functionName) {
+        return functionManager.deleteFunction(functionName);
     }
 
     private void connectHandler(NetSocket socket) {

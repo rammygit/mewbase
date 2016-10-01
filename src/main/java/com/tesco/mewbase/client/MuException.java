@@ -7,9 +7,17 @@ public class MuException extends RuntimeException {
 
     private final String errorCode;
 
+    public MuException(String message) {
+        this(message, (String)null);
+    }
+
     public MuException(String message, Throwable cause, String errorCode) {
         super(message, cause);
         this.errorCode = errorCode;
+    }
+
+    public MuException(String message, Throwable cause) {
+        this(message, cause, null);
     }
 
     public MuException(String message, String errorCode) {
