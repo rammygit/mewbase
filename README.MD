@@ -91,4 +91,6 @@ Mewbase will contain the following features
 * Standalone option
 * Log archiving
 * Client helpers for event sourcing (?)
+* Completely non blocking, and reactive APIS
+
 
