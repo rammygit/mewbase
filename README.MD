@@ -122,7 +122,7 @@ a REST API and is designed using CQRS/event sourcing principles. It implements t
 
 and provide the following queries:
 
-* view shoping basket
+* View shoping basket
 
 As commands come in the service processes them and emits events by sending them to the mewbase engine. When the service
 wants to get current state of a shopping basket it simply asks mewbase for it. The service provides a function that
