@@ -8,9 +8,9 @@ Smart organisations now realise that its vital to keep track of all the streams 
 
 Exammples of streams of events might be:
 
-* events from IoT sensors
-* shopping basket events (add/remove/order) from a website
-* stock movement events in a supply chain
+* Shopping basket events (add/remove/order) from a website
+* Events from IoT sensors
+* Stock movement events in a supply chain
 
 There are many examples!
 
@@ -116,9 +116,9 @@ Some of the features we're looking at implementing:
 Let's take a simple example of an order microservice whose job it is to maintain shopping baskets for customers. It has
 a REST API and is designed using CQRS/event sourcing principles. It implements the following commands:
 
-* add item to basket
-* remove item from basket
-* place order
+* Add item to basket
+* Remove item from basket
+* Place order
 
 and provide the following queries:
 
