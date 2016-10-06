@@ -57,7 +57,7 @@ public class SubscriptionImpl implements Subscription {
     protected synchronized void handleRecevFrame(BsonObject frame) {
         checkContext();
         int sizeBytes = 1234; // FIXME
-        ReceivedEvent re = new ReceivedEventImpl(this, streamName, frame.getString(Codec.RECEV_EVENTTYPE), frame.getLong(Codec.RECEV_TIMESTAMP),
+        ReceivedEvent re = new ReceivedEventImpl(this, streamName, frame.getLong(Codec.RECEV_TIMESTAMP),
                 frame.getLong(Codec.RECEV_SEQNO), frame.getBsonObject(Codec.RECEV_EVENT), sizeBytes);
         Consumer<ReceivedEvent> h = handler; // Copy ref to avoid race if handler is unregistered
         if (h == null || !buffered.isEmpty()) {

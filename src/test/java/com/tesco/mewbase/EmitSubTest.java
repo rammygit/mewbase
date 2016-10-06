@@ -29,7 +29,6 @@ public class EmitSubTest {
     private final static Logger log = LoggerFactory.getLogger(EmitSubTest.class);
 
     private static final String TEST_STREAM1 = "com.tesco.basket";
-    private static final String TEST_EVENT_TYPE1 = "addItem";
 
     private Server server;
     private Client client;
@@ -62,14 +61,13 @@ public class EmitSubTest {
         BsonObject sent = new BsonObject().put("foo", "bar");
         sub.setHandler(re -> {
             context.assertEquals(TEST_STREAM1, re.streamName());
-            context.assertEquals(TEST_EVENT_TYPE1, re.eventType());
             context.assertEquals(0l, re.sequenceNumber());
             context.assertTrue(re.timeStamp() >= now);
             BsonObject event = re.event();
             context.assertEquals(sent, event);
             async.complete();
         });
-        prod.emit(TEST_EVENT_TYPE1, sent).get();
+        prod.emit(sent).get();
     }
 
     @Test
@@ -79,7 +77,7 @@ public class EmitSubTest {
         int numEvents = 10;
         for (int i = 0; i < numEvents; i++) {
             BsonObject event = new BsonObject().put("foo", "bar").put("num", i);
-            CompletableFuture<Void> cf = prod.emit(TEST_EVENT_TYPE1, event);
+            CompletableFuture<Void> cf = prod.emit(event);
             if (i == numEvents - 1) {
                 cf.get();
             }
@@ -92,7 +90,6 @@ public class EmitSubTest {
         AtomicLong cnt = new AtomicLong();
         sub.setHandler(re -> {
             context.assertEquals(TEST_STREAM1, re.streamName());
-            context.assertEquals(TEST_EVENT_TYPE1, re.eventType());
             long c = cnt.getAndIncrement();
             context.assertEquals(c, re.sequenceNumber());
             BsonObject event = re.event();

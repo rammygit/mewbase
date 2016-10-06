@@ -8,8 +8,7 @@ import com.tesco.mewbase.bson.BsonObject;
 public class SubDescriptor {
 
     private String durableID;
-    private String streamName;
-    private String eventType;
+    private String streamName; maybe change this 
     private Long startSeq;
     private long startTimestamp;
     private BsonObject matcher;
@@ -29,15 +28,6 @@ public class SubDescriptor {
 
     public SubDescriptor setStreamName(String streamName) {
         this.streamName = streamName;
-        return this;
-    }
-
-    public String getEventType() {
-        return eventType;
-    }
-
-    public SubDescriptor setEventType(String eventType) {
-        this.eventType = eventType;
         return this;
     }
 
@@ -78,7 +68,6 @@ public class SubDescriptor {
         if (startTimestamp != that.startTimestamp) return false;
         if (durableID != null ? !durableID.equals(that.durableID) : that.durableID != null) return false;
         if (streamName != null ? !streamName.equals(that.streamName) : that.streamName != null) return false;
-        if (eventType != null ? !eventType.equals(that.eventType) : that.eventType != null) return false;
         if (startSeq != null ? !startSeq.equals(that.startSeq) : that.startSeq != null)
             return false;
         return matcher != null ? matcher.equals(that.matcher) : that.matcher == null;
@@ -89,7 +78,6 @@ public class SubDescriptor {
     public int hashCode() {
         int result = durableID != null ? durableID.hashCode() : 0;
         result = 31 * result + (streamName != null ? streamName.hashCode() : 0);
-        result = 31 * result + (eventType != null ? eventType.hashCode() : 0);
         result = 31 * result + (startSeq != null ? startSeq.hashCode() : 0);
         result = 31 * result + (int) (startTimestamp ^ (startTimestamp >>> 32));
         result = 31 * result + (matcher != null ? matcher.hashCode() : 0);
@@ -101,7 +89,6 @@ public class SubDescriptor {
         return "SubDescriptor{" +
                 "durableID='" + durableID + '\'' +
                 ", streamName='" + streamName + '\'' +
-                ", eventType='" + eventType + '\'' +
                 ", startSeq=" + startSeq +
                 ", startTimestamp=" + startTimestamp +
                 ", matcher=" + matcher +

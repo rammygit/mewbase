@@ -27,9 +27,8 @@ public class StreamProcessor {
         return streamName;
     }
 
-    protected CompletableFuture<Void> handleEmit(String eventType, BsonObject event) {
+    protected CompletableFuture<Void> handleEmit(BsonObject event) {
         BsonObject frame = new BsonObject();
-        frame.put("eventType", eventType);
         frame.put("streamName", streamName);
         frame.put("timestamp", System.currentTimeMillis());
         frame.put("event", event);

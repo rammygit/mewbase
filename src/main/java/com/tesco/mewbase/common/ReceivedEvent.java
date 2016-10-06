@@ -11,8 +11,6 @@ public interface ReceivedEvent {
 
     String streamName();
 
-    String eventType();
-
     long timeStamp();
 
     long sequenceNumber();

@@ -52,14 +52,9 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     public void handleEmit(BsonObject frame) {
         checkAuthorised();
         String streamName = frame.getString(Codec.EMIT_STREAMNAME);
-        String eventType = frame.getString(Codec.EMIT_EVENTTYPE);
         BsonObject event = frame.getBsonObject(Codec.EMIT_EVENT);
         if (streamName == null) {
             logAndClose("No streamName in EMIT");
-            return;
-        }
-        if (eventType == null) {
-            logAndClose("No eventType in EMIT");
             return;
         }
         if (event == null) {
@@ -68,7 +63,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         }
         StreamProcessor processor = server.getStreamProcessor(streamName);
         long order = getWriteSeq();
-        CompletableFuture<Void> cf = processor.handleEmit(eventType, event);
+        CompletableFuture<Void> cf = processor.handleEmit(event);
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();
@@ -103,7 +98,6 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     public void handleSubscribe(BsonObject frame) {
         checkAuthorised();
         String streamName = frame.getString(Codec.SUBSCRIBE_STREAMNAME);
-        String eventType = frame.getString(Codec.SUBSCRIBE_EVENTTYPE);
         if (streamName == null) {
             logAndClose("No streamName in SUBSCRIBE");
             return;

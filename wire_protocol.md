@@ -54,7 +54,6 @@ Emit an event to the server for storage.
 Fields
 
 * `streamName` - mandatory - string. The event stream to emit to.
-* `eventType` - mandatory - string. Type of the event - must be unique to the stream. E.g. `add_item`
 * `event` - mandatory - BSONObject. The event itself.
 * `sessID` - optional - int32. unique id of the producer scoped to the connection. Used to group transactional emits
 
@@ -106,8 +105,6 @@ Subscribe to events from a stream
 Fields
 
 * `streamName` - mandatory - string. The name of the stream to subscribe to, e.g. `com.tesco.basket`
-* `eventType` - optional - string. The name of a specific event to subscrive to. If omitted all types of events in the
-stream will be subscribed to
 * `startSeq` - optional - int64. The sequence number of events in the stream to start from subscribing from.
 * `startTimestamp` - optional - int64. The earliest timestamp of events in the stream to start from subscribing from.
 * `durableID` - optional - string. Unique id for a durable subscription. If provided then the server will look-up and
@@ -143,7 +140,6 @@ Event received by a subscription.
 Fields:
  
 * `subID` - mandatory, int32. ID of the client subscription.
-* `eventType` - mandatory, string. Type of the event
 * `timestamp` - mandatory, int64. Timestamp when the event was persisted.
 * `seqNo` - mandatory, int64. Sequence number of the event in the stream.
 * `event` - mandatory, BSONObject. The event itself.

@@ -52,7 +52,7 @@ public class FunctionTest {
 
     @Test
     public void testSimpleFunction(TestContext context) throws Exception {
-        SubDescriptor descriptor = new SubDescriptor().setStreamName(TEST_STREAM1).setEventType(TEST_EVENT_TYPE1);
+        SubDescriptor descriptor = new SubDescriptor().setStreamName(TEST_STREAM1);
         server.installFunction("testfunc", descriptor, (ctx, re) -> {
             BsonObject event = re.event();
             long basketID = event.getInteger("basketID");

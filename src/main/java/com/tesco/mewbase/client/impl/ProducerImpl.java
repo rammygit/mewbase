@@ -36,7 +36,7 @@ public class ProducerImpl implements Producer {
     }
 
     @Override
-    public CompletableFuture<Void> emit(String eventType, BsonObject event) {
-        return connection.doEmit(streamName, id, eventType, event);
+    public CompletableFuture<Void> emit(BsonObject event) {
+        return connection.doEmit(streamName, id, event);
     }
 }

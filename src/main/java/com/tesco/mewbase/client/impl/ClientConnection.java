@@ -57,7 +57,6 @@ public class ClientConnection implements Connection, ClientFrameHandler {
             throw new IllegalArgumentException("No streamName in SubDescriptor");
         }
         frame.put(Codec.SUBSCRIBE_STREAMNAME, descriptor.getStreamName());
-        frame.put(Codec.SUBSCRIBE_EVENTTYPE, descriptor.getEventType());
         frame.put(Codec.SUBSCRIBE_STARTSEQ, descriptor.getStartSeq());
         frame.put(Codec.SUBSCRIBE_STARTTIMESTAMP, descriptor.getStartTimestamp());
         frame.put(Codec.SUBSCRIBE_DURABLEID, descriptor.getDurableID());
@@ -182,11 +181,10 @@ public class ClientConnection implements Connection, ClientFrameHandler {
         netSocket.write(buffer);
     }
 
-    protected CompletableFuture<Void> doEmit(String streamName, int producerID, String eventType, BsonObject event) {
+    protected CompletableFuture<Void> doEmit(String streamName, int producerID, BsonObject event) {
         CompletableFuture<Void> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
         frame.put(Codec.EMIT_STREAMNAME, streamName);
-        frame.put(Codec.EMIT_EVENTTYPE, eventType);
         frame.put(Codec.EMIT_SESSID, producerID);
         frame.put(Codec.EMIT_EVENT, event);
         Buffer buffer = Codec.encodeFrame(Codec.EMIT_FRAME, frame);
