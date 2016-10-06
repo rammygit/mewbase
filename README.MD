@@ -82,7 +82,7 @@ Mewbase will be designed from scratch to cope with very large datasets and optim
 
 ### Features
 
-SOme of the features we're looking at implementing:
+Some of the features we're looking at implementing:
 
 * Multiple event logs scaling to petabyte size
 * Horizontal scalability via sharding/partitioning
