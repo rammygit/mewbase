@@ -152,4 +152,5 @@ the project. (Any volunteers?)
 
 This project has a lot of scope and there's a lot to do with some serious engineering challenges.
 
-If you'd like to get involved and be a part of it, please say hi on our google group.
+If you'd like to get involved and be a part of it, please say hi in our
+[google group](https://groups.google.com/forum/#!forum/mewbase).
