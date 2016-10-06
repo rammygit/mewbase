@@ -1,7 +1,7 @@
 package com.tesco.mewbase.log.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.log.LogReadStream;
+import com.tesco.mewbase.common.ReadStream;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -14,9 +14,9 @@ import java.util.function.Consumer;
 /**
  * Created by tim on 27/09/16.
  */
-public class InMemoryLogReadStream implements LogReadStream {
+public class InMemoryReadStream implements ReadStream {
 
-    private final static Logger log = LoggerFactory.getLogger(InMemoryLogReadStream.class);
+    private final static Logger log = LoggerFactory.getLogger(InMemoryReadStream.class);
 
 
     private Consumer<BsonObject> handler;
@@ -24,7 +24,7 @@ public class InMemoryLogReadStream implements LogReadStream {
     private Iterator<BsonObject> iter;
     private Context ctx;
 
-    public InMemoryLogReadStream(Iterator<BsonObject> iter) {
+    public InMemoryReadStream(Iterator<BsonObject> iter) {
         this.iter = iter;
         this.ctx = Vertx.currentContext();
     }

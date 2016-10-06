@@ -1,7 +1,7 @@
 package com.tesco.mewbase.log.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.log.LogWriteStream;
+import com.tesco.mewbase.common.WriteStream;
 import io.vertx.core.Handler;
 
 import java.util.Queue;
@@ -9,11 +9,11 @@ import java.util.Queue;
 /**
  * Created by tim on 27/09/16.
  */
-public class InMemoryLogWriteStream implements LogWriteStream {
+public class InMemoryWriteStream implements WriteStream {
 
     private final Queue<BsonObject> queue;
 
-    public InMemoryLogWriteStream(Queue<BsonObject> queue) {
+    public InMemoryWriteStream(Queue<BsonObject> queue) {
         this.queue = queue;
     }
 

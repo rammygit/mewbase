@@ -1,6 +1,8 @@
 package com.tesco.mewbase.log;
 
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.common.WriteStream;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -9,9 +11,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Log {
 
-    LogReadStream openReadStream(long mewbase);
+    ReadStream openReadStream(long mewbase);
 
-    LogWriteStream openWriteStream();
+    WriteStream openWriteStream();
 
     CompletableFuture<Void> append(BsonObject obj);
 }

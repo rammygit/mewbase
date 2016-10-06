@@ -1,4 +1,4 @@
-package com.tesco.mewbase.log;
+package com.tesco.mewbase.common;
 
 import com.tesco.mewbase.bson.BsonObject;
 import io.vertx.core.Handler;
@@ -6,7 +6,7 @@ import io.vertx.core.Handler;
 /**
  * Created by tim on 27/09/16.
  */
-public interface LogWriteStream {
+public interface WriteStream {
 
     void exceptionHandler(Handler<Throwable> handler);
 

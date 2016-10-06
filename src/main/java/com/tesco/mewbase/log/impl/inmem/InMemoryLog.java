@@ -2,8 +2,8 @@ package com.tesco.mewbase.log.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.log.Log;
-import com.tesco.mewbase.log.LogReadStream;
-import com.tesco.mewbase.log.LogWriteStream;
+import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.common.WriteStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,7 @@ public class InMemoryLog implements Log {
     }
 
     @Override
-    public LogReadStream openReadStream(long mewbase) {
+    public ReadStream openReadStream(long mewbase) {
         BsonObject top = queue.element();
         Iterator<BsonObject> iter = queue.iterator();
         if (top.getLong("seqNo") < mewbase) {
@@ -42,11 +42,11 @@ public class InMemoryLog implements Log {
                 }
             }
         }
-        return new InMemoryLogReadStream(iter);
+        return new InMemoryReadStream(iter);
     }
 
     @Override
-    public LogWriteStream openWriteStream() {
-        return new InMemoryLogWriteStream(queue);
+    public WriteStream openWriteStream() {
+        return new InMemoryWriteStream(queue);
     }
 }
