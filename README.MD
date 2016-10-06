@@ -1,12 +1,10 @@
 # mewbase
 
-*Please note Mewbase is a very new project and very much a work in progress. Don't use it in production yet! *
+*Please note Mewbase is a very new project and very much a work in progress. Don't use it in production yet!*
 
 ## The problem
 
-Mewbase is an event streaming and view engine.
-
-Many applications now realise that its vital to keep track of all the streams of events produced by your application.
+Smart organisations now realise that its vital to keep track of all the streams of events they produce.
 
 Exammples of streams of events might be:
 
@@ -16,31 +14,31 @@ Exammples of streams of events might be:
 
 There are many examples!
 
-These events often need to be persisted fast, in high volume and potentially stored for very long periods of time. 
+These events often need to be persisted fast and in high volume and potentially stored for very long periods of time. 
 
 Storing logs of events provides many advantages including
 
 * Complete audit trail of everything that happened
 * Events can be replayed to for back-testing or debugging
 * Analytics can be run on the events to extract business value (e.g. customers who deleted items from their basket
-before placing an order are likely to still want the item- opportunity for a reminder)
+before placing an order are likely to still want the item- opportunity for a recommendation!)
 * Machine learning models can be trained in the events to do all sorts of funky stuff
 * Events can be used to co-ordinated busines processes between different services
 * Functions can be used to implement distributed eventually consistent transactions
 
 But many applications typically want to deal with *aggregated* event data, not the raw event data. Examples would include:
 
-* a website wants to see the *current* state of a shopping basket, not deal with the raw add/remove item events
-* a report needs to display average temperature from IoT sensors broken down by region
-* a stock inventory needs to maintain current stock of products per warehouse not deal with individual stock movement
+* A website wants to see the *current* state of a shopping basket, not deal with the raw add/remove item events
+* A report needs to display average temperature from IoT sensors broken down by region in real-time
+* A stock inventory needs to maintain current stock of products per warehouse not deal with individual stock movement
 events
-* a business process needs to listen to events and maintain state
+* A business process needs to listen to events and maintain state
 
 This leads many applications either to either:
 
 * Not capture raw events at all - only deal with the current state of their objects - thus losing valuable business
 data
-* maintaining their own "views" on the event log data perhaps by subscribing to messages and updating tables or documennts
+* Maintain their own "views" on the event log data perhaps by subscribing to messages and updating tables or documennts
 in a separate database
 
 The latter is usually implemented in an ad-hoc way for each application and requires several moving parts, and has to deal
@@ -57,26 +55,26 @@ The views can then be queried in similar way to how you would with a document or
 
 So you can think of mewbase as combining the following:
 
-* an event streaming engine
-* a document/graph database
-* functions which map events to documents
+* An event streaming engine
+* A document/graph database
+* Functions which map events to documents
 
-An interesting observation is that, unlike a normal document database, the documents are not updated directly by clients,
+An interesting observation is, unlike a normal document database, the documents are not updated directly by clients,
 they are only updated in the engine by the functions.
 
-The client simply sends events (*add item to basket*, and issues queries *give me current state of basket 1234*).
+The client simply sends events (*add item to basket*), and issues queries (*give me current state of basket 1234*).
 That means the client has no access to shared mutable state - a big win!  
 
 Since the events, functions and documents are all maintained in the same engine, mewbase keeps track of synchronization
-between the events and the views so you know they are always up to date.
-
-That means the client has no access to shared mutable state - a big win! 
+between the events and the views so you know they are always up to date, irrespective of whether any client
+applications or services are connected.
 
 All this functionality will be accessible over a simple wire protocol and via a simple client API which we will
 provide in Java, JavaScript and potentially other languages going ahead.
 
-Mewbase engine will also be full embeddable in any Java (or Scala, or Groovy, or...) application so you can
-colocate your "server" in your actual service.
+Mewbase engine will also be full embeddable in any Java (or Scala, or Groovy) application so you can
+colocate your "server" in your actual service, or if you prefer a standalone server or cluster of servers mewbase will
+support that setup too.
 
 Mewbase is a great match for implementing event driven microservices using an event sourcing / CQRS pattern.
 
@@ -84,7 +82,7 @@ Mewbase will be designed from scratch to cope with very large datasets and optim
 
 ### Features
 
-Mewbase will contain the following features
+SOme of the features we're looking at implementing:
 
 * Multiple event logs scaling to petabyte size
 * Horizontal scalability via sharding/partitioning
@@ -113,7 +111,7 @@ Mewbase will contain the following features
 * Live persistent queries - sends more matching data to client as it arrives on server 
 * Sidecars for node.js/go
 
-### What does this look like from a client perspective
+### What does this look like from a client perspective?
 
 Let's take a simple example of an order microservice whose job it is to maintain shopping baskets for customers. It has
 a REST API and is designed using CQRS/event sourcing principles. It implements the following commands:
@@ -124,13 +122,13 @@ a REST API and is designed using CQRS/event sourcing principles. It implements t
 
 and provide the following queries:
 
-* view specific shoping basket
+* view shoping basket
 
 As commands come in the service processes them and emits events by sending them to the mewbase engine. When the service
 wants to get current state of a shopping basket it simply asks mewbase for it. The service provides a function that
 maps the events to the basket which runs in the engine.
 
-The engine can be emdedded directly in any Java service - this follows the microservice architectural style where 
+Each service can have its own engine - this plays nicely with the microservice architectural style where 
 services maintain their own data. Or alternatively different services can share a standalone engine or a cluster,
 depending on which architectural style you prefer.
 
@@ -147,11 +145,11 @@ document style views on the events.
 "micro" i.e. 10^-6 or more loosely "something small". Mewbase is a great choice for event based microservices hence
 the connection.
 
-Also "mew" is the sound made by a kitten, and it would be great to have a logo of cute kitten for the project. (Any
-volunteers?)
+Also, more importantly, "mew" is the sound made by a kitten, and it would be great to have a logo of a cute kitten for
+the project. (Any volunteers?)
 
 ## Get involved!
 
-There is a big scope in this project and a lot to do with some serious engineering challenges.
+This project has a lot of scope and there's a lot to do with some serious engineering challenges.
 
 If you'd like to get involved and be a part of it, please say hi on our google group.
