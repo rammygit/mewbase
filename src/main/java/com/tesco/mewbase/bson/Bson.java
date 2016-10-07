@@ -44,94 +44,93 @@ import static java.time.format.DateTimeFormatter.ISO_INSTANT;
  */
 public class Bson {
 
-  public static ObjectMapper mapper = new ObjectMapper(new BsonFactory());
+    public static ObjectMapper mapper = new ObjectMapper(new BsonFactory());
 
 
-  static {
-    SimpleModule module = new SimpleModule();
-    module.addSerializer(BsonObject.class, new BsonObjectSerializer());
-    module.addSerializer(BsonArray.class, new BsonArraySerializer());
-    mapper.registerModule(module);
-  }
-
-  public static void encode(Object obj, OutputStream outputStream) throws EncodeException {
-    try {
-      mapper.writeValue(outputStream, obj);
-    } catch (Exception e) {
-      throw new EncodeException("Failed to encode as BSON: " + e.getMessage());
+    static {
+        SimpleModule module = new SimpleModule();
+        module.addSerializer(BsonObject.class, new BsonObjectSerializer());
+        module.addSerializer(BsonArray.class, new BsonArraySerializer());
+        mapper.registerModule(module);
     }
-  }
 
-
-  public static <T> T decodeValue(InputStream inputStream, Class<T> clazz) throws DecodeException {
-    try {
-      return mapper.readValue(inputStream, clazz);
+    public static void encode(Object obj, OutputStream outputStream) throws EncodeException {
+        try {
+            mapper.writeValue(outputStream, obj);
+        } catch (Exception e) {
+            throw new EncodeException("Failed to encode as BSON: " + e.getMessage());
+        }
     }
-    catch (Exception e) {
-      throw new DecodeException("Failed to decode BSON:" + e.getMessage());
-    }
-  }
 
-  @SuppressWarnings("unchecked")
-  static Object checkAndCopy(Object val, boolean copy) {
-    if (val == null) {
-      // OK
-    } else if (val instanceof Number && !(val instanceof BigDecimal)) {
-      // OK
-    } else if (val instanceof Boolean) {
-      // OK
-    } else if (val instanceof String) {
-      // OK
-    } else if (val instanceof Character) {
-      // OK
-    } else if (val instanceof CharSequence) {
-      val = val.toString();
-    } else if (val instanceof BsonObject) {
-      if (copy) {
-        val = ((BsonObject) val).copy();
-      }
-    } else if (val instanceof BsonArray) {
-      if (copy) {
-        val = ((BsonArray) val).copy();
-      }
-    } else if (val instanceof Map) {
-      if (copy) {
-        val = (new BsonObject((Map)val)).copy();
-      } else {
-        val = new BsonObject((Map)val);
-      }
-    } else if (val instanceof List) {
-      if (copy) {
-        val = (new BsonArray((List)val)).copy();
-      } else {
-        val = new BsonArray((List)val);
-      }
-    } else if (val instanceof byte[]) {
-      val = Base64.getEncoder().encodeToString((byte[])val);
-    } else if (val instanceof Instant) {
-      val = ISO_INSTANT.format((Instant) val);
-    } else {
-      throw new IllegalStateException("Illegal type in BsonObject: " + val.getClass());
-    }
-    return val;
-  }
 
-  static <T> Stream<T> asStream(Iterator<T> sourceIterator) {
-    Iterable<T> iterable = () -> sourceIterator;
-    return StreamSupport.stream(iterable.spliterator(), false);
-  }
-
-  private static class BsonObjectSerializer extends JsonSerializer<BsonObject> {
-    @Override
-    public void serialize(BsonObject value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-      jgen.writeObject(value.getMap());
+    public static <T> T decodeValue(InputStream inputStream, Class<T> clazz) throws DecodeException {
+        try {
+            return mapper.readValue(inputStream, clazz);
+        } catch (Exception e) {
+            throw new DecodeException("Failed to decode BSON:" + e.getMessage());
+        }
     }
-  }
 
-  private static class BsonArraySerializer extends JsonSerializer<BsonArray> {
-    @Override
-    public void serialize(BsonArray value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
-      jgen.writeObject(value.getList());
+    @SuppressWarnings("unchecked")
+    static Object checkAndCopy(Object val, boolean copy) {
+        if (val == null) {
+            // OK
+        } else if (val instanceof Number && !(val instanceof BigDecimal)) {
+            // OK
+        } else if (val instanceof Boolean) {
+            // OK
+        } else if (val instanceof String) {
+            // OK
+        } else if (val instanceof Character) {
+            // OK
+        } else if (val instanceof CharSequence) {
+            val = val.toString();
+        } else if (val instanceof BsonObject) {
+            if (copy) {
+                val = ((BsonObject) val).copy();
+            }
+        } else if (val instanceof BsonArray) {
+            if (copy) {
+                val = ((BsonArray) val).copy();
+            }
+        } else if (val instanceof Map) {
+            if (copy) {
+                val = (new BsonObject((Map) val)).copy();
+            } else {
+                val = new BsonObject((Map) val);
+            }
+        } else if (val instanceof List) {
+            if (copy) {
+                val = (new BsonArray((List) val)).copy();
+            } else {
+                val = new BsonArray((List) val);
+            }
+        } else if (val instanceof byte[]) {
+            val = Base64.getEncoder().encodeToString((byte[]) val);
+        } else if (val instanceof Instant) {
+            val = ISO_INSTANT.format((Instant) val);
+        } else {
+            throw new IllegalStateException("Illegal type in BsonObject: " + val.getClass());
+        }
+        return val;
     }
-  }
+
+    static <T> Stream<T> asStream(Iterator<T> sourceIterator) {
+        Iterable<T> iterable = () -> sourceIterator;
+        return StreamSupport.stream(iterable.spliterator(), false);
+    }
+
+    private static class BsonObjectSerializer extends JsonSerializer<BsonObject> {
+        @Override
+        public void serialize(BsonObject value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            jgen.writeObject(value.getMap());
+        }
+    }
+
+    private static class BsonArraySerializer extends JsonSerializer<BsonArray> {
+        @Override
+        public void serialize(BsonArray value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+            jgen.writeObject(value.getList());
+        }
+    }
 }

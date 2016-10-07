@@ -23,6 +23,7 @@ public interface DocUpdater extends Transactional {
 
     /**
      * Updates document with specified id
+     *
      * @param binderName
      * @param id
      * @param updateSpec - determines which top level fields to update or uses dot notations find nested fields/arrays
@@ -32,6 +33,7 @@ public interface DocUpdater extends Transactional {
 
     /**
      * Updates documents in binder with specified id
+     *
      * @param binderName
      * @param updateSpec - determines which top level fields to update or uses dot notations find nested fields/arrays
      * @return

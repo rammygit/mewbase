@@ -1,9 +1,7 @@
 package com.tesco.mewbase.client;
 
 import com.tesco.mewbase.common.DocQuerier;
-import com.tesco.mewbase.common.DocUpdater;
 import com.tesco.mewbase.common.SubDescriptor;
-import com.tesco.mewbase.function.FunctionManager;
 
 import java.util.concurrent.CompletableFuture;
 

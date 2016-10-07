@@ -1,7 +1,5 @@
 package com.tesco.mewbase.server.impl;
 
-import com.tesco.mewbase.client.Connection;
-import com.tesco.mewbase.client.impl.ClientImpl;
 import com.tesco.mewbase.common.ReceivedEvent;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
@@ -81,7 +79,7 @@ public class ServerImpl implements Server {
     public synchronized CompletableFuture<Void> stop() {
         CompletableFuture[] all = new CompletableFuture[netServers.size()];
         int i = 0;
-        for (NetServer server: netServers) {
+        for (NetServer server : netServers) {
             CompletableFuture<Void> cf = new CompletableFuture<>();
             server.close(ar -> {
                 if (ar.succeeded()) {
@@ -100,7 +98,7 @@ public class ServerImpl implements Server {
 
     @Override
     public boolean installFunction(String functionName, SubDescriptor descriptor,
-                                BiConsumer<FunctionContext, ReceivedEvent> function) {
+                                   BiConsumer<FunctionContext, ReceivedEvent> function) {
         return functionManager.installFunction(functionName, descriptor, function);
     }
 
