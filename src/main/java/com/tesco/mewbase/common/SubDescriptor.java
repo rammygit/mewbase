@@ -8,7 +8,7 @@ import com.tesco.mewbase.bson.BsonObject;
 public class SubDescriptor {
 
     private String durableID;
-    private String streamName; maybe change this 
+    private String streamName;
     private Long startSeq;
     private long startTimestamp;
     private BsonObject matcher;
