@@ -19,17 +19,10 @@
 
 package com.tesco.mewbase;
 
-import java.util.Random;
-
-import static org.junit.Assert.fail;
-
 /**
  * @author <a href="http://tfox.org">Tim Fox</a>
  */
 public class TestUtils {
-
-    private static Random random = new Random();
-
     /**
      * Create an array of random bytes
      *
@@ -82,5 +75,4 @@ public class TestUtils {
         }
         return true;
     }
-
 }
