@@ -1,5 +1,9 @@
 # Guide to contributing
 
+Thank you for considering contributing to mewbase!
+
+We value contributions, no matter how small, from anyone.
+
 Please read this if you intend to contribute to the project.
 
 ## General principles
