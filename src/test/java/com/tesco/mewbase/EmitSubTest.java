@@ -93,7 +93,7 @@ public class EmitSubTest {
             long c = cnt.getAndIncrement();
             context.assertEquals(c, re.sequenceNumber());
             BsonObject event = re.event();
-            context.assertEquals(c, (long)event.getInteger("num"));
+            context.assertEquals(c, (long) event.getInteger("num"));
             if (c == numEvents - 1) {
                 async.complete();
             }

@@ -41,7 +41,7 @@ public class StreamProcessor {
             cf = log.append(frame);
         }
         cf.thenRun(() -> {
-            for (SubscriptionImpl subscription: subscriptions) {
+            for (SubscriptionImpl subscription : subscriptions) {
                 subscription.handleEvent(seq, frame);
             }
         });

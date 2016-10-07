@@ -23,10 +23,10 @@ package com.tesco.mewbase.bson;
  */
 public class DecodeException extends RuntimeException {
 
-  public DecodeException() {
-  }
+    public DecodeException() {
+    }
 
-  public DecodeException(String message) {
-    super(message);
-  }
+    public DecodeException(String message) {
+        super(message);
+    }
 }

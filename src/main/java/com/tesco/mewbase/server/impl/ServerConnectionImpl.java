@@ -226,7 +226,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     protected void checkWrap(int i) {
         // Sanity check - wrap around - won't happen but better to close connection that give incorrect behaviour
         if (i == Integer.MIN_VALUE) {
-            String msg =  "int wrapped!";
+            String msg = "int wrapped!";
             logAndClose(msg);
             throw new IllegalStateException(msg);
         }
@@ -235,7 +235,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     protected void checkWrap(long l) {
         // Sanity check - wrap around - won't happen but better to close connection that give incorrect behaviour
         if (l == Long.MIN_VALUE) {
-            String msg =  "long wrapped!";
+            String msg = "long wrapped!";
             logAndClose(msg);
             throw new IllegalStateException(msg);
         }
