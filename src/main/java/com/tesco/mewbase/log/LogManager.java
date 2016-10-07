@@ -5,5 +5,5 @@ package com.tesco.mewbase.log;
  */
 public interface LogManager {
 
-    Log getLog(String streamName);
+    Log getLog(String channel);
 }

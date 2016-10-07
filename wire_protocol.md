@@ -53,7 +53,7 @@ Emit an event to the server for storage.
 
 Fields
 
-* `streamName` - mandatory - string. The event stream to emit to.
+* `channel` - mandatory - string. The name of the channel to emit to.
 * `event` - mandatory - BSONObject. The event itself.
 * `sessID` - optional - int32. unique id of the producer scoped to the connection. Used to group transactional emits
 
@@ -104,14 +104,14 @@ Subscribe to events from a stream
 
 Fields
 
-* `streamName` - mandatory - string. The name of the stream to subscribe to, e.g. `com.tesco.basket`
-* `startSeq` - optional - int64. The sequence number of events in the stream to start from subscribing from.
+* `channel` - mandatory - string. The name of the channel to subscribe from, e.g. `com.tesco.basket`
+* `startPos` - optional - int64. The position in the channel to start subscribing from
 * `startTimestamp` - optional - int64. The earliest timestamp of events in the stream to start from subscribing from.
 * `durableID` - optional - string. Unique id for a durable subscription. If provided then the server will look-up and
 resume an existing subscription for that name, otherwise a new durable subscription for that name will be created.
 * `matcher` - optional BSONObject. Object to match on the event fields. Non matching events will be filtered out.
  
-if `startSeq` or `startTimestamp` are omitted then only events starting from when the subscription was created will
+if `startPos` or `startTimestamp` are omitted then only events starting from when the subscription was created will
  be received.
  
 ### SUBRESPONSE
@@ -141,7 +141,7 @@ Fields:
  
 * `subID` - mandatory, int32. ID of the client subscription.
 * `timestamp` - mandatory, int64. Timestamp when the event was persisted.
-* `seqNo` - mandatory, int64. Sequence number of the event in the stream.
+* `pos` - mandatory, int64. Position in the channel of the event
 * `event` - mandatory, BSONObject. The event itself.
  
 ### ACKEV

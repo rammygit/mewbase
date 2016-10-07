@@ -11,33 +11,32 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Created by tim on 26/09/16.
  */
-public class StreamProcessor {
+public class ChannelProcessor {
 
-    private final String streamName;
+    private final String channel;
     private final Log log;
     private final AtomicLong eventSeq = new AtomicLong();
     private final Set<SubscriptionImpl> subscriptions = new ConcurrentHashSet<>();
 
-    public StreamProcessor(String streamName, Log log) {
-        this.streamName = streamName;
+    public ChannelProcessor(String channel, Log log) {
+        this.channel = channel;
         this.log = log;
     }
 
-    public String getStreamName() {
-        return streamName;
+    public String getChannel() {
+        return channel;
     }
 
     protected CompletableFuture<Void> handleEmit(BsonObject event) {
         BsonObject frame = new BsonObject();
-        frame.put("streamName", streamName);
-        frame.put("timestamp", System.currentTimeMillis());
-        frame.put("event", event);
+        frame.put(Codec.RECEV_TIMESTAMP, System.currentTimeMillis());
+        frame.put(Codec.RECEV_EVENT, event);
         CompletableFuture<Void> cf;
         long seq;
         // Needs to be sync to ensure log stores events in strict seq order
         synchronized (this) {
             seq = eventSeq.getAndIncrement();
-            frame.put("seqNo", seq);
+            frame.put(Codec.RECEV_POS, seq);
             cf = log.append(frame);
         }
         cf.thenRun(() -> {

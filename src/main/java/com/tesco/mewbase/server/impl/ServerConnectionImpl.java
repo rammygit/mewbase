@@ -51,17 +51,17 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleEmit(BsonObject frame) {
         checkAuthorised();
-        String streamName = frame.getString(Codec.EMIT_STREAMNAME);
+        String channel = frame.getString(Codec.EMIT_CHANNEL);
         BsonObject event = frame.getBsonObject(Codec.EMIT_EVENT);
-        if (streamName == null) {
-            logAndClose("No streamName in EMIT");
+        if (channel == null) {
+            logAndClose("No channel in EMIT");
             return;
         }
         if (event == null) {
             logAndClose("No event in EMIT");
             return;
         }
-        StreamProcessor processor = server.getStreamProcessor(streamName);
+        ChannelProcessor processor = server.getChannelProcessor(channel);
         long order = getWriteSeq();
         CompletableFuture<Void> cf = processor.handleEmit(event);
 
@@ -97,18 +97,18 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleSubscribe(BsonObject frame) {
         checkAuthorised();
-        String streamName = frame.getString(Codec.SUBSCRIBE_STREAMNAME);
-        if (streamName == null) {
-            logAndClose("No streamName in SUBSCRIBE");
+        String channel = frame.getString(Codec.SUBSCRIBE_CHANNEL);
+        if (channel == null) {
+            logAndClose("No channel in SUBSCRIBE");
             return;
         }
-        Long startSeq = frame.getLong(Codec.SUBSCRIBE_STARTSEQ);
+        Long startSeq = frame.getLong(Codec.SUBSCRIBE_STARTPOS);
         Long startTimestamp = frame.getLong(Codec.SUBSCRIBE_STARTTIMESTAMP);
         String durableID = frame.getString(Codec.SUBSCRIBE_DURABLEID);
         BsonObject matcher = frame.getBsonObject(Codec.SUBSCRIBE_MATCHER);
         int subID = subSeq++;
         checkWrap(subSeq);
-        StreamProcessor processor = server.getStreamProcessor(streamName);
+        ChannelProcessor processor = server.getChannelProcessor(channel);
         SubscriptionImpl subscription = processor.createSubscription(this, subID, startSeq == null ? -1 : startSeq);
         subscriptionMap.put(subID, subscription);
         processor.addSubScription(subscription);
@@ -116,7 +116,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         resp.put(Codec.RESPONSE_OK, true);
         resp.put(Codec.SUBRESPONSE_SUBID, subID);
         writeResponse(Codec.SUBRESPONSE_FRAME, resp, getWriteSeq());
-        ServerConnectionImpl.log.trace("Subscribed streamName: {} startSeq {}", streamName, startSeq);
+        ServerConnectionImpl.log.trace("Subscribed channel: {} startSeq {}", channel, startSeq);
     }
 
     @Override

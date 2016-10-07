@@ -15,7 +15,7 @@ in the direction of an appropriate task
 
 ## General principles
 
-* All work in the project should be submitted via pull requests
+* All contributions should be submitted via pull requests
 * The master branch should be stable at all times (all green tests) - do not work on the master branch directly
 * The exception to the above is for very small or cosmetic changes of < 10 lines or so can be applied directly on master
 
@@ -40,7 +40,7 @@ in the direction of an appropriate task
 
 ## Review process
 
-* The PR must be reviewed by at least one other developer. Other developers are welcome to make comments on the PR too.
+* Contributions must be reviewed by at least one other developer. Other developers are welcome to make comments on the PR too.
 The review should be carried out by placing comments on the PR in GitHub, not by sending private emails or other means.
  This provides visibility and provides a public record.
 * Review comments may well require further changes to the code before the PR is accepted. This is *completely normal*,

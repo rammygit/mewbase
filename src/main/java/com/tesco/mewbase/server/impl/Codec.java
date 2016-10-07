@@ -50,7 +50,7 @@ public class Codec {
     public static final String CONNECT_PASSWORD = "password";
     public static final String CONNECT_VERSION = "version";
 
-    public static final String EMIT_STREAMNAME = "streamName";
+    public static final String EMIT_CHANNEL = "channel";
     public static final String EMIT_EVENT = "event";
     public static final String EMIT_SESSID = "sessID";
 
@@ -60,8 +60,8 @@ public class Codec {
 
     public static final String ABORTTX_SESSID = "sessID";
 
-    public static final String SUBSCRIBE_STREAMNAME = "streamName";
-    public static final String SUBSCRIBE_STARTSEQ = "startSeq";
+    public static final String SUBSCRIBE_CHANNEL = "channel";
+    public static final String SUBSCRIBE_STARTPOS = "startPos";
     public static final String SUBSCRIBE_STARTTIMESTAMP = "startTimestamp";
     public static final String SUBSCRIBE_DURABLEID = "durableID";
     public static final String SUBSCRIBE_MATCHER = "matcher";
@@ -70,7 +70,7 @@ public class Codec {
 
     public static final String RECEV_SUBID = "subID";
     public static final String RECEV_TIMESTAMP = "timestamp";
-    public static final String RECEV_SEQNO = "seqNo";
+    public static final String RECEV_POS = "pos";
     public static final String RECEV_EVENT = "event";
 
     public static final String ACKEV_SUBID = "subID";

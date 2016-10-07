@@ -18,7 +18,7 @@ public class SubscriptionImpl {
 
     private static final int MAX_UNACKED_BYTES = 4 * 1024 * 1024; // TODO make configurable
 
-    private final StreamProcessor streamProcessor;
+    private final ChannelProcessor channelProcessor;
     private final ServerConnectionImpl connection;
     private final int idPerConn;
     private final Log log;
@@ -30,9 +30,9 @@ public class SubscriptionImpl {
     private int unackedBytes;
     private final Context ctx;
 
-    public SubscriptionImpl(StreamProcessor streamProcessor, ServerConnectionImpl connection, int idPerConn,
+    public SubscriptionImpl(ChannelProcessor channelProcessor, ServerConnectionImpl connection, int idPerConn,
                             Log log, long startSeq, long streamSeq) {
-        this.streamProcessor = streamProcessor;
+        this.channelProcessor = channelProcessor;
         this.connection = connection;
         this.idPerConn = idPerConn;
         this.log = log;
@@ -45,7 +45,7 @@ public class SubscriptionImpl {
 
     protected void close() {
         checkContext();
-        streamProcessor.removeSubScription(this);
+        channelProcessor.removeSubScription(this);
     }
 
     protected void handleEvent(long seq, BsonObject frame) {
@@ -58,7 +58,7 @@ public class SubscriptionImpl {
     }
 
     private void handleEvent0(long seq, BsonObject frame) {
-        logger.trace("sub for streamName {} id {} handling event with seq {}", streamProcessor.getStreamName(), idPerConn, seq);
+        logger.trace("sub for channel {} id {} handling event with seq {}", channelProcessor.getChannel(), idPerConn, seq);
         checkContext();
         frame = frame.copy();
         frame.put(Codec.RECEV_SUBID, idPerConn);
@@ -92,10 +92,10 @@ public class SubscriptionImpl {
         }
     }
 
-    private void openReadStream(long seqNo) {
-        readStream = log.openReadStream(seqNo);
+    private void openReadStream(long pos) {
+        readStream = log.openReadStream(pos);
         retro = true;
-        readStream.handler(bson -> handleEvent0(bson.getLong(Codec.RECEV_SEQNO), bson));
+        readStream.handler(bson -> handleEvent0(bson.getLong(Codec.RECEV_POS), bson));
     }
 
     // Sanity check - this should always be executed using the connection's context

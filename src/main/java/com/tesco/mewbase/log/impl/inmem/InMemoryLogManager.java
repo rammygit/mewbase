@@ -14,11 +14,11 @@ public class InMemoryLogManager implements LogManager {
     private final Map<String, InMemoryLog> logs = new ConcurrentHashMap<>();
 
     @Override
-    public Log getLog(String streamName) {
-        InMemoryLog log = logs.get(streamName);
+    public Log getLog(String channel) {
+        InMemoryLog log = logs.get(channel);
         if (log == null) {
             log = new InMemoryLog();
-            InMemoryLog prev = logs.putIfAbsent(streamName, log);
+            InMemoryLog prev = logs.putIfAbsent(channel, log);
             if (prev != null) {
                 log = prev;
             }
