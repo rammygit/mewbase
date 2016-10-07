@@ -6,6 +6,13 @@ We value contributions, no matter how small, from anyone.
 
 Please read this if you intend to contribute to the project.
 
+## What to contribute?
+
+* Have a look at the GitHub issues - is there something that catches your eye?
+* Ask on the google group for something to do - one of the permanent team should be able to point you 
+in the direction of an appropriate task
+* If you haven't contributed to the project before, best to start with something small
+
 ## General principles
 
 * All work in the project should be submitted via pull requests
