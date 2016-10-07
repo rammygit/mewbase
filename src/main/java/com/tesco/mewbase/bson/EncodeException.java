@@ -21,10 +21,10 @@ package com.tesco.mewbase.bson;
  */
 public class EncodeException extends RuntimeException {
 
-  public EncodeException(String message) {
-    super(message);
-  }
+    public EncodeException(String message) {
+        super(message);
+    }
 
-  public EncodeException() {
-  }
+    public EncodeException() {
+    }
 }

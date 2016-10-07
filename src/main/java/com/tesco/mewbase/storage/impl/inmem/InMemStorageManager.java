@@ -9,9 +9,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- *
  * Not a serious storage manager. Can be useful for tests
- *
+ * <p>
  * Created by tim on 05/10/16.
  */
 public class InMemStorageManager implements StorageManager {

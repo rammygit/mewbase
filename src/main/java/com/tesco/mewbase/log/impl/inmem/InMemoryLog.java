@@ -1,9 +1,9 @@
 package com.tesco.mewbase.log.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.common.WriteStream;
+import com.tesco.mewbase.log.Log;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +23,7 @@ public class InMemoryLog implements Log {
 
     public CompletableFuture<Void> append(BsonObject obj) {
         queue.add(obj);
-        CompletableFuture<Void> cf= new CompletableFuture<>();
+        CompletableFuture<Void> cf = new CompletableFuture<>();
         cf.complete(null);
         log.trace("Appended obj {}", obj);
 

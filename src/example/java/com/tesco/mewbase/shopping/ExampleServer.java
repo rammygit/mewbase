@@ -6,9 +6,6 @@ import com.tesco.mewbase.server.ServerOptions;
 import com.tesco.mewbase.server.impl.ServerImpl;
 
 /**
- *
- *
- *
  * Created by tim on 30/09/16.
  */
 public class ExampleServer {

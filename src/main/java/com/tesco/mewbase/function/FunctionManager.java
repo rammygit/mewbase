@@ -1,6 +1,5 @@
 package com.tesco.mewbase.function;
 
-import com.tesco.mewbase.client.Connection;
 import com.tesco.mewbase.common.ReceivedEvent;
 import com.tesco.mewbase.common.SubDescriptor;
 

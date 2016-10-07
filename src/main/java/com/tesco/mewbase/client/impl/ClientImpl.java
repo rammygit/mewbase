@@ -27,7 +27,8 @@ public class ClientImpl implements Client {
     }
 
     protected ClientImpl(Vertx vertx, boolean ownVertx) {
-        this.vertx = vertx;NetClientOptions options = new NetClientOptions();
+        this.vertx = vertx;
+        NetClientOptions options = new NetClientOptions();
         this.netClient = vertx.createNetClient(options);
         this.ownVertx = ownVertx;
     }

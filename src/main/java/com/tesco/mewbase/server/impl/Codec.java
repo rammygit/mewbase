@@ -10,12 +10,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
  * TODO we should write our own BSON parser and only decode fields when needed.
  * BSON is ordered and `type` should be the first field - we only need to decode that in order to know what to do
  * with the frame - in the case of an EMIT we should be able to pass the buffer direct to subscribers without
  * further decoding of the event, also to storage. I.e. we want to avoid decoding the entire frame in all cases
- *
+ * <p>
  * Created by tim on 23/09/16.
  */
 public class Codec {
@@ -89,6 +88,7 @@ public class Codec {
         RecordParser parser = RecordParser.newFixed(4, null);
         Handler<Buffer> handler = new Handler<Buffer>() {
             int size = -1;
+
             public void handle(Buffer buff) {
                 if (size == -1) {
                     size = buff.getIntLE(0) - 4;
@@ -107,7 +107,7 @@ public class Codec {
     private void handleFrame(int size, Buffer buffer) {
         // TODO bit clunky - need to add size back in so it can be decoded, improve this!
         Buffer buff2 = Buffer.buffer(buffer.length() + 4);
-        buff2.appendIntLE(size  + 4).appendBuffer(buffer);
+        buff2.appendIntLE(size + 4).appendBuffer(buffer);
         BsonObject bson = new BsonObject(buff2);
         handleBson(bson);
     }

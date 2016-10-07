@@ -2,8 +2,6 @@ package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Client;
-import com.tesco.mewbase.client.Connection;
-import com.tesco.mewbase.client.ConnectionOptions;
 import com.tesco.mewbase.client.impl.ClientImpl;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.server.Server;

@@ -2,8 +2,6 @@ package com.tesco.mewbase.function.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.QueryResult;
-import com.tesco.mewbase.common.DocQuerier;
-import com.tesco.mewbase.common.DocUpdater;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.function.FunctionContext;
 
