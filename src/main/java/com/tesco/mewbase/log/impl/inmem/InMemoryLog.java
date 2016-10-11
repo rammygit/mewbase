@@ -31,13 +31,13 @@ public class InMemoryLog implements Log {
     }
 
     @Override
-    public ReadStream openReadStream(long mewbase) {
+    public ReadStream openReadStream(long pos) {
         BsonObject top = queue.element();
         Iterator<BsonObject> iter = queue.iterator();
-        if (top.getLong("seqNo") < mewbase) {
+        if (top.getLong("pos") < pos) {
             while (iter.hasNext()) {
                 BsonObject obj = iter.next();
-                if (obj.getLong("seqNo") == mewbase - 1) {
+                if (obj.getLong("pos") == pos - 1) {
                     break;
                 }
             }

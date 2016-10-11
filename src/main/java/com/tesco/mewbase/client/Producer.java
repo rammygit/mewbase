@@ -6,6 +6,9 @@ import com.tesco.mewbase.common.Transactional;
 import java.util.concurrent.CompletableFuture;
 
 /**
+ *
+ * Used mainly if you want transactions
+ *
  * Created by tim on 22/09/16.
  */
 public interface Producer extends Transactional {

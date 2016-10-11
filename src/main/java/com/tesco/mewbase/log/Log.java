@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Log {
 
-    ReadStream openReadStream(long mewbase);
+    ReadStream openReadStream(long pos);
 
     WriteStream openWriteStream();
 

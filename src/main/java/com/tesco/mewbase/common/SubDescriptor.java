@@ -7,11 +7,12 @@ import com.tesco.mewbase.bson.BsonObject;
  */
 public class SubDescriptor {
 
+    private String channel;
     private String durableID;
-    private String streamName;
-    private Long startSeq;
+    private Long startPos;
     private long startTimestamp;
     private BsonObject matcher;
+    private String group;
 
     public String getDurableID() {
         return durableID;
@@ -22,21 +23,21 @@ public class SubDescriptor {
         return this;
     }
 
-    public String getStreamName() {
-        return streamName;
+    public String getChannel() {
+        return channel;
     }
 
-    public SubDescriptor setStreamName(String streamName) {
-        this.streamName = streamName;
+    public SubDescriptor setChannel(String channel) {
+        this.channel = channel;
         return this;
     }
 
-    public Long getStartSeq() {
-        return startSeq;
+    public Long getStartPos() {
+        return startPos;
     }
 
-    public SubDescriptor setStartSeq(long startSeq) {
-        this.startSeq = startSeq;
+    public SubDescriptor setStartPos(long startPos) {
+        this.startPos = startPos;
         return this;
     }
 
@@ -58,6 +59,15 @@ public class SubDescriptor {
         return this;
     }
 
+
+    public String getGroup() {
+        return group;
+    }
+
+    public void setGroup(String group) {
+        this.group = group;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -67,31 +77,21 @@ public class SubDescriptor {
 
         if (startTimestamp != that.startTimestamp) return false;
         if (durableID != null ? !durableID.equals(that.durableID) : that.durableID != null) return false;
-        if (streamName != null ? !streamName.equals(that.streamName) : that.streamName != null) return false;
-        if (startSeq != null ? !startSeq.equals(that.startSeq) : that.startSeq != null)
-            return false;
-        return matcher != null ? matcher.equals(that.matcher) : that.matcher == null;
+        if (channel != null ? !channel.equals(that.channel) : that.channel != null) return false;
+        if (startPos != null ? !startPos.equals(that.startPos) : that.startPos != null) return false;
+        if (matcher != null ? !matcher.equals(that.matcher) : that.matcher != null) return false;
+        return group != null ? group.equals(that.group) : that.group == null;
 
     }
 
     @Override
     public int hashCode() {
         int result = durableID != null ? durableID.hashCode() : 0;
-        result = 31 * result + (streamName != null ? streamName.hashCode() : 0);
-        result = 31 * result + (startSeq != null ? startSeq.hashCode() : 0);
+        result = 31 * result + (channel != null ? channel.hashCode() : 0);
+        result = 31 * result + (startPos != null ? startPos.hashCode() : 0);
         result = 31 * result + (int) (startTimestamp ^ (startTimestamp >>> 32));
         result = 31 * result + (matcher != null ? matcher.hashCode() : 0);
+        result = 31 * result + (group != null ? group.hashCode() : 0);
         return result;
-    }
-
-    @Override
-    public String toString() {
-        return "SubDescriptor{" +
-                "durableID='" + durableID + '\'' +
-                ", streamName='" + streamName + '\'' +
-                ", startSeq=" + startSeq +
-                ", startTimestamp=" + startTimestamp +
-                ", matcher=" + matcher +
-                '}';
     }
 }

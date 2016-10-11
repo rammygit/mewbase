@@ -17,15 +17,15 @@ import java.util.function.Consumer;
 public class SubscriptionImpl implements Subscription {
 
     private final int id;
-    private final String streamName;
+    private final String channel;
     private final ClientConnection conn;
     private final Queue<ReceivedEvent> buffered = new LinkedList<>();
     private Consumer<ReceivedEvent> handler;
     private final Context ctx;
 
-    public SubscriptionImpl(int id, String streamName, ClientConnection conn) {
+    public SubscriptionImpl(int id, String channel, ClientConnection conn) {
         this.id = id;
-        this.streamName = streamName;
+        this.channel = channel;
         this.conn = conn;
         this.ctx = Vertx.currentContext();
     }
@@ -54,11 +54,31 @@ public class SubscriptionImpl implements Subscription {
         conn.doUnsubscribe(id);
     }
 
+    @Override
+    public void pause() {
+
+    }
+
+    @Override
+    public void resume() {
+
+    }
+
+    @Override
+    public void acknowledge() {
+
+    }
+
+    @Override
+    public BsonObject receive(long timeout) {
+        return null;
+    }
+
     protected synchronized void handleRecevFrame(BsonObject frame) {
         checkContext();
         int sizeBytes = 1234; // FIXME
-        ReceivedEvent re = new ReceivedEventImpl(this, streamName, frame.getLong(Codec.RECEV_TIMESTAMP),
-                frame.getLong(Codec.RECEV_SEQNO), frame.getBsonObject(Codec.RECEV_EVENT), sizeBytes);
+        ReceivedEvent re = new ReceivedEventImpl(this, channel, frame.getLong(Codec.RECEV_TIMESTAMP),
+                frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT), sizeBytes);
         Consumer<ReceivedEvent> h = handler; // Copy ref to avoid race if handler is unregistered
         if (h == null || !buffered.isEmpty()) {
             buffered.add(re);

@@ -34,7 +34,7 @@ public class ServerImpl implements Server {
 
     private final ServerOptions serverOptions;
     private final Vertx vertx;
-    private final Map<String, StreamProcessor> streamProcessors = new ConcurrentHashMap<>();
+    private final Map<String, ChannelProcessor> channelProcessors = new ConcurrentHashMap<>();
     private final Set<ServerConnectionImpl> connections = new ConcurrentHashSet<>();
     private final Set<NetServer> netServers = new ConcurrentHashSet<>();
     private final LogManager logManager;
@@ -90,7 +90,7 @@ public class ServerImpl implements Server {
             });
             all[i++] = cf;
         }
-        streamProcessors.clear();
+        channelProcessors.clear();
         connections.clear();
         netServers.clear();
         return CompletableFuture.allOf(all);
@@ -112,11 +112,11 @@ public class ServerImpl implements Server {
         connections.add(conn);
     }
 
-    protected StreamProcessor getStreamProcessor(String streamName) {
-        StreamProcessor processor = streamProcessors.get(streamName);
+    protected ChannelProcessor getChannelProcessor(String channel) {
+        ChannelProcessor processor = channelProcessors.get(channel);
         if (processor == null) {
-            processor = new StreamProcessor(streamName, getLog(streamName));
-            StreamProcessor old = streamProcessors.putIfAbsent(streamName, processor);
+            processor = new ChannelProcessor(channel, getLog(channel));
+            ChannelProcessor old = channelProcessors.putIfAbsent(channel, processor);
             if (old != null) {
                 processor = old;
             }
@@ -128,8 +128,8 @@ public class ServerImpl implements Server {
         connections.remove(connection);
     }
 
-    protected Log getLog(String streamName) {
-        return logManager.getLog(streamName);
+    protected Log getLog(String channel) {
+        return logManager.getLog(channel);
     }
 
 }

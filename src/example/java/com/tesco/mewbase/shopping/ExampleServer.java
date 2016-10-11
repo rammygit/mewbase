@@ -13,10 +13,10 @@ public class ExampleServer {
     public static void main(String[] args) {
 
         Server mewbase = new ServerImpl(new ServerOptions());
-        mewbase.installFunction("myfunc1", new SubDescriptor().setStreamName("com.tesco.foo"), (ctx, re) -> {
+        mewbase.installFunction("myfunc1", new SubDescriptor().setChannel("com.tesco.foo"), (ctx, re) -> {
             //do something
         });
-        mewbase.installFunction("myfunc1", new SubDescriptor().setStreamName("com.tesco.bar"), (ctx, re) -> {
+        mewbase.installFunction("myfunc1", new SubDescriptor().setChannel("com.tesco.bar"), (ctx, re) -> {
             //do something
         });
         mewbase.start();

@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Created by tim on 22/09/16.
@@ -42,9 +43,9 @@ public class ClientConnection implements Connection, ClientFrameHandler {
     }
 
     @Override
-    public Producer createProducer(String streamName) {
+    public Producer createProducer(String channel) {
         int id = sessionSeq.getAndIncrement();
-        ProducerImpl prod = new ProducerImpl(this, streamName, id);
+        ProducerImpl prod = new ProducerImpl(this, channel, id);
         producerMap.put(id, prod);
         return prod;
     }
@@ -53,11 +54,11 @@ public class ClientConnection implements Connection, ClientFrameHandler {
     public CompletableFuture<Subscription> subscribe(SubDescriptor descriptor) {
         CompletableFuture<Subscription> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
-        if (descriptor.getStreamName() == null) {
-            throw new IllegalArgumentException("No streamName in SubDescriptor");
+        if (descriptor.getChannel() == null) {
+            throw new IllegalArgumentException("No channel in SubDescriptor");
         }
-        frame.put(Codec.SUBSCRIBE_STREAMNAME, descriptor.getStreamName());
-        frame.put(Codec.SUBSCRIBE_STARTSEQ, descriptor.getStartSeq());
+        frame.put(Codec.SUBSCRIBE_CHANNEL, descriptor.getChannel());
+        frame.put(Codec.SUBSCRIBE_STARTPOS, descriptor.getStartPos());
         frame.put(Codec.SUBSCRIBE_STARTTIMESTAMP, descriptor.getStartTimestamp());
         frame.put(Codec.SUBSCRIBE_DURABLEID, descriptor.getDurableID());
         frame.put(Codec.SUBSCRIBE_MATCHER, descriptor.getMatcher());
@@ -67,7 +68,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
             boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
             if (ok) {
                 int subID = resp.getInteger(Codec.SUBRESPONSE_SUBID);
-                SubscriptionImpl sub = new SubscriptionImpl(subID, descriptor.getStreamName(), this);
+                SubscriptionImpl sub = new SubscriptionImpl(subID, descriptor.getChannel(), this);
                 subscriptionMap.put(subID, sub);
                 cf.complete(sub);
             } else {
@@ -75,6 +76,17 @@ public class ClientConnection implements Connection, ClientFrameHandler {
             }
         });
         return cf;
+    }
+
+    @Override
+    public CompletableFuture<Void> emit(String channel, BsonObject event) {
+        return doEmit(channel, -1, event);
+    }
+
+    @Override
+    public CompletableFuture<Void> emit(String channel, BsonObject event, Function<BsonObject, String> partitionFunc) {
+        // TODO partitions
+        return doEmit(channel, -1, event);
     }
 
     @Override
@@ -181,10 +193,10 @@ public class ClientConnection implements Connection, ClientFrameHandler {
         netSocket.write(buffer);
     }
 
-    protected CompletableFuture<Void> doEmit(String streamName, int producerID, BsonObject event) {
+    protected CompletableFuture<Void> doEmit(String channel, int producerID, BsonObject event) {
         CompletableFuture<Void> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
-        frame.put(Codec.EMIT_STREAMNAME, streamName);
+        frame.put(Codec.EMIT_CHANNEL, channel);
         frame.put(Codec.EMIT_SESSID, producerID);
         frame.put(Codec.EMIT_EVENT, event);
         Buffer buffer = Codec.encodeFrame(Codec.EMIT_FRAME, frame);

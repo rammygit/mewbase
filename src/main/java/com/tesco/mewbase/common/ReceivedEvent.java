@@ -9,12 +9,11 @@ public interface ReceivedEvent {
 
     // Metadata for event
 
-    String streamName();
+    String channel();
 
     long timeStamp();
 
     long sequenceNumber();
-
 
     BsonObject event();
 

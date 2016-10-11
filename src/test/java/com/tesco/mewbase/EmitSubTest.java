@@ -53,14 +53,14 @@ public class EmitSubTest {
     public void testSimpleEmitSubscribe(TestContext context) throws Exception {
         Connection conn = client.connect(new ConnectionOptions()).get();
         SubDescriptor descriptor = new SubDescriptor();
-        descriptor.setStreamName(TEST_STREAM1);
+        descriptor.setChannel(TEST_STREAM1);
         Subscription sub = conn.subscribe(descriptor).get();
         Producer prod = conn.createProducer(TEST_STREAM1);
         Async async = context.async();
         long now = System.currentTimeMillis();
         BsonObject sent = new BsonObject().put("foo", "bar");
         sub.setHandler(re -> {
-            context.assertEquals(TEST_STREAM1, re.streamName());
+            context.assertEquals(TEST_STREAM1, re.channel());
             context.assertEquals(0l, re.sequenceNumber());
             context.assertTrue(re.timeStamp() >= now);
             BsonObject event = re.event();
@@ -83,13 +83,13 @@ public class EmitSubTest {
             }
         }
         SubDescriptor descriptor = new SubDescriptor();
-        descriptor.setStreamName(TEST_STREAM1);
-        descriptor.setStartSeq(0);
+        descriptor.setChannel(TEST_STREAM1);
+        descriptor.setStartPos(0);
         Subscription sub = conn.subscribe(descriptor).get();
         Async async = context.async();
         AtomicLong cnt = new AtomicLong();
         sub.setHandler(re -> {
-            context.assertEquals(TEST_STREAM1, re.streamName());
+            context.assertEquals(TEST_STREAM1, re.channel());
             long c = cnt.getAndIncrement();
             context.assertEquals(c, re.sequenceNumber());
             BsonObject event = re.event();
