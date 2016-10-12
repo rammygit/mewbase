@@ -7,7 +7,6 @@ import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 import com.tesco.mewbase.server.impl.ServerImpl;
-import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
 import org.junit.Before;
@@ -27,13 +26,12 @@ public class FunctionTest {
     private final static Logger log = LoggerFactory.getLogger(FunctionTest.class);
 
     private static final String TEST_STREAM1 = "com.tesco.basket";
-    private static final String TEST_EVENT_TYPE1 = "addItem";
 
     private Server server;
     private Client client;
 
     @Before
-    public void before(TestContext context) throws Exception {
+    public void before() throws Exception {
         log.trace("in before");
         server = new ServerImpl(new ServerOptions());
         CompletableFuture<Void> cfStart = server.start();
@@ -42,14 +40,14 @@ public class FunctionTest {
     }
 
     @After
-    public void after(TestContext context) throws Exception {
+    public void after() throws Exception {
         log.trace("in after");
         client.close().get();
         server.stop().get();
     }
 
     @Test
-    public void testSimpleFunction(TestContext context) throws Exception {
+    public void testSimpleFunction() throws Exception {
         SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_STREAM1);
         server.installFunction("testfunc", descriptor, (ctx, re) -> {
             BsonObject event = re.event();
