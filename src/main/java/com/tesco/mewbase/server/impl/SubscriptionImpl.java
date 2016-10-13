@@ -101,7 +101,9 @@ public class SubscriptionImpl {
     // Sanity check - this should always be executed using the connection's context
     private void checkContext() {
         if (Vertx.currentContext() != ctx) {
-            throw new IllegalStateException("Wrong context!");
+            // TODO revisit handling of context within the subscription.
+            // Currently subscription handlers are executed on the context of the received event, not the context with which the subscription was created
+            //throw new IllegalStateException("Wrong context!");
         }
     }
 }
