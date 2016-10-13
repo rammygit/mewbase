@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -18,13 +19,12 @@ public class InMemoryReadStream implements ReadStream {
 
     private final static Logger log = LoggerFactory.getLogger(InMemoryReadStream.class);
 
-
-    private Consumer<BsonObject> handler;
+    private BiConsumer<Long, BsonObject> handler;
     private boolean paused;
-    private Iterator<BsonObject> iter;
+    private Iterator<QueueEntry> iter;
     private Context ctx;
 
-    public InMemoryReadStream(Iterator<BsonObject> iter) {
+    public InMemoryReadStream(Iterator<QueueEntry> iter) {
         this.iter = iter;
         this.ctx = Vertx.currentContext();
     }
@@ -33,8 +33,8 @@ public class InMemoryReadStream implements ReadStream {
         ctx.runOnContext(v -> {
             if (iter.hasNext()) {
                 if (handler != null && !paused) {
-                    BsonObject obj = iter.next();
-                    handler.accept(obj);
+                    QueueEntry entry = iter.next();
+                    handler.accept((long)entry.receivedPos, entry.bson);
                     if (!paused) {
                         deliverOnContext();
                     }
@@ -46,12 +46,12 @@ public class InMemoryReadStream implements ReadStream {
     }
 
     @Override
-    public void exceptionHandler(Handler<Throwable> handler) {
+    public void exceptionHandler(Consumer<Throwable> handler) {
 
     }
 
     @Override
-    public void handler(Consumer<BsonObject> handler) {
+    public void handler(BiConsumer<Long, BsonObject> handler) {
         this.handler = handler;
         deliverOnContext();
     }

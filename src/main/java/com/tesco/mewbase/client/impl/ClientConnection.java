@@ -72,7 +72,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
                 subscriptionMap.put(subID, sub);
                 cf.complete(sub);
             } else {
-                cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
         });
         return cf;
@@ -180,7 +180,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
             if (ok) {
                 cf.complete(ClientConnection.this);
             } else {
-                cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
         });
     }
@@ -205,7 +205,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
             if (ok) {
                 cf.complete(null);
             } else {
-                cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
         });
         return cf;

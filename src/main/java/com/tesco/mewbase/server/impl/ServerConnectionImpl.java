@@ -63,7 +63,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         }
         ChannelProcessor processor = server.getChannelProcessor(channel);
         long order = getWriteSeq();
-        CompletableFuture<Void> cf = processor.handleEmit(event);
+        CompletableFuture<Long> cf = processor.handleEmit(event);
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();

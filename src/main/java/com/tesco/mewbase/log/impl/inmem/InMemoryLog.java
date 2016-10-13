@@ -2,8 +2,8 @@ package com.tesco.mewbase.log.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.ReadStream;
-import com.tesco.mewbase.common.WriteStream;
 import com.tesco.mewbase.log.Log;
+import io.vertx.core.buffer.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,36 +17,64 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class InMemoryLog implements Log {
 
-    private final static Logger log = LoggerFactory.getLogger(InMemoryLog.class);
+    private final static Logger logger = LoggerFactory.getLogger(InMemoryLog.class);
 
-    private final Queue<BsonObject> queue = new ConcurrentLinkedQueue<>();
+    private final Buffer log = Buffer.buffer();
+    private long headPos;
 
-    public CompletableFuture<Void> append(BsonObject obj) {
-        queue.add(obj);
-        CompletableFuture<Void> cf = new CompletableFuture<>();
-        cf.complete(null);
-        log.trace("Appended obj {}", obj);
-
+    public CompletableFuture<Long> append(BsonObject obj) {
+        Buffer buff = obj.encode();
+        log.appendBuffer(buff);
+        long pos = headPos;
+        headPos += buff.length();
+        CompletableFuture<Long> cf = new CompletableFuture<>();
+        cf.complete(pos);
+        logger.trace("Appended obj {} at pos {}", obj, pos);
         return cf;
     }
 
     @Override
-    public ReadStream openReadStream(long pos) {
-        BsonObject top = queue.element();
-        Iterator<BsonObject> iter = queue.iterator();
-        if (top.getLong("pos") < pos) {
-            while (iter.hasNext()) {
-                BsonObject obj = iter.next();
-                if (obj.getLong("pos") == pos - 1) {
-                    break;
-                }
-            }
-        }
-        return new InMemoryReadStream(iter);
+    public CompletableFuture<Void> start() {
+        CompletableFuture<Void> cf = new CompletableFuture<>();
+        cf.complete(null);
+        return cf;
     }
 
     @Override
-    public WriteStream openWriteStream() {
-        return new InMemoryWriteStream(queue);
+    public void close() {
     }
+
+    @Override
+    public CompletableFuture<ReadStream> openReadStream(long pos) {
+        CompletableFuture<ReadStream> cf = new CompletableFuture<>();
+        cf.complete(new InMemoryReadStream(new ElemIterator(log, (int)pos)));
+        return cf;
+    }
+
+    private static final class ElemIterator implements Iterator<QueueEntry> {
+
+        private final Buffer log;
+        private int pos;
+
+        public ElemIterator(Buffer log, int pos) {
+            this.log = log;
+            this.pos = pos;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return pos != log.length();
+        }
+
+        @Override
+        public QueueEntry next() {
+            int size = log.getIntLE(pos);
+            Buffer buff = log.slice(pos, pos + size);
+            BsonObject obj = new BsonObject(buff);
+            QueueEntry entry = new QueueEntry(pos, obj);
+            pos += size;
+            return entry;
+        }
+    }
+
 }

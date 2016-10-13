@@ -1,12 +1,12 @@
 package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.log.Log;
 import io.vertx.core.impl.ConcurrentHashSet;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by tim on 26/09/16.
@@ -15,8 +15,8 @@ public class ChannelProcessor {
 
     private final String channel;
     private final Log log;
-    private final AtomicLong eventSeq = new AtomicLong();
     private final Set<SubscriptionImpl> subscriptions = new ConcurrentHashSet<>();
+    private long lastDeliveredPos;
 
     public ChannelProcessor(String channel, Log log) {
         this.channel = channel;
@@ -27,24 +27,22 @@ public class ChannelProcessor {
         return channel;
     }
 
-    protected CompletableFuture<Void> handleEmit(BsonObject event) {
+    protected CompletableFuture<Long> handleEmit(BsonObject event) {
         BsonObject frame = new BsonObject();
         frame.put(Codec.RECEV_TIMESTAMP, System.currentTimeMillis());
         frame.put(Codec.RECEV_EVENT, event);
-        CompletableFuture<Void> cf;
-        long seq;
-        // Needs to be sync to ensure log stores events in strict seq order
-        synchronized (this) {
-            seq = eventSeq.getAndIncrement();
-            frame.put(Codec.RECEV_POS, seq);
-            cf = log.append(frame);
-        }
-        cf.thenRun(() -> {
-            for (SubscriptionImpl subscription : subscriptions) {
-                subscription.handleEvent(seq, frame);
+        CompletableFuture<Long> cf = log.append(frame);
+        cf.thenAccept(pos -> {
+            try {
+                // TODO consider using our own simpler CompletableFuture type internally (or Vert.x futures)
+                for (SubscriptionImpl subscription : subscriptions) {
+                    subscription.handleEvent(pos, frame);
+                }
+                lastDeliveredPos = pos;
+            } catch (Exception e) {
+                throw new MewException(e);
             }
         });
-
         return cf;
     }
 
@@ -53,7 +51,7 @@ public class ChannelProcessor {
     }
 
     protected SubscriptionImpl createSubscription(ServerConnectionImpl conn, int idPerConn, long startSeq) {
-        return new SubscriptionImpl(this, conn, idPerConn, log, startSeq, eventSeq.get());
+        return new SubscriptionImpl(this, conn, idPerConn, log, startSeq, lastDeliveredPos);
     }
 
     protected void removeSubScription(SubscriptionImpl subscription) {

@@ -9,6 +9,8 @@ import io.vertx.core.buffer.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Created by tim on 26/09/16.
  */
@@ -22,8 +24,8 @@ public class SubscriptionImpl {
     private final ServerConnectionImpl connection;
     private final int idPerConn;
     private final Log log;
-    private long deliveredSeq;
-    private long streamSeq;
+    private long deliveredPos;
+    private long streamPos;
     private ReadStream readStream;
     private boolean retro;
     private boolean paused;
@@ -31,13 +33,13 @@ public class SubscriptionImpl {
     private final Context ctx;
 
     public SubscriptionImpl(ChannelProcessor channelProcessor, ServerConnectionImpl connection, int idPerConn,
-                            Log log, long startSeq, long streamSeq) {
+                            Log log, long startSeq, long streamPos) {
         this.channelProcessor = channelProcessor;
         this.connection = connection;
         this.idPerConn = idPerConn;
         this.log = log;
         this.ctx = Vertx.currentContext();
-        this.streamSeq = streamSeq;
+        this.streamPos = streamPos;
         if (startSeq != -1) {
             openReadStream(startSeq);
         }
@@ -48,22 +50,23 @@ public class SubscriptionImpl {
         channelProcessor.removeSubScription(this);
     }
 
-    protected void handleEvent(long seq, BsonObject frame) {
+    protected void handleEvent(long pos, BsonObject frame) {
         checkContext();
-        this.streamSeq = seq;
+        this.streamPos = pos;
         if (retro || paused) {
             return;
         }
-        handleEvent0(seq, frame);
+        handleEvent0(pos, frame);
     }
 
-    private void handleEvent0(long seq, BsonObject frame) {
-        logger.trace("sub for channel {} id {} handling event with seq {}", channelProcessor.getChannel(), idPerConn, seq);
+    private void handleEvent0(long pos, BsonObject frame) {
+        logger.trace("sub for channel {} id {} handling event with seq {}", channelProcessor.getChannel(), idPerConn, pos);
         checkContext();
         frame = frame.copy();
         frame.put(Codec.RECEV_SUBID, idPerConn);
+        frame.put(Codec.RECEV_POS, pos);
         Buffer buff = connection.writeNonResponse(Codec.RECEV_FRAME, frame);
-        deliveredSeq = seq;
+        deliveredPos = pos;
         unackedBytes += buff.length();
         if (unackedBytes > MAX_UNACKED_BYTES) {
             paused = true;
@@ -71,8 +74,9 @@ public class SubscriptionImpl {
                 readStream.pause();
             }
         }
-        if (retro && streamSeq == deliveredSeq) {
+        if (retro && streamPos == deliveredPos) {
             readStream.close();
+            readStream = null;
             retro = false;
         }
     }
@@ -85,17 +89,25 @@ public class SubscriptionImpl {
             paused = false;
             if (readStream != null) {
                 readStream.resume();
-            } else if (streamSeq > deliveredSeq) {
+            } else if (streamPos > deliveredPos) {
                 // We've missed some messages
-                openReadStream(deliveredSeq + 1);
+                openReadStream(deliveredPos + 1);
             }
         }
     }
 
     private void openReadStream(long pos) {
-        readStream = log.openReadStream(pos);
+        CompletableFuture<ReadStream> cf = log.openReadStream(pos);
         retro = true;
-        readStream.handler(bson -> handleEvent0(bson.getLong(Codec.RECEV_POS), bson));
+        cf.handle((rs, t) -> {
+            if (t != null) {
+                logger.error("Failed to open readstream", t);
+            } else {
+                readStream = rs;
+                readStream.handler(this::handleEvent0);
+            }
+           return null;
+        });
     }
 
     // Sanity check - this should always be executed using the connection's context

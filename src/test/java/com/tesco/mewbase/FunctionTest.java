@@ -26,8 +26,7 @@ public class FunctionTest {
 
     private final static Logger log = LoggerFactory.getLogger(FunctionTest.class);
 
-    private static final String TEST_STREAM1 = "com.tesco.basket";
-    private static final String TEST_EVENT_TYPE1 = "addItem";
+    private static final String TEST_CHANNEL = "com.tesco.basket";
 
     private Server server;
     private Client client;
@@ -50,7 +49,7 @@ public class FunctionTest {
 
     @Test
     public void testSimpleFunction(TestContext context) throws Exception {
-        SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_STREAM1);
+        SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_CHANNEL);
         server.installFunction("testfunc", descriptor, (ctx, re) -> {
             BsonObject event = re.event();
             long basketID = event.getInteger("basketID");
