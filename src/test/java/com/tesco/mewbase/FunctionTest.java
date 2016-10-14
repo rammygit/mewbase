@@ -2,11 +2,16 @@ package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Client;
+import com.tesco.mewbase.client.Connection;
+import com.tesco.mewbase.client.ConnectionOptions;
+import com.tesco.mewbase.client.Producer;
 import com.tesco.mewbase.client.impl.ClientImpl;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 import com.tesco.mewbase.server.impl.ServerImpl;
+import io.vertx.ext.unit.Async;
+import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.After;
 import org.junit.Before;
@@ -47,7 +52,8 @@ public class FunctionTest {
     }
 
     @Test
-    public void testSimpleFunction() throws Exception {
+    public void testSimpleFunction(TestContext context) throws Exception {
+        Async async = context.async();
         SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_STREAM1);
         server.installFunction("testfunc", descriptor, (ctx, re) -> {
             BsonObject event = re.event();
@@ -57,10 +63,14 @@ public class FunctionTest {
             String quantPath = "items." + productID + ".quantity";
 
             CompletableFuture<Void> cf =
-                    ctx.upsert("baskets", new BsonObject().put("id", basketID).put("$inc", new BsonObject().put(quantPath, quant)));
-            cf.thenRun(() -> {
-                // updated ok
-            });
+                    ctx.upsert("baskets", new BsonObject().put("id", "basket" + basketID).put("$inc", new BsonObject().put(quantPath, quant)));
+            // updated ok
+            cf.thenRun(async::complete);
         });
+
+        Connection conn = client.connect(new ConnectionOptions()).get();
+        Producer prod = conn.createProducer(TEST_STREAM1);
+
+        prod.emit(new BsonObject().put("basketID", 1).put("productId", 1).put("quantity", 1)).get();
     }
 }

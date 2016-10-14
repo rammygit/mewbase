@@ -70,6 +70,7 @@ public class InMemoryDocManager implements DocManager {
             cfResult.completeExceptionally(new MuException("No id field in BsonObject"));
         } else {
             binder.upsert(id, doc);
+            cfResult.complete(null);
         }
         return cfResult;
     }
