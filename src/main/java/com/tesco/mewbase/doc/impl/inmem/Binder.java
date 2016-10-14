@@ -17,7 +17,7 @@ public class Binder {
     }
 
     public void upsert(String id, BsonObject doc) {
-//        BsonObject curr = docs.get(id);
+        BsonObject curr = docs.get(id);
 //
 //
 //        BsonObject inc = doc.getBsonObject("$inc");
@@ -44,6 +44,6 @@ public class Binder {
 //            });
 //        }
 //
-//        docs.put(id, doc);
+        docs.put(id, doc);
     }
 }
