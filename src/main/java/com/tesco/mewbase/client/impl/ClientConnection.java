@@ -10,7 +10,6 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.plugin.dom.exception.InvalidStateException;
 
 import java.util.Map;
 import java.util.Queue;
@@ -113,7 +112,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
                 } else if(numResults == 0) {
                     cf.complete(null);
                 } else {
-                    cf.completeExceptionally(new InvalidStateException("Get By ID cannot return more than one result"));
+                    cf.completeExceptionally(new IllegalStateException("Get By ID cannot return more than one result"));
                 }
             } else {
                 cf.completeExceptionally(new IllegalStateException("Result query ID does not match handler expectation"));
@@ -165,7 +164,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
             cf.complete(frame.getBsonObject(Codec.QUERYRESULT_RESULT));
             doQueryAck(queryID);
         } else {
-            throw new InvalidStateException("Received unexpected query result");
+            throw new IllegalStateException("Received unexpected query result");
         }
     }
 
