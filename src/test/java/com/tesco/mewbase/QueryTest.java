@@ -66,6 +66,14 @@ public class QueryTest {
         Assert.assertEquals("bar", doc.getString("foo"));
     }
 
+    @Test
+    public void testGetByIdReturnsNullForNonExistentDocument(TestContext context) throws Exception {
+        Connection conn = client.connect(new ConnectionOptions()).get();
+        BsonObject doc = conn.getByID(TEST_BINDER1, "non-existent-document").get();
+
+        Assert.assertEquals(null, doc);
+    }
+
     private CompletableFuture<Void> insertDocument(String binder, BsonObject document) throws Exception {
         CompletableFuture<Void> cf = new CompletableFuture<>();
 

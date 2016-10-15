@@ -107,7 +107,14 @@ public class ClientConnection implements Connection, ClientFrameHandler {
 
         write(buffer, resp -> {
             if(resp.getInteger(Codec.QUERYRESPONSE_QUERYID) == queryID) {
-                expectedQueryResults.put(queryID, cf);
+                Integer numResults = resp.getInteger(Codec.QUERYRESPONSE_NUMRESULTS);
+                if(numResults == 1) {
+                    expectedQueryResults.put(queryID, cf);
+                } else if(numResults == 0) {
+                    cf.complete(null);
+                } else {
+                    cf.completeExceptionally(new InvalidStateException("Get By ID cannot return more than one result"));
+                }
             } else {
                 cf.completeExceptionally(new IllegalStateException("Result query ID does not match handler expectation"));
             }
