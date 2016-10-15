@@ -105,17 +105,18 @@ public class ClientConnection implements Connection, ClientFrameHandler {
         Buffer buffer = Codec.encodeFrame(Codec.QUERY_FRAME, frame);
 
         write(buffer, resp -> {
-            if(resp.getInteger(Codec.QUERYRESPONSE_QUERYID) == queryID) {
-                Integer numResults = resp.getInteger(Codec.QUERYRESPONSE_NUMRESULTS);
-                if(numResults == 1) {
-                    expectedQueryResults.put(queryID, cf);
-                } else if(numResults == 0) {
-                    cf.complete(null);
-                } else {
-                    cf.completeExceptionally(new IllegalStateException("Get By ID cannot return more than one result"));
-                }
-            } else {
+            if(resp.getInteger(Codec.QUERYRESPONSE_QUERYID) != queryID) {
                 cf.completeExceptionally(new IllegalStateException("Result query ID does not match handler expectation"));
+                return;
+            }
+
+            Integer numResults = resp.getInteger(Codec.QUERYRESPONSE_NUMRESULTS);
+            if(numResults == 1) {
+                expectedQueryResults.put(queryID, cf);
+            } else if(numResults == 0) {
+                cf.complete(null);
+            } else {
+                cf.completeExceptionally(new IllegalStateException("Invalid result count for get by ID"));
             }
         });
 
@@ -163,6 +164,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
         if(cf != null) {
             cf.complete(frame.getBsonObject(Codec.QUERYRESULT_RESULT));
             doQueryAck(queryID);
+            expectedQueryResults.remove(queryID);
         } else {
             throw new IllegalStateException("Received unexpected query result");
         }
