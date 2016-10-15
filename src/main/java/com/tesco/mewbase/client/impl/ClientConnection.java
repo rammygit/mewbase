@@ -10,6 +10,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.plugin.dom.exception.InvalidStateException;
 
 import java.util.Map;
 import java.util.Queue;
@@ -29,11 +30,13 @@ public class ClientConnection implements Connection, ClientFrameHandler {
 
 
     private final AtomicInteger sessionSeq = new AtomicInteger();
+    private final AtomicInteger nextQueryId = new AtomicInteger();
     private final NetSocket netSocket;
     private final Codec codec;
     private final Map<Integer, ProducerImpl> producerMap = new ConcurrentHashMap<>();
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final Queue<Consumer<BsonObject>> respQueue = new ConcurrentLinkedQueue<>();
+    private final Map<Integer, CompletableFuture<BsonObject>> expectedQueryResults = new ConcurrentHashMap<>();
     private final Context context;
 
     public ClientConnection(NetSocket netSocket) {
@@ -91,7 +94,26 @@ public class ClientConnection implements Connection, ClientFrameHandler {
 
     @Override
     public CompletableFuture<BsonObject> getByID(String binderName, String id) {
-        return null;
+        CompletableFuture<BsonObject> cf = new CompletableFuture<>();
+        BsonObject matcher = new BsonObject().put("$match", new BsonObject().put("id", id));
+        int queryID = nextQueryId.getAndIncrement();
+
+        BsonObject frame = new BsonObject();
+        frame.put(Codec.QUERY_QUERYID, queryID);
+        frame.put(Codec.QUERY_BINDER, binderName);
+        frame.put(Codec.QUERY_MATCHER, matcher);
+
+        Buffer buffer = Codec.encodeFrame(Codec.QUERY_FRAME, frame);
+
+        write(buffer, resp -> {
+            if(resp.getInteger(Codec.QUERYRESPONSE_QUERYID) == queryID) {
+                expectedQueryResults.put(queryID, cf);
+            } else {
+                cf.completeExceptionally(new IllegalStateException("Result query ID does not match handler expectation"));
+            }
+        });
+
+        return cf;
     }
 
     @Override
@@ -125,12 +147,19 @@ public class ClientConnection implements Connection, ClientFrameHandler {
 
     @Override
     public void handleQueryResponse(BsonObject frame) {
-
+        handleResponse(frame);
     }
 
     @Override
     public void handleQueryResult(BsonObject frame) {
-
+        int queryID = frame.getInteger(Codec.QUERYRESULT_QUERYID);
+        CompletableFuture<BsonObject> cf = expectedQueryResults.get(queryID);
+        if(cf != null) {
+            cf.complete(frame.getBsonObject(Codec.QUERYRESULT_RESULT));
+            doQueryAck(queryID);
+        } else {
+            throw new InvalidStateException("Received unexpected query result");
+        }
     }
 
     @Override
@@ -190,6 +219,13 @@ public class ClientConnection implements Connection, ClientFrameHandler {
         frame.put(Codec.ACKEV_SUBID, subID);
         frame.put(Codec.ACKEV_BYTES, sizeBytes);
         Buffer buffer = Codec.encodeFrame(Codec.ACKEV_FRAME, frame);
+        netSocket.write(buffer);
+    }
+
+    protected void doQueryAck(int queryID) {
+        BsonObject frame = new BsonObject();
+        frame.put(Codec.QUERYACK_QUERYID, queryID);
+        Buffer buffer = Codec.encodeFrame(Codec.QUERYACK_FRAME, frame);
         netSocket.write(buffer);
     }
 

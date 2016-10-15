@@ -1,6 +1,7 @@
 package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.doc.DocManager;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -24,6 +25,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     private final NetSocket socket;
     private final Codec codec;
     private final Context context;
+    private final DocManager docManager;
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
     private boolean authorised;
@@ -31,11 +33,12 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     private long writeSeq;
     private long expectedRespNo;
 
-    public ServerConnectionImpl(ServerImpl server, NetSocket netSocket, Context context) {
+    public ServerConnectionImpl(ServerImpl server, NetSocket netSocket, Context context, DocManager docManager) {
         this.codec = new Codec(netSocket, this);
         this.server = server;
         this.socket = netSocket;
         this.context = context;
+        this.docManager = docManager;
     }
 
     @Override
@@ -162,11 +165,43 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleQuery(BsonObject frame) {
         checkAuthorised();
+        int queryID = frame.getInteger(Codec.QUERY_QUERYID);
+        String binder = frame.getString(Codec.QUERY_BINDER);
+        BsonObject matcher = frame.getBsonObject(Codec.QUERY_MATCHER);
+
+        // TODO currently hardcoded to assume get by ID, implement properly for other query types
+        String documentId = matcher.getBsonObject("$match").getString("id");
+        CompletableFuture<BsonObject> cf = docManager.getByID(binder, documentId);
+
+        cf.thenAccept(result -> {
+            if(result == null) {
+                BsonObject resp = new BsonObject();
+                resp.put(Codec.QUERYRESPONSE_QUERYID, queryID);
+                resp.put(Codec.QUERYRESPONSE_NUMRESULTS, 0);
+                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, getWriteSeq());
+            } else {
+                BsonObject resp = new BsonObject();
+                resp.put(Codec.QUERYRESPONSE_QUERYID, queryID);
+                resp.put(Codec.QUERYRESPONSE_NUMRESULTS, 1);
+                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, getWriteSeq());
+
+                BsonObject res = new BsonObject();
+                res.put(Codec.QUERYRESULT_QUERYID, queryID);
+                res.put(Codec.QUERYRESULT_RESULT, result);
+                writeResponse(Codec.QUERYRESULT_FRAME, res, getWriteSeq());
+            }
+        });
     }
 
     @Override
     public void handleQueryAck(BsonObject frame) {
         checkAuthorised();
+
+        Integer queryID = frame.getInteger(Codec.QUERYACK_QUERYID);
+
+        if (queryID == null) {
+            logAndClose("No queryID in QueryAck");
+        }
     }
 
     @Override

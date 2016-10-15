@@ -63,7 +63,7 @@ public class QueryTest {
         BsonObject doc = conn.getByID(TEST_BINDER1, docId).get();
 
         Assert.assertEquals(docId, doc.getString("id"));
-        Assert.assertEquals("bar", doc.getString("bar"));
+        Assert.assertEquals("bar", doc.getString("foo"));
     }
 
     private CompletableFuture<Void> insertDocument(String binder, BsonObject document) throws Exception {

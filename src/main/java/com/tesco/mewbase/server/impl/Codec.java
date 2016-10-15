@@ -77,6 +77,17 @@ public class Codec {
     public static final String ACKEV_BYTES = "bytes";
 
     // Query stuff TODO
+    public static final String QUERY_QUERYID = "queryID";
+    public static final String QUERY_BINDER = "binder";
+    public static final String QUERY_MATCHER = "matcher";
+
+    public static final String QUERYRESPONSE_QUERYID = "queryID";
+    public static final String QUERYRESPONSE_NUMRESULTS = "numResults";
+
+    public static final String QUERYRESULT_QUERYID = "queryID";
+    public static final String QUERYRESULT_RESULT = "result";
+
+    public static final String QUERYACK_QUERYID = "queryID";
 
 
     private final static Logger log = LoggerFactory.getLogger(Codec.class);
