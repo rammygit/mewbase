@@ -1,6 +1,7 @@
 package com.tesco.mewbase.log.impl.file.faf.af;
 
 import com.tesco.mewbase.log.impl.file.BasicFile;
+import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.AsyncFile;
 
@@ -43,7 +44,9 @@ public class AsyncFileBasicFile implements BasicFile {
         return cf;
     }
 
-    public void close() {
-        af.close();
+    public CompletableFuture<Void> close() {
+        AsyncResCF<Void> cf = new AsyncResCF<>();
+        af.close(cf);
+        return cf;
     }
 }

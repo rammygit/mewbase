@@ -1,10 +1,13 @@
 package com.tesco.mewbase.log.impl.file;
 
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.impl.file.faf.af.AsyncFileFileAccessManager;
+import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -18,43 +21,56 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.Assert.*;
+
 /**
  * Created by tim on 08/10/16.
  */
 @RunWith(VertxUnitRunner.class)
-public class FileLogTest {
+public class OldTests {
 
-    private final static Logger logger = LoggerFactory.getLogger(FileLogTest.class);
+    private final static Logger logger = LoggerFactory.getLogger(OldTests.class);
 
-    private static final String TEST_CHANNEL = "com.tesco.basket";
+    private static final String TEST_CHANNEL_1 = "channel1";
+    private static final String TEST_CHANNEL_2 = "channel2";
 
     @Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
 
     private Vertx vertx;
+    private FileAccessManager faf;
+    private FileLogManagerOptions options;
+    private FileLogManager flm;
     private Log log;
+    private File logDir;
 
     @Before
     public void before(TestContext context) throws Exception {
-        File ftestDir = testFolder.newFolder();
-        logger.trace("test dir is {}", ftestDir);
+        logDir = testFolder.newFolder();
+        logger.trace("log dir is {}", logDir);
         vertx = Vertx.vertx();
-        FileAccessManager faf = new AsyncFileFileAccessManager(vertx);
-        FileLogManagerOptions options = new FileLogManagerOptions().setLogDir(ftestDir.getPath());
-        FileLogManager flm = new FileLogManager(vertx, options, faf);
-        log = flm.getLog(TEST_CHANNEL);
+        faf = new AsyncFileFileAccessManager(vertx);
+        options = new FileLogManagerOptions().setLogDir(logDir.getPath());
+        flm = new FileLogManager(vertx, options, faf);
+        log = flm.getLog(TEST_CHANNEL_1);
         log.start().get();
     }
 
     @After
     public void after(TestContext context) throws Exception {
-        log.close();
-        vertx.close();
+        log.close().thenCompose(v -> {
+            AsyncResCF<Void> cf = new AsyncResCF<>();
+            vertx.close(cf);
+            return cf;
+        }).get();
     }
 
     @Test
@@ -114,5 +130,16 @@ public class FileLogTest {
         latch2.await(5, TimeUnit.SECONDS);
         rs.close();
     }
+
+    private BsonObject readInfoFromFile(File infoFile) {
+        try {
+            byte[] bytes = Files.readAllBytes(infoFile.toPath());
+            Buffer buff = Buffer.buffer(bytes);
+            return new BsonObject(buff);
+        } catch (IOException e) {
+            throw new MewException(e);
+        }
+    }
+
 
 }

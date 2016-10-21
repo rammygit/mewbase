@@ -16,5 +16,5 @@ public interface BasicFile {
 
     CompletableFuture<Void> read(Buffer buffer, int length, int readPos);
 
-    void close();
+    CompletableFuture<Void> close();
 }

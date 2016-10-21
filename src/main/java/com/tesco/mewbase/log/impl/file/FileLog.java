@@ -24,6 +24,15 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
+ * TODO:
+ *
+ * 1. Corruption detection, incl CRC checks
+ * 2. Version header
+ * 3. Batching
+ * 4. Configurable fsync
+ *
+ *
+ *
  * Created by tim on 07/10/16.
  */
 public class FileLog implements Log {
@@ -31,21 +40,18 @@ public class FileLog implements Log {
     private final static Logger log = LoggerFactory.getLogger(FileLog.class);
 
     private static final int MAX_CREATE_BUFF_SIZE = 10 * 1024 * 1024;
-    private static final int MAX_RECORD_SIZE = 4 * 1024 * 1024;
-    private static final int MIN_RECORDS_PER_FILE = 10;
     private static final String LOG_INFO_FILE_TAIL = "-log-info.dat";
 
     private final Vertx vertx;
     private final FileAccessManager faf;
     private final String channel;
     private final FileLogManagerOptions options;
-    private final Map<Integer, File> fileMap = new HashMap<>();
 
     private BasicFile currWriteFile;
     private BasicFile nextWriteFile;
     private int fileNumber; // Number of log file containing current head
-    private int filePos; // Position of head in head file
-    private long pos;    // Overall position of head in log
+    private int filePos;    // Position of head in head file
+    private long headPos;   // Overall position of head in log
     private CompletableFuture<Void> nextFileCF;
 
     public FileLog(Vertx vertx, FileAccessManager faf, FileLogManagerOptions options, String channel) {
@@ -53,23 +59,39 @@ public class FileLog implements Log {
         this.channel = channel;
         this.options = options;
         this.faf = faf;
+        if (options.getMaxLogChunkSize() < 1) {
+            throw new IllegalArgumentException("maxLogChunkSize must be > 1");
+        }
+        if (options.getPreallocateSize() < 0) {
+            throw new IllegalArgumentException("maxLogChunkSize must be >= 0");
+        }
+        if (options.getMaxRecordSize() < 1) {
+            throw new IllegalArgumentException("maxRecordSize must be > 1");
+        }
+        if (options.getMaxRecordSize() > options.getMaxLogChunkSize()) {
+            throw new IllegalArgumentException("maxRecordSize must be <= maxLogChunkSize");
+        }
+        if (options.getPreallocateSize() > options.getMaxLogChunkSize()) {
+            throw new IllegalArgumentException("preallocateSize must be <= maxLogChunkSize");
+        }
     }
 
-    public CompletableFuture<Void> start() {
-        if (options.getFileSize() < MIN_RECORDS_PER_FILE * MAX_RECORD_SIZE) {
-            throw new MewException("File size too small");
-        }
-        checkAndLoadFiles();
+    public synchronized CompletableFuture<Void> start() {
+        log.trace("Starting file log for channel {}", channel);
+
         loadInfo();
-        File currFile = fileMap.get(fileNumber);
+        checkAndLoadFiles();
+        File currFile = getFile(fileNumber);
         CompletableFuture<Void> cfCreate = null;
-        if (currFile == null) {
-            if (fileNumber == 0) {
+        if (!currFile.exists()) {
+            if (fileNumber == 0 && filePos == 0) {
                 // This is OK, new log
-                saveInfo(false);
+                log.trace("Creating new log info file for channel {}", channel);
+                saveInfo(true);
                 // Create a new first file
-                cfCreate = createAndFillFile(0);
-                currFile = fileMap.get(0);
+                cfCreate = createAndFillFile(getFileName(0));
+            } else {
+                throw new MewException("Info file for channel {} doesn't match data file(s)");
             }
         }
         final File cFile = currFile;
@@ -89,35 +111,46 @@ public class FileLog implements Log {
     @Override
     public CompletableFuture<ReadStream> openReadStream(long pos) {
         // TODO limit number of open streams to avoid exhausting file handles
-        return faf.openBasicFile(fileMap.get(fileNumber)).thenApply(bf -> new LogReadStream((int)pos, bf));
+        // TODO pos
+        File file = getFile(0);
+        return faf.openBasicFile(file).thenApply(bf -> new LogReadStream((int)pos, bf));
     }
 
     @Override
     public synchronized CompletableFuture<Long> append(BsonObject obj) {
 
         Buffer record = obj.encode();
-
         int len  = record.length();
-
-        if (record.length() > MAX_RECORD_SIZE) {
-            throw new MewException("Record too long " +len +"  max " + MAX_RECORD_SIZE);
+        if (record.length() > options.getMaxRecordSize()) {
+            throw new MewException("Record too long " +len + " max " + options.getMaxRecordSize());
         }
 
         CompletableFuture<Long> cf;
 
-        if (filePos >= options.getFileSize()) {
+        log.trace("in append filePos is {} file size is {}", filePos, options.getMaxLogChunkSize());
+
+        int remainingSpace = options.getMaxLogChunkSize() - filePos;
+        log.trace("Remaining space is {}", remainingSpace);
+        if (record.length() > remainingSpace) {
+            if (remainingSpace > 0) {
+                // Write into the remaining space so all log chunk files are same size
+                Buffer buffer = Buffer.buffer(new byte[remainingSpace]);
+                append0(buffer.length(), buffer);
+            }
             // Move to next file
             if (nextWriteFile != null) {
+                log.trace("Moving to next log file");
                 currWriteFile = nextWriteFile;
                 filePos = 0;
                 fileNumber++;
                 nextWriteFile = null;
             } else {
-                log.warn("Eager create of next file too slow");
+                log.warn("Eager create of next file too slow, nextFileCF {}", nextFileCF);
                 checkCreateNextFile();
                 // Next file creation is in progress, just wait for it
                 cf = new CompletableFuture<>();
                 nextFileCF.thenAccept(v -> {
+                    log.trace("Next file cf completed");
                     // When complete just call append again
                     CompletableFuture<Long> again = append(obj);
                     again.handle((pos, t) -> {
@@ -139,23 +172,50 @@ public class FileLog implements Log {
     }
 
     @Override
-    public void close() {
+    public synchronized CompletableFuture<Void> close() {
+        CompletableFuture<Void> ret;
         if (currWriteFile != null) {
-            currWriteFile.close();
+            ret = currWriteFile.close();
+        } else {
+            ret = CompletableFuture.completedFuture(null);
         }
+        saveInfo(true);
+        currWriteFile = null;
+        nextWriteFile = null;
+        nextFileCF = null;
+        fileNumber = 0;
+        filePos = 0;
+        headPos = 0;
+        return ret;
+    }
+
+    @Override
+    public synchronized int getFileNumber() {
+        return fileNumber;
+    }
+
+    @Override
+    public synchronized long getHeadPos() {
+        return headPos;
+    }
+
+    @Override
+    public synchronized int getFilePos() {
+        return filePos;
     }
 
     private CompletableFuture<Long> append0(int len, Buffer record) {
         int writePos = filePos;
+        long overallWritePos = headPos;
         filePos += len;
-        pos += len;
-        return currWriteFile.append(record, writePos).thenApply(v -> (long)pos);
+        headPos += len;
+        return currWriteFile.append(record, writePos).thenApply(v -> overallWritePos);
     }
 
     private void saveInfo(boolean shutdown) {
         BsonObject info = new BsonObject();
         info.put("fileNumber", fileNumber);
-        info.put("headPos", pos);
+        info.put("headPos", headPos);
         info.put("fileHeadPos", filePos);
         info.put("shutdown", shutdown);
         saveFileInfo(info);
@@ -164,21 +224,38 @@ public class FileLog implements Log {
     private void loadInfo() {
         BsonObject info = loadFileInfo();
         if (info != null) {
-            Integer fNumber = info.getInteger("fileNumber");
-            if (fNumber == null) {
-                throw new MewException("Invalid log info file, no fileNumber");
+            try {
+                Integer fNumber = info.getInteger("fileNumber");
+                if (fNumber == null) {
+                    throw new MewException("Invalid log info file, no fileNumber");
+                }
+                if (fNumber < 0){
+                    throw new MewException("Invalid log info file, negative fileNumber");
+                }
+                this.fileNumber = fNumber;
+                Integer hPos = info.getInteger("headPos");
+                if (hPos == null) {
+                    throw new MewException("Invalid log info file, no headPos");
+                }
+                if (hPos < 0){
+                    throw new MewException("Invalid log info file, negative headPos");
+                }
+                this.headPos = hPos;
+                Integer fhPos = info.getInteger("fileHeadPos");
+                if (fhPos == null) {
+                    throw new MewException("Invalid log info file, no fileHeadPos");
+                }
+                if (fhPos < 0){
+                    throw new MewException("Invalid log info file, negative fileHeadPos");
+                }
+                this.filePos = fhPos;
+                Boolean shutdown = info.getBoolean("shutdown");
+                if (shutdown == null) {
+                    throw new MewException("Invalid log info file, no shutdown");
+                }
+            } catch (ClassCastException e) {
+                throw new MewException("Invalid info file for channel " + channel, e);
             }
-            this.fileNumber = fNumber;
-            Integer hPos = info.getInteger("headPos");
-            if (hPos == null) {
-                throw new MewException("Invalid log info file, no headPos");
-            }
-            this.pos = hPos;
-            Integer fhPos = info.getInteger("fileHeadPos");
-            if (fhPos == null) {
-                throw new MewException("Invalid log info file, no fileHeadPos");
-            }
-            this.filePos = fhPos;
         }
     }
 
@@ -212,91 +289,42 @@ public class FileLog implements Log {
         }
     }
 
+    private File getFile(int fileNumber) {
+        return new File(options.getLogDir(), getFileName(fileNumber));
+    }
+
     private void checkCreateNextFile() {
         // We create a next file when the current file is half written
-        if (nextFileCF == null && nextWriteFile == null && filePos > options.getFileSize() / 2) {
+        if (nextFileCF == null && nextWriteFile == null && filePos > options.getMaxLogChunkSize() / 2) {
             nextFileCF = new CompletableFuture<>();
-            CompletableFuture<Void> cfNext = createAndFillFile(fileNumber + 1);
+            CompletableFuture<Void> cfNext = createAndFillFile(getFileName(fileNumber + 1));
             CompletableFuture<BasicFile> cfBf = cfNext.thenCompose(v -> {
-                File next = fileMap.get(fileNumber + 1);
+                File next = getFile(fileNumber + 1);
                 return faf.openBasicFile(next);
             });
-            cfBf.thenAccept(bf -> {
-                nextWriteFile = bf;
-                nextFileCF = null;
+            cfBf.handle((bf, t) -> {
+               if (t == null) {
+                   nextWriteFile = bf;
+                   nextFileCF.complete(null);
+                   nextFileCF = null;
+               } else {
+                   log.error("Failed to create next file", t);
+               }
+               return null;
             });
         }
     }
 
-    /*
-    List and check all the files in the log dir for the channel
-     */
-    private void checkAndLoadFiles() {
-        File logDir = new File(options.getLogDir());
-        File[] files = logDir.listFiles(file -> {
-            log.trace("Checking file in directory name {}", file);
-            String name = file.getName();
-            int lpos = name.lastIndexOf("-");
-            if (name.equals(getLogInfoFileName())) {
-                return false;
-            }
-            if (lpos == -1) {
-                log.warn("Unexpected file in log dir: " + file);
-                return false;
-            } else {
-                String chName = name.substring(0, lpos);
-                int num = Integer.valueOf(name.substring(lpos + 1, name.length() - 4));
-                boolean matches = chName.equals(channel);
-                if (matches) {
-                    fileMap.put(num, file);
-                }
-                return matches;
-            }
-        });
-        if (files == null) {
-            throw new MewException("Failed to list files in dir {}", logDir.toString());
-        }
-
-        log.trace("There are {} files in {} for channel {}", files.length, logDir, channel);
-
-        for (File f : files) {
-            // Check files all correct size
-            // TODO cope with files of different sizes in case users want to change settings after creation
-            if (f.length() != options.getFileSize()) {
-                throw new MewException("Log file " + f + " not expected size of " + options.getFileSize());
-            }
-        }
-
-        for (int i = 0; i < fileMap.size(); i++) {
-            // Check file names are contiguous
-            String fname = getFileName(i);
-            if (!fileMap.containsKey(i)) {
-                throw new MewException("Log files not in expected sequence, can't find " + fname);
-            }
-        }
-    }
-
-
-    private String getFileName(int i) {
-        return channel + "-" + i + ".log";
-    }
-
-    private String getLogInfoFileName() {
-        return channel + LOG_INFO_FILE_TAIL;
-    }
-
-    private CompletableFuture<Void> createAndFillFile(int fn) {
+    private CompletableFuture<Void> createAndFillFile(String fileName) {
         AsyncResCF<Void> cf = new AsyncResCF<>();
-        File next =  new File(options.getLogDir(), getFileName(fn));
+        File next =  new File(options.getLogDir(), fileName);
         vertx.executeBlocking(fut -> {
-            createAndFillFileBlocking(next, options.getFileSize());
+            createAndFillFileBlocking(next, options.getPreallocateSize());
             fut.complete(null);
         }, false, cf);
-        fileMap.put(fn, next);
         return cf;
     }
 
-    // files need to be preallocated for best performance
     private void createAndFillFileBlocking(File file, int size) {
         log.trace("Creating log file {} with size {}", file, size);
         ByteBuffer buff = ByteBuffer.allocate(MAX_CREATE_BUFF_SIZE);
@@ -318,7 +346,65 @@ public class FileLog implements Log {
         } catch (Exception e) {
             throw new MewException("Failed to create log file", e);
         }
-        log.trace("Created log file {} with size {}", file, size);
+        log.trace("Created log file {}", file);
+    }
+
+    /*
+    List and check all the files in the log dir for the channel
+     */
+    private void checkAndLoadFiles() {
+        Map<Integer, File> fileMap = new HashMap<>();
+        File logDir = new File(options.getLogDir());
+        File[] files = logDir.listFiles(file -> {
+            String name = file.getName();
+            int lpos = name.lastIndexOf("-");
+            if (name.endsWith(LOG_INFO_FILE_TAIL)) {
+                return false;
+            }
+            if (lpos == -1) {
+                log.warn("Unexpected file in log dir: " + file);
+                return false;
+            } else {
+                String chName = name.substring(0, lpos);
+                int num = Integer.valueOf(name.substring(lpos + 1, name.length() - 4));
+                boolean matches = chName.equals(channel);
+                if (matches) {
+                    fileMap.put(num, file);
+                }
+                return matches;
+            }
+        });
+        if (files == null) {
+            throw new MewException("Failed to list files in dir {}", logDir.toString());
+        }
+
+        Arrays.sort(files, (f1, f2) -> f1.compareTo(f2));
+        // All files before the head file must be right size
+        // TODO test this
+        for (int i = 0; i < files.length; i++) {
+            if (i < fileNumber && options.getMaxLogChunkSize() != files[i].length()) {
+                throw new MewException("File unexpected size: " + files[i]);
+            }
+        }
+
+        log.trace("There are {} files in {} for channel {}", files.length, logDir, channel);
+
+        for (int i = 0; i < fileMap.size(); i++) {
+            // Check file names are contiguous
+            String fname = getFileName(i);
+            if (!fileMap.containsKey(i)) {
+                throw new MewException("Log files not in expected sequence, can't find " + fname);
+            }
+        }
+    }
+
+
+    private String getFileName(int i) {
+        return channel + "-" + i + ".log";
+    }
+
+    private String getLogInfoFileName() {
+        return channel + LOG_INFO_FILE_TAIL;
     }
 
     private static final class QueueEntry {
@@ -335,7 +421,8 @@ public class FileLog implements Log {
 
         private static final int READ_BUFFER_SIZE = 4 * 1024;
 
-        private final BasicFile fa;
+        private BasicFile fa;
+        private int streamFileNumber;
         private int readPos; // TODO should be long?
         private int receivedPos; // TODO should be long?
         private int size = -1;
@@ -395,12 +482,12 @@ public class FileLog implements Log {
         }
 
         @Override
-        public void pause() {
+        public synchronized void pause() {
             paused = true;
         }
 
         @Override
-        public void resume() {
+        public synchronized void resume() {
             paused = false;
             while (!paused) {
                 QueueEntry entry = queue.poll();
@@ -423,13 +510,39 @@ public class FileLog implements Log {
         private void doRead() {
             Buffer readBuff = Buffer.buffer(READ_BUFFER_SIZE);
             CompletableFuture<Void> cf = fa.read(readBuff, READ_BUFFER_SIZE, readPos);
-            readPos += READ_BUFFER_SIZE;
             cf.handle((v, t) -> {
                 if (t == null) {
                     log.trace("Passing buffer length {} to parser", readBuff);
-                    parser.handle(readBuff);
-                    if (!paused) {
-                        faf.scheduleOp(this::doRead);
+                    if (readBuff.length() > 0) {
+                        parser.handle(readBuff);
+                    }
+                    if (readBuff.length() < READ_BUFFER_SIZE) {
+                        // Move to next file
+
+                        // TODO thread safety
+                        if (streamFileNumber < fileNumber) {
+                            streamFileNumber++;
+                            if (streamFileNumber == fileNumber) {
+                                // TODO careful about last record
+                            } else {
+                                fa.close();
+                                CompletableFuture<BasicFile> cfOpen =
+                                        faf.openBasicFile(new File(options.getLogDir(), getFileName(streamFileNumber)));
+                                cfOpen.handle((bf, t2) -> {
+                                   if (t2 != null) {
+                                       log.error("Failed to open file", t2);
+                                   } else {
+                                       fa = bf;
+                                   }
+                                   return null;
+                                });
+                            }
+                        }
+                    } else {
+                        readPos += readBuff.length();
+                        if (!paused) {
+                            faf.scheduleOp(this::doRead);
+                        }
                     }
                 } else {
                     handleException(t);

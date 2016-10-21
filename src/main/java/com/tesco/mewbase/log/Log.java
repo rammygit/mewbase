@@ -16,5 +16,11 @@ public interface Log {
 
     CompletableFuture<Void> start();
 
-    void close();
+    CompletableFuture<Void> close();
+
+    int getFileNumber();
+
+    long getHeadPos();
+
+    int getFilePos();
 }

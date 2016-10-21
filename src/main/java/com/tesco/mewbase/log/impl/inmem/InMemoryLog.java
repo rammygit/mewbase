@@ -41,7 +41,8 @@ public class InMemoryLog implements Log {
     }
 
     @Override
-    public void close() {
+    public CompletableFuture<Void> close() {
+        return CompletableFuture.completedFuture(null);
     }
 
     @Override
@@ -49,6 +50,21 @@ public class InMemoryLog implements Log {
         CompletableFuture<ReadStream> cf = new CompletableFuture<>();
         cf.complete(new InMemoryReadStream(new ElemIterator(log, (int)pos)));
         return cf;
+    }
+
+    @Override
+    public synchronized int getFileNumber() {
+        return 0;
+    }
+
+    @Override
+    public synchronized long getHeadPos() {
+        return headPos;
+    }
+
+    @Override
+    public synchronized int getFilePos() {
+        return (int)headPos;
     }
 
     private static final class ElemIterator implements Iterator<QueueEntry> {

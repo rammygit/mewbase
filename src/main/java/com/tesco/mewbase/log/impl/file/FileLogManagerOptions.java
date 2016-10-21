@@ -6,12 +6,14 @@ package com.tesco.mewbase.log.impl.file;
 public class FileLogManagerOptions {
 
     public static final String DEFAULT_LOG_DIR = "mewlog";
-    public static final int DEFAULT_FILE_SIZE = 4 * 10 * 1024 * 1024;
-    public static final int DEFAULT_PREALLOCATE_NUMBER = 2;
+    public static final int DEFAULT_MAX_LOG_CHUNK_SIZE = 4 * 10 * 1024 * 1024;
+    public static final int DEFAULT_PREALLOCATE_SIZE = 0;
+    public static final int DEFAULT_MAX_RECORD_SIZE = 4 * 1024 * 1024;
 
     private String logDir = DEFAULT_LOG_DIR;
-    private int fileSize = DEFAULT_FILE_SIZE;
-    private int preallocateNumber = DEFAULT_PREALLOCATE_NUMBER;
+    private int maxLogChunkSize = DEFAULT_MAX_LOG_CHUNK_SIZE;
+    private int preallocateSize = DEFAULT_PREALLOCATE_SIZE;
+    private int maxRecordSize = DEFAULT_MAX_RECORD_SIZE;
 
     public String getLogDir() {
         return logDir;
@@ -22,21 +24,30 @@ public class FileLogManagerOptions {
         return this;
     }
 
-    public int getFileSize() {
-        return fileSize;
+    public int getMaxLogChunkSize() {
+        return maxLogChunkSize;
     }
 
-    public FileLogManagerOptions setFileSize(int fileSize) {
-        this.fileSize = fileSize;
+    public FileLogManagerOptions setMaxLogChunkSize(int maxLogChunkSize) {
+        this.maxLogChunkSize = maxLogChunkSize;
         return this;
     }
 
-    public int getPreallocateNumber() {
-        return preallocateNumber;
+    public int getMaxRecordSize() {
+        return maxRecordSize;
     }
 
-    public FileLogManagerOptions setPreallocateNumber(int preallocateNumber) {
-        this.preallocateNumber = preallocateNumber;
+    public FileLogManagerOptions setMaxRecordSize(int maxRecordSize) {
+        this.maxRecordSize = maxRecordSize;
+        return this;
+    }
+
+    public int getPreallocateSize() {
+        return preallocateSize;
+    }
+
+    public FileLogManagerOptions setPreallocateSize(int preallocateSize) {
+        this.preallocateSize = preallocateSize;
         return this;
     }
 }
