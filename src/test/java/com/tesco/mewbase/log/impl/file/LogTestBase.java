@@ -173,6 +173,16 @@ public class LogTestBase {
         assertEquals(length, file.length());
     }
 
+    protected void assertLogChunkLengthAsync(TestContext testContext, int fileNumber, long length) {
+        File file = new File(logDir, getLogFileName(TEST_CHANNEL_1, fileNumber));
+        testContext.assertEquals(length, file.length());
+    }
+
+    protected void assertNumFiles(String channel, int expected) {
+        File[] files = listLogFiles(new File(options.getLogDir()), channel);
+        assertEquals(expected, files.length);
+    }
+
     protected void appendObjectsSequentially(int num, Function<Integer, BsonObject> objectFunction) throws Exception {
         for (int i = 0; i < num; i++) {
             log.append(objectFunction.apply(i)).get();

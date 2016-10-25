@@ -2,6 +2,7 @@ package com.tesco.mewbase.log.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.log.Log;
 import io.vertx.core.buffer.Buffer;
 import org.slf4j.Logger;
@@ -43,6 +44,11 @@ public class InMemoryLog implements Log {
     @Override
     public CompletableFuture<Void> close() {
         return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public ReadStream subscribe(SubDescriptor subDescriptor) {
+        return null;
     }
 
     @Override

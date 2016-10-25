@@ -9,7 +9,7 @@ public class SubDescriptor {
 
     private String channel;
     private String durableID;
-    private Long startPos;
+    private long startPos;
     private long startTimestamp;
     private BsonObject matcher;
     private String group;
@@ -32,7 +32,7 @@ public class SubDescriptor {
         return this;
     }
 
-    public Long getStartPos() {
+    public long getStartPos() {
         return startPos;
     }
 
@@ -76,9 +76,9 @@ public class SubDescriptor {
         SubDescriptor that = (SubDescriptor) o;
 
         if (startTimestamp != that.startTimestamp) return false;
+        if (startPos != that.startPos) return false;
         if (durableID != null ? !durableID.equals(that.durableID) : that.durableID != null) return false;
         if (channel != null ? !channel.equals(that.channel) : that.channel != null) return false;
-        if (startPos != null ? !startPos.equals(that.startPos) : that.startPos != null) return false;
         if (matcher != null ? !matcher.equals(that.matcher) : that.matcher != null) return false;
         return group != null ? group.equals(that.group) : that.group == null;
 
@@ -88,7 +88,7 @@ public class SubDescriptor {
     public int hashCode() {
         int result = durableID != null ? durableID.hashCode() : 0;
         result = 31 * result + (channel != null ? channel.hashCode() : 0);
-        result = 31 * result + (startPos != null ? startPos.hashCode() : 0);
+        result = 31 * result + (int) (startPos ^ (startPos >>> 32));
         result = 31 * result + (int) (startTimestamp ^ (startTimestamp >>> 32));
         result = 31 * result + (matcher != null ? matcher.hashCode() : 0);
         result = 31 * result + (group != null ? group.hashCode() : 0);

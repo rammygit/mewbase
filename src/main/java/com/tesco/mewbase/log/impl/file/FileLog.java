@@ -3,10 +3,12 @@ package com.tesco.mewbase.log.impl.file;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.parsetools.RecordParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +54,8 @@ public class FileLog implements Log {
     private int fileNumber; // Number of log file containing current head
     private int filePos;    // Position of head in head file
     private long headPos;   // Overall position of head in log
+    private long lastWrittenPos;  // Position of last safely written record
+
     private CompletableFuture<Void> nextFileCF;
 
     public FileLog(Vertx vertx, FileAccessManager faf, FileLogManagerOptions options, String channel) {
@@ -108,12 +112,27 @@ public class FileLog implements Log {
         });
     }
 
+    private Set<SubHolder> subHolders = new ConcurrentHashSet<>();
+
+    @Override
+    public ReadStream subscribe(SubDescriptor subDescriptor) {
+        SubHolder holder = new SubHolder(this, subDescriptor, lastWrittenPos, subDescriptor.getStartPos(),
+                options.getReadBufferSize(), options.getMaxLogChunkSize());
+        subHolders.add(holder);
+        return holder;
+    }
+
+    void removeSubHolder(SubHolder holder) {
+        subHolders.remove(holder);
+    }
+
     @Override
     public CompletableFuture<ReadStream> openReadStream(long pos) {
-        // TODO limit number of open streams to avoid exhausting file handles
-        // TODO pos
-        File file = getFile(0);
-        return faf.openBasicFile(file).thenApply(bf -> new LogReadStream((int)pos, bf));
+//        // TODO limit number of open streams to avoid exhausting file handles
+//        // TODO pos
+//        File file = getFile(0);
+//        return faf.openBasicFile(file).thenApply(bf -> new LogReadStream((int)pos, bf));
+        return null;
     }
 
     @Override
@@ -127,10 +146,10 @@ public class FileLog implements Log {
 
         CompletableFuture<Long> cf;
 
-        log.trace("in append filePos is {} file size is {}", filePos, options.getMaxLogChunkSize());
+        //log.trace("in append filePos is {} file size is {}", filePos, options.getMaxLogChunkSize());
 
         int remainingSpace = options.getMaxLogChunkSize() - filePos;
-        log.trace("Remaining space is {}", remainingSpace);
+        //log.trace("Remaining space is {}", remainingSpace);
         if (record.length() > remainingSpace) {
             if (remainingSpace > 0) {
                 // Write into the remaining space so all log chunk files are same size
@@ -167,8 +186,54 @@ public class FileLog implements Log {
         }
 
         cf = append0(len, record);
+        cf.thenApply(pos -> {
+            lastWrittenPos = pos;
+            sendToSubs(pos, obj);
+            return pos;
+        });
         checkCreateNextFile();
         return cf;
+    }
+
+    synchronized long getLastWrittenPos() {
+        return lastWrittenPos;
+    }
+
+    static final class FileCoord {
+        final long pos;
+        final int fileMaxSize;
+        final int fileNumber;
+        final int filePos;
+
+        public FileCoord(long pos, int fileMaxSize) {
+            this.pos = pos;
+            this.fileMaxSize = fileMaxSize;
+            this.fileNumber = (int)(pos / fileMaxSize);
+            this.filePos = (int)(pos % fileMaxSize);
+        }
+    }
+
+    FileCoord getCoord(long pos) {
+        return new FileCoord(pos, options.getMaxLogChunkSize());
+    }
+
+    CompletableFuture<BasicFile> openFile(int fileNumber) {
+        File file = new File(options.getLogDir(), getFileName(fileNumber));
+        return faf.openBasicFile(file);
+    }
+
+    void scheduleOp(Runnable runner) {
+        faf.scheduleOp(runner);
+    }
+
+    private void sendToSubs(long pos, BsonObject bsonObject) {
+        for (SubHolder holder: subHolders) {
+            if (holder.matches(bsonObject)) {
+                if (!holder.handle(pos, bsonObject)) {
+                    // TODO could be improved by removing holder from live set when inactive
+                }
+            }
+        }
     }
 
     @Override
@@ -297,6 +362,7 @@ public class FileLog implements Log {
         // We create a next file when the current file is half written
         if (nextFileCF == null && nextWriteFile == null && filePos > options.getMaxLogChunkSize() / 2) {
             nextFileCF = new CompletableFuture<>();
+            log.trace("Creating next file");
             CompletableFuture<Void> cfNext = createAndFillFile(getFileName(fileNumber + 1));
             CompletableFuture<BasicFile> cfBf = cfNext.thenCompose(v -> {
                 File next = getFile(fileNumber + 1);
@@ -417,147 +483,147 @@ public class FileLog implements Log {
         }
     }
 
-    private final class LogReadStream implements ReadStream {
-
-        private static final int READ_BUFFER_SIZE = 4 * 1024;
-
-        private BasicFile fa;
-        private int streamFileNumber;
-        private int readPos; // TODO should be long?
-        private int receivedPos; // TODO should be long?
-        private int size = -1;
-        private RecordParser parser;
-        private BiConsumer<Long, BsonObject> handler;
-        private Consumer<Throwable> exceptionHandler;
-        private Queue<QueueEntry> queue = new LinkedList<>();
-        private boolean paused;
-
-        public LogReadStream(int readPos, BasicFile fa) {
-            this.readPos = readPos;
-            this.fa = fa;
-            parser = RecordParser.newFixed(4, this::handleRec);
-        }
-
-        private void handleRec(Buffer buff) {
-            if (size == -1) {
-                size = buff.getIntLE(0) - 4;
-                log.trace("Size is {}", size);
-                parser.fixedSizeMode(size);
-            } else {
-                //log.trace("Got frame size {}", size);
-                if (size != 0) {
-                    log.trace("Got frame size {}", size);
-                    handleFrame(receivedPos, size, buff);
-                    receivedPos += buff.length() + 4;
-                    parser.fixedSizeMode(4);
-                    size = -1;
-                }
-            }
-        }
-
-        private void handleFrame(int receivedPos, int size, Buffer buffer) {
-            // TODO bit clunky - need to add size back in so it can be decoded, improve this!
-            Buffer buff2 = Buffer.buffer(buffer.length() + 4);
-            buff2.appendIntLE(size + 4).appendBuffer(buffer);
-            BsonObject bson = new BsonObject(buff2);
-            if (handler != null) {
-                if (paused) {
-                    queue.add(new QueueEntry(receivedPos, bson));
-                } else {
-                    handler.accept((long)receivedPos, bson);
-                }
-            } else {
-                log.trace("No handler");
-            }
-        }
-
-        @Override
-        public void exceptionHandler(Consumer<Throwable> handler) {
-            this.exceptionHandler = handler;
-        }
-
-        @Override
-        public void handler(BiConsumer<Long, BsonObject> handler) {
-            this.handler = handler;
-        }
-
-        @Override
-        public synchronized void pause() {
-            paused = true;
-        }
-
-        @Override
-        public synchronized void resume() {
-            paused = false;
-            while (!paused) {
-                QueueEntry entry = queue.poll();
-                if (entry == null) {
-                    break;
-                }
-                handler.accept((long)entry.receivedPos, entry.bson);
-            }
-            if (!paused) {
-                doRead();
-            }
-        }
-
-        @Override
-        public void close() {
-            paused = true;
-            fa.close();
-        }
-
-        private void doRead() {
-            Buffer readBuff = Buffer.buffer(READ_BUFFER_SIZE);
-            CompletableFuture<Void> cf = fa.read(readBuff, READ_BUFFER_SIZE, readPos);
-            cf.handle((v, t) -> {
-                if (t == null) {
-                    log.trace("Passing buffer length {} to parser", readBuff);
-                    if (readBuff.length() > 0) {
-                        parser.handle(readBuff);
-                    }
-                    if (readBuff.length() < READ_BUFFER_SIZE) {
-                        // Move to next file
-
-                        // TODO thread safety
-                        if (streamFileNumber < fileNumber) {
-                            streamFileNumber++;
-                            if (streamFileNumber == fileNumber) {
-                                // TODO careful about last record
-                            } else {
-                                fa.close();
-                                CompletableFuture<BasicFile> cfOpen =
-                                        faf.openBasicFile(new File(options.getLogDir(), getFileName(streamFileNumber)));
-                                cfOpen.handle((bf, t2) -> {
-                                   if (t2 != null) {
-                                       log.error("Failed to open file", t2);
-                                   } else {
-                                       fa = bf;
-                                   }
-                                   return null;
-                                });
-                            }
-                        }
-                    } else {
-                        readPos += readBuff.length();
-                        if (!paused) {
-                            faf.scheduleOp(this::doRead);
-                        }
-                    }
-                } else {
-                    handleException(t);
-                }
-                return null;
-            });
-        }
-
-        private void handleException(Throwable t) {
-            if (exceptionHandler != null) {
-                exceptionHandler.accept(t);
-            } else {
-                log.error("Failed to read", t);
-            }
-        }
-    }
+//    private final class LogReadStream implements ReadStream {
+//
+//        private static final int READ_BUFFER_SIZE = 4 * 1024;
+//
+//        private BasicFile fa;
+//        private int streamFileNumber;
+//        private int readPos; // TODO should be long?
+//        private int receivedPos; // TODO should be long?
+//        private int size = -1;
+//        private RecordParser parser;
+//        private BiConsumer<Long, BsonObject> handler;
+//        private Consumer<Throwable> exceptionHandler;
+//        private Queue<QueueEntry> queue = new LinkedList<>();
+//        private boolean paused;
+//
+//        public LogReadStream(int readPos, BasicFile fa) {
+//            this.readPos = readPos;
+//            this.fa = fa;
+//            parser = RecordParser.newFixed(4, this::handleRec);
+//        }
+//
+//        private void handleRec(Buffer buff) {
+//            if (size == -1) {
+//                size = buff.getIntLE(0) - 4;
+//                log.trace("Size is {}", size);
+//                parser.fixedSizeMode(size);
+//            } else {
+//                //log.trace("Got frame size {}", size);
+//                if (size != 0) {
+//                    log.trace("Got frame size {}", size);
+//                    handleFrame(receivedPos, size, buff);
+//                    receivedPos += buff.length() + 4;
+//                    parser.fixedSizeMode(4);
+//                    size = -1;
+//                }
+//            }
+//        }
+//
+//        private void handleFrame(int receivedPos, int size, Buffer buffer) {
+//            // TODO bit clunky - need to add size back in so it can be decoded, improve this!
+//            Buffer buff2 = Buffer.buffer(buffer.length() + 4);
+//            buff2.appendIntLE(size + 4).appendBuffer(buffer);
+//            BsonObject bson = new BsonObject(buff2);
+//            if (handler != null) {
+//                if (paused) {
+//                    queue.add(new QueueEntry(receivedPos, bson));
+//                } else {
+//                    handler.accept((long)receivedPos, bson);
+//                }
+//            } else {
+//                log.trace("No handler");
+//            }
+//        }
+//
+//        @Override
+//        public void exceptionHandler(Consumer<Throwable> handler) {
+//            this.exceptionHandler = handler;
+//        }
+//
+//        @Override
+//        public void handler(BiConsumer<Long, BsonObject> handler) {
+//            this.handler = handler;
+//        }
+//
+//        @Override
+//        public synchronized void pause() {
+//            paused = true;
+//        }
+//
+//        @Override
+//        public synchronized void resume() {
+//            paused = false;
+//            while (!paused) {
+//                QueueEntry entry = queue.poll();
+//                if (entry == null) {
+//                    break;
+//                }
+//                handler.accept((long)entry.receivedPos, entry.bson);
+//            }
+//            if (!paused) {
+//                doRead();
+//            }
+//        }
+//
+//        @Override
+//        public void close() {
+//            paused = true;
+//            fa.close();
+//        }
+//
+//        private void doRead() {
+//            Buffer readBuff = Buffer.buffer(READ_BUFFER_SIZE);
+//            CompletableFuture<Void> cf = fa.read(readBuff, READ_BUFFER_SIZE, readPos);
+//            cf.handle((v, t) -> {
+//                if (t == null) {
+//                    log.trace("Passing buffer length {} to parser", readBuff);
+//                    if (readBuff.length() > 0) {
+//                        parser.handle(readBuff);
+//                    }
+//                    if (readBuff.length() < READ_BUFFER_SIZE) {
+//                        // Move to next file
+//
+//                        // TODO thread safety
+//                        if (streamFileNumber < fileNumber) {
+//                            streamFileNumber++;
+//                            if (streamFileNumber == fileNumber) {
+//                                // TODO careful about last record
+//                            } else {
+//                                fa.close();
+//                                CompletableFuture<BasicFile> cfOpen =
+//                                        faf.openBasicFile(new File(options.getLogDir(), getFileName(streamFileNumber)));
+//                                cfOpen.handle((bf, t2) -> {
+//                                   if (t2 != null) {
+//                                       log.error("Failed to open file", t2);
+//                                   } else {
+//                                       fa = bf;
+//                                   }
+//                                   return null;
+//                                });
+//                            }
+//                        }
+//                    } else {
+//                        readPos += readBuff.length();
+//                        if (!paused) {
+//                            faf.scheduleOp(this::doRead);
+//                        }
+//                    }
+//                } else {
+//                    handleException(t);
+//                }
+//                return null;
+//            });
+//        }
+//
+//        private void handleException(Throwable t) {
+//            if (exceptionHandler != null) {
+//                exceptionHandler.accept(t);
+//            } else {
+//                log.error("Failed to read", t);
+//            }
+//        }
+//    }
 
 }
