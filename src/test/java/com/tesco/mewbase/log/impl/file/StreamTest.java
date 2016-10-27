@@ -7,19 +7,25 @@ import com.tesco.mewbase.log.impl.file.faf.af.AsyncFileFileAccessManager;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Repeat;
+import io.vertx.ext.unit.junit.RepeatRule;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Created by tim on 08/10/16.
@@ -29,53 +35,12 @@ public class StreamTest extends LogTestBase {
 
     private final static Logger logger = LoggerFactory.getLogger(StreamTest.class);
 
-//    @Test
-//    public void test_stream_defaults(TestContext testContext) throws Exception {
-//        test_stream(testContext, 100, FileLogManagerOptions.DEFAULT_MAX_LOG_CHUNK_SIZE,
-//                FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE, FileLogManagerOptions.DEFAULT_MAX_RECORD_SIZE);
-//    }
-
-    /*
-
-    Test retro:
-
-    Test no prealloc:
-
-    all in one file (much less than max file chunk size)
-    all in one file (exactly equal to mfcs)
-    all in one file (little bit of empty space at end of file)
-
-    two files - filling first file exactly
-    two files - filling first file with some empty space at end
-    two files - filling two files exactly
-    two files - filling both files with some space at end
-
-    three files
-
-    test pause/resume
-
-    test start at non zero pos
-
-    test start at -ve pos -> fail
-    test start at too big pos -> fail
-    test start at invalid pos (middle of object) -> fail
-
-
-    test active, position pos at head and assert new messages are received
-
-    test move from retro to active
-
-    test pause/resume when active - no msgs delivered in interim
-    test pause/resume when active - msgs delivered in interim - switch back to retro then catch up again
-
-
-    test multiple subs on same channel
-
-     */
-
     private BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
     private int objLen = obj.encode().length();
     private int numObjects = 100;
+
+    @Rule
+    public RepeatRule repeatRule = new RepeatRule();
 
     @Test
     public void test_stream_single_file_less_than_max_file_size(TestContext testContext) throws Exception {
@@ -176,24 +141,33 @@ public class StreamTest extends LogTestBase {
     }
 
     protected void test_stream(TestContext testContext, int numObjects, int maxLogChunkSize, int readBuffersize,
-                               int maxRecordSize, int expectedEndFile, int expectedEndFileLength, int objLen)
+                               int maxRecordSize, int expectedEndFile, int expectedEndFileLength, int objLen) throws Exception {
+        test_stream(testContext, numObjects, numObjects, maxLogChunkSize, readBuffersize, maxRecordSize, expectedEndFile, expectedEndFileLength,
+                    objLen, 0);
+    }
+
+    protected void test_stream(TestContext testContext, int numAppendObjects, int numReadObjects, int maxLogChunkSize, int readBuffersize,
+                               int maxRecordSize, int expectedEndFile, int expectedEndFileLength, int objLen,
+                               long startPos)
             throws Exception {
         options = new FileLogManagerOptions().setMaxLogChunkSize(maxLogChunkSize).
                 setReadBufferSize(readBuffersize).setMaxRecordSize(maxRecordSize).setLogDir(logDir.getPath());
         startLog();
 
         BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
-        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
+        appendObjectsSequentially(numAppendObjects, i -> obj.copy().put("num", i));
 
-        ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1));
+
         Async async = testContext.async();
         AtomicInteger cnt = new AtomicInteger();
+        int offset = numAppendObjects - numReadObjects;
+        ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(startPos));
         rs.handler((pos, record) -> {
             testContext.assertEquals("bar", record.getString("foo"));
-            testContext.assertEquals(cnt.get(), record.getInteger("num"));
-            long expectedPos = calcPos(cnt.get(), maxLogChunkSize, objLen);
+            testContext.assertEquals(cnt.get() + offset, record.getInteger("num"));
+            long expectedPos = calcPos(cnt.get() + offset, maxLogChunkSize, objLen);
             testContext.assertEquals(expectedPos, (long)pos);
-            if (cnt.incrementAndGet() == numObjects) {
+            if (cnt.incrementAndGet() == numReadObjects) {
                 rs.close();
                 testContext.assertEquals(expectedEndFile, log.getFileNumber());
                 // Check the lengths of the files
@@ -211,9 +185,13 @@ public class StreamTest extends LogTestBase {
                 async.complete();
             }
         });
+        rs.start();
     }
 
+
+
     @Test
+    //@Repeat(value = 1000)
     public void test_pause_resume_in_retro(TestContext testContext) throws Exception {
         int fileSize = objLen * 20;
         options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
@@ -222,7 +200,7 @@ public class StreamTest extends LogTestBase {
         BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
         appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
 
-        ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1));
+        SubHolder rs = (SubHolder)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1));
         Async async = testContext.async();
         AtomicInteger cnt = new AtomicInteger();
         AtomicBoolean paused = new AtomicBoolean();
@@ -246,14 +224,225 @@ public class StreamTest extends LogTestBase {
                 });
             }
         });
+        rs.start();
     }
+
+    @Test
+    public void test_stream_from_non_zero_position(TestContext testContext) throws Exception {
+        int fileSize = objLen * numObjects / 5 + objLen / 2;
+        long startPos = calcPos(50, fileSize, objLen);
+        test_stream(testContext, 100, 50, fileSize, objLen - 1, objLen,
+                4, objLen * numObjects / 5, objLen, startPos);
+    }
+
+    @Test
+    public void test_stream_from_negative_position(TestContext testContext) throws Exception {
+        int fileSize = objLen * 20;
+        options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
+                setReadBufferSize(FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE).setMaxRecordSize(objLen).setLogDir(logDir.getPath());
+        startLog();
+        BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
+
+        try {
+            ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-2));
+            fail("Should throw exception");
+        } catch (IllegalArgumentException e) {
+            // OK
+        }
+    }
+
+    @Test
+    public void test_stream_from_past_head(TestContext testContext) throws Exception {
+        int fileSize = objLen * 20;
+        options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
+                setReadBufferSize(FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE).setMaxRecordSize(objLen).setLogDir(logDir.getPath());
+        startLog();
+        BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
+
+        try {
+            ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog)log).getLastWrittenPos() + 1));
+            fail("Should throw exception");
+        } catch (IllegalArgumentException e) {
+            // OK
+        }
+    }
+
+    @Test
+    //@Repeat(value = 10000)
+    public void test_stream_from_last_written(TestContext testContext) throws Exception {
+        int fileSize = objLen * numObjects + 10;
+        options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
+                setReadBufferSize(FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE).setMaxRecordSize(objLen).setLogDir(logDir.getPath());
+        startLog();
+        BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
+
+        ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog)log).getLastWrittenPos()));
+
+        Async async1 = testContext.async();
+        Async async2 = testContext.async();
+        AtomicInteger cnt = new AtomicInteger(numObjects - 1);
+        rs.handler((pos, record) -> {
+            testContext.assertEquals("bar", record.getString("foo"));
+            int currCount = cnt.get();
+            if (currCount == numObjects -1) {
+                async1.complete();
+            }
+            testContext.assertEquals(currCount, record.getInteger("num"));
+            long expectedPos = calcPos(currCount, fileSize, objLen);
+            testContext.assertEquals(expectedPos, (long)pos);
+            if (cnt.incrementAndGet() == numObjects * 2) {
+                rs.close();
+                async2.complete();
+            }
+        });
+        rs.start();
+
+        // Append some more after the head has been consumed - log will then switch into live mode
+
+        async1.await();
+
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i + numObjects));
+    }
+
+    @Test
+    public void test_stream_active_from_zero(TestContext testContext) throws Exception {
+        int fileSize = objLen * numObjects + 10;
+        options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
+                setReadBufferSize(FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE).setMaxRecordSize(objLen).setLogDir(logDir.getPath());
+        startLog();
+        BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
+
+        SubHolder rs = (SubHolder)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-1));
+
+        Async async = testContext.async();
+        AtomicInteger cnt = new AtomicInteger();
+        rs.handler((pos, record) -> {
+            testContext.assertEquals("bar", record.getString("foo"));
+            int currCount = cnt.get();
+            testContext.assertEquals(currCount, record.getInteger("num"));
+            long expectedPos = calcPos(currCount, fileSize, objLen);
+            testContext.assertEquals(expectedPos, (long)pos);
+            testContext.assertFalse(rs.isRetro());
+            if (cnt.incrementAndGet() == numObjects) {
+                rs.close();
+                async.complete();
+            }
+        });
+        rs.start();
+
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
+    }
+
+    @Test
+    public void test_pause_resume_active_retro_active(TestContext testContext) throws Exception {
+        int fileSize = objLen * numObjects + 10;
+        options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
+                setReadBufferSize(FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE).setMaxRecordSize(objLen).setLogDir(logDir.getPath());
+        startLog();
+        BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
+
+        SubHolder rs = (SubHolder)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-1));
+
+        Async async1 = testContext.async();
+        Async async2 = testContext.async();
+        AtomicInteger cnt = new AtomicInteger();
+        testContext.assertFalse(rs.isRetro());
+        rs.handler((pos, record) -> {
+            testContext.assertEquals("bar", record.getString("foo"));
+            int currCount = cnt.get();
+            if (currCount == numObjects / 2 - 1) {
+                // When received half the messages pause then resume after a few ms,
+                //log will then be in retro mode
+                testContext.assertFalse(rs.isRetro());
+                rs.pause();
+                vertx.setTimer(10, tid -> {
+                    rs.resume();
+                    testContext.assertTrue(rs.isRetro());
+                });
+            }
+            testContext.assertEquals(currCount, record.getInteger("num"));
+            long expectedPos = calcPos(currCount, fileSize, objLen);
+            testContext.assertEquals(expectedPos, (long)pos);
+            if (cnt.incrementAndGet() == numObjects) {
+                async1.complete();
+            }
+            if (cnt.get() == numObjects * 2) {
+                testContext.assertFalse(rs.isRetro());
+                rs.close();
+                async2.complete();
+            }
+        });
+        rs.start();
+
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
+
+        async1.await();
+
+        // Now send some more messages - sub should be active again
+
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i + numObjects));
+    }
+
+    @Test
+    public void test_pause_resume_active_active(TestContext testContext) throws Exception {
+        int fileSize = objLen * numObjects + 10;
+        options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
+                setReadBufferSize(FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE).setMaxRecordSize(objLen).setLogDir(logDir.getPath());
+        startLog();
+        BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
+
+        SubHolder rs = (SubHolder)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-1));
+
+        testContext.assertFalse(rs.isRetro());
+
+        Async async1 = testContext.async();
+        Async async2 = testContext.async();
+        AtomicInteger cnt = new AtomicInteger();
+        rs.handler((pos, record) -> {
+            testContext.assertEquals("bar", record.getString("foo"));
+            int currCount = cnt.get();
+
+            testContext.assertEquals(currCount, record.getInteger("num"));
+            long expectedPos = calcPos(currCount, fileSize, objLen);
+            testContext.assertEquals(expectedPos, (long)pos);
+            testContext.assertFalse(rs.isRetro());
+            if (cnt.incrementAndGet() == numObjects) {
+                // Pause then resume. Don't emit any more messages when paused so consumer stays
+                // active
+                rs.pause();
+                vertx.setTimer(10, tid -> {
+                    rs.resume();
+                    testContext.assertFalse(rs.isRetro());
+                    async1.complete();
+                });
+
+            }
+            if (cnt.get() == numObjects * 2) {
+                testContext.assertFalse(rs.isRetro());
+                rs.close();
+                async2.complete();
+            }
+        });
+        rs.start();
+
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
+
+        async1.await();
+
+        // Now send some more messages - should stay active
+
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i + numObjects));
+
+    }
+
 
     /*
     Calculate the apend position of the nth object to be appended to the log, n starts at zero
      */
     protected long calcPos(int nth, int maxLogChunkSize, int objLength) {
-
-        logger.trace("calculating pos for n {}  mlcs {} ol {}", nth, maxLogChunkSize, objLength);
 
         int pos = 0;
         int filePos = 0;
@@ -268,41 +457,47 @@ public class StreamTest extends LogTestBase {
             }
         }
 
-        logger.trace("Pos is {}", pos);
-
-
         return pos;
     }
 
-//    @Test
-//    public void test_stream_multiple_files(TestContext testContext) throws Exception {
-//
-//        BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
-//        int length = obj.encode().length();
-//        int numObjects = 100;
-//        options = getOptions().setMaxLogChunkSize(length * (numObjects - 1)).setMaxRecordSize(length + 1);
-//        startLog();
-//        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
-//        assertExists(0);
-//        assertLogChunkLength(0, options.getMaxLogChunkSize());
-//        assertExists(1);
-//        assertLogChunkLength(1, length);
-//
-//        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
-//        CompletableFuture<ReadStream> cf = log.openReadStream(0);
-//        ReadStream rs = cf.get();
-//        Async async = testContext.async();
-//        AtomicInteger cnt = new AtomicInteger();
-//        rs.handler((pos, record) -> {
-//            testContext.assertEquals("bar", record.getString("foo"));
-//            testContext.assertEquals(cnt.get(), record.getInteger("num"));
-//            if (cnt.incrementAndGet() == numObjects) {
-//                rs.close();
-//                async.complete();
-//            }
-//        });
-//        rs.resume();
-//    }
+    @Test
+    //@Repeat(value = 10000)
+    public void test_stream_multiple(TestContext testContext) throws Exception {
+
+        int fileSize = objLen * numObjects / 5 + objLen / 2;
+        options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
+                setReadBufferSize(FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE).setMaxRecordSize(objLen).setLogDir(logDir.getPath());
+        startLog();
+        BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
+
+        appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
+
+        SubHolder rs1 = (SubHolder)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(0));
+        SubHolder rs2 = (SubHolder)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(0));
+
+        CountDownLatch latch = new CountDownLatch(2);
+
+        handleRecords(rs1, testContext, latch, fileSize);
+        handleRecords(rs2, testContext, latch, fileSize);
+
+        latch.await();
+    }
+
+    private void handleRecords(SubHolder rs, TestContext testContext, CountDownLatch latch, int fileSize) {
+        AtomicInteger cnt = new AtomicInteger();
+        rs.handler((pos, record) -> {
+            testContext.assertEquals("bar", record.getString("foo"));
+            int currCount = cnt.get();
+            testContext.assertEquals(currCount, record.getInteger("num"));
+            long expectedPos = calcPos(currCount, fileSize, objLen);
+            testContext.assertEquals(expectedPos, (long)pos);
+            if (cnt.incrementAndGet() == numObjects) {
+                rs.close();
+                latch.countDown();
+            }
+        });
+        rs.start();
+    }
 
 
 }

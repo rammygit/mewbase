@@ -53,6 +53,10 @@ public class InMemoryReadStream implements ReadStream {
     @Override
     public void handler(BiConsumer<Long, BsonObject> handler) {
         this.handler = handler;
+    }
+
+    @Override
+    public void start() {
         deliverOnContext();
     }
 

@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -48,13 +49,14 @@ public class FileLog implements Log {
     private final FileAccessManager faf;
     private final String channel;
     private final FileLogManagerOptions options;
+    private final Set<SubHolder> subHolders = new ConcurrentHashSet<>();
 
     private BasicFile currWriteFile;
     private BasicFile nextWriteFile;
     private int fileNumber; // Number of log file containing current head
     private int filePos;    // Position of head in head file
     private long headPos;   // Overall position of head in log
-    private long lastWrittenPos;  // Position of last safely written record
+    private AtomicLong lastWrittenPos = new AtomicLong();  // Position of last safely written record
 
     private CompletableFuture<Void> nextFileCF;
 
@@ -112,18 +114,24 @@ public class FileLog implements Log {
         });
     }
 
-    private Set<SubHolder> subHolders = new ConcurrentHashSet<>();
-
     @Override
-    public ReadStream subscribe(SubDescriptor subDescriptor) {
-        SubHolder holder = new SubHolder(this, subDescriptor, lastWrittenPos, subDescriptor.getStartPos(),
+    public synchronized ReadStream subscribe(SubDescriptor subDescriptor) {
+        if (subDescriptor.getStartPos() < -1) {
+            throw new IllegalArgumentException("startPos must be >= -1");
+        }
+        if (subDescriptor.getStartPos() > getLastWrittenPos()) {
+            throw new IllegalArgumentException("startPos cannot be past head");
+        }
+        return new SubHolder(this, subDescriptor,
                 options.getReadBufferSize(), options.getMaxLogChunkSize());
-        subHolders.add(holder);
-        return holder;
     }
 
     void removeSubHolder(SubHolder holder) {
         subHolders.remove(holder);
+    }
+
+    void readdSubHolder(SubHolder holder) {
+        subHolders.add(holder);
     }
 
     @Override
@@ -146,10 +154,7 @@ public class FileLog implements Log {
 
         CompletableFuture<Long> cf;
 
-        //log.trace("in append filePos is {} file size is {}", filePos, options.getMaxLogChunkSize());
-
         int remainingSpace = options.getMaxLogChunkSize() - filePos;
-        //log.trace("Remaining space is {}", remainingSpace);
         if (record.length() > remainingSpace) {
             if (remainingSpace > 0) {
                 // Write into the remaining space so all log chunk files are same size
@@ -169,7 +174,6 @@ public class FileLog implements Log {
                 // Next file creation is in progress, just wait for it
                 cf = new CompletableFuture<>();
                 nextFileCF.thenAccept(v -> {
-                    log.trace("Next file cf completed");
                     // When complete just call append again
                     CompletableFuture<Long> again = append(obj);
                     again.handle((pos, t) -> {
@@ -187,7 +191,6 @@ public class FileLog implements Log {
 
         cf = append0(len, record);
         cf.thenApply(pos -> {
-            lastWrittenPos = pos;
             sendToSubs(pos, obj);
             return pos;
         });
@@ -195,8 +198,8 @@ public class FileLog implements Log {
         return cf;
     }
 
-    synchronized long getLastWrittenPos() {
-        return lastWrittenPos;
+    long getLastWrittenPos() {
+        return lastWrittenPos.get();
     }
 
     static final class FileCoord {
@@ -226,11 +229,16 @@ public class FileLog implements Log {
         faf.scheduleOp(runner);
     }
 
-    private void sendToSubs(long pos, BsonObject bsonObject) {
+    private synchronized void sendToSubs(long pos, BsonObject bsonObject) {
+        lastWrittenPos.set(pos);
         for (SubHolder holder: subHolders) {
             if (holder.matches(bsonObject)) {
-                if (!holder.handle(pos, bsonObject)) {
-                    // TODO could be improved by removing holder from live set when inactive
+                try {
+                    if (!holder.handle(pos, bsonObject)) {
+                        // TODO could be improved by removing holder from live set when inactive
+                    }
+                } catch (Throwable t) {
+                    log.error("Failed to send to subs", t);
                 }
             }
         }
@@ -238,19 +246,20 @@ public class FileLog implements Log {
 
     @Override
     public synchronized CompletableFuture<Void> close() {
+        saveInfo(true);
         CompletableFuture<Void> ret;
         if (currWriteFile != null) {
             ret = currWriteFile.close();
         } else {
             ret = CompletableFuture.completedFuture(null);
         }
-        saveInfo(true);
-        currWriteFile = null;
-        nextWriteFile = null;
-        nextFileCF = null;
-        fileNumber = 0;
-        filePos = 0;
-        headPos = 0;
+        if (nextWriteFile != null) {
+            ret = ret.thenCompose(v -> nextWriteFile.close());
+        }
+        if (nextFileCF != null) {
+            CompletableFuture<Void> ncf = nextFileCF;
+            ret = ret.thenCompose(v -> ncf);
+        }
         return ret;
     }
 
@@ -358,26 +367,34 @@ public class FileLog implements Log {
         return new File(options.getLogDir(), getFileName(fileNumber));
     }
 
-    private void checkCreateNextFile() {
+    private synchronized void checkCreateNextFile() {
         // We create a next file when the current file is half written
         if (nextFileCF == null && nextWriteFile == null && filePos > options.getMaxLogChunkSize() / 2) {
             nextFileCF = new CompletableFuture<>();
-            log.trace("Creating next file");
             CompletableFuture<Void> cfNext = createAndFillFile(getFileName(fileNumber + 1));
             CompletableFuture<BasicFile> cfBf = cfNext.thenCompose(v -> {
                 File next = getFile(fileNumber + 1);
                 return faf.openBasicFile(next);
             });
             cfBf.handle((bf, t) -> {
-               if (t == null) {
-                   nextWriteFile = bf;
-                   nextFileCF.complete(null);
-                   nextFileCF = null;
-               } else {
-                   log.error("Failed to create next file", t);
-               }
-               return null;
+                synchronized (FileLog.this) {
+                    if (t == null) {
+                        nextWriteFile = bf;
+                        if (nextFileCF == null) {
+                            log.error("nextFileCF is null");
+                        }
+                        nextFileCF.complete(null);
+                        nextFileCF = null;
+                    } else {
+                        log.error("Failed to create next file", t);
+                    }
+                    return null;
+                }
+            }).exceptionally(t -> {
+                log.error(t.getMessage(), t);
+                return null;
             });
+
         }
     }
 
@@ -482,148 +499,5 @@ public class FileLog implements Log {
             this.bson = bson;
         }
     }
-
-//    private final class LogReadStream implements ReadStream {
-//
-//        private static final int READ_BUFFER_SIZE = 4 * 1024;
-//
-//        private BasicFile fa;
-//        private int streamFileNumber;
-//        private int readPos; // TODO should be long?
-//        private int receivedPos; // TODO should be long?
-//        private int size = -1;
-//        private RecordParser parser;
-//        private BiConsumer<Long, BsonObject> handler;
-//        private Consumer<Throwable> exceptionHandler;
-//        private Queue<QueueEntry> queue = new LinkedList<>();
-//        private boolean paused;
-//
-//        public LogReadStream(int readPos, BasicFile fa) {
-//            this.readPos = readPos;
-//            this.fa = fa;
-//            parser = RecordParser.newFixed(4, this::handleRec);
-//        }
-//
-//        private void handleRec(Buffer buff) {
-//            if (size == -1) {
-//                size = buff.getIntLE(0) - 4;
-//                log.trace("Size is {}", size);
-//                parser.fixedSizeMode(size);
-//            } else {
-//                //log.trace("Got frame size {}", size);
-//                if (size != 0) {
-//                    log.trace("Got frame size {}", size);
-//                    handleFrame(receivedPos, size, buff);
-//                    receivedPos += buff.length() + 4;
-//                    parser.fixedSizeMode(4);
-//                    size = -1;
-//                }
-//            }
-//        }
-//
-//        private void handleFrame(int receivedPos, int size, Buffer buffer) {
-//            // TODO bit clunky - need to add size back in so it can be decoded, improve this!
-//            Buffer buff2 = Buffer.buffer(buffer.length() + 4);
-//            buff2.appendIntLE(size + 4).appendBuffer(buffer);
-//            BsonObject bson = new BsonObject(buff2);
-//            if (handler != null) {
-//                if (paused) {
-//                    queue.add(new QueueEntry(receivedPos, bson));
-//                } else {
-//                    handler.accept((long)receivedPos, bson);
-//                }
-//            } else {
-//                log.trace("No handler");
-//            }
-//        }
-//
-//        @Override
-//        public void exceptionHandler(Consumer<Throwable> handler) {
-//            this.exceptionHandler = handler;
-//        }
-//
-//        @Override
-//        public void handler(BiConsumer<Long, BsonObject> handler) {
-//            this.handler = handler;
-//        }
-//
-//        @Override
-//        public synchronized void pause() {
-//            paused = true;
-//        }
-//
-//        @Override
-//        public synchronized void resume() {
-//            paused = false;
-//            while (!paused) {
-//                QueueEntry entry = queue.poll();
-//                if (entry == null) {
-//                    break;
-//                }
-//                handler.accept((long)entry.receivedPos, entry.bson);
-//            }
-//            if (!paused) {
-//                doRead();
-//            }
-//        }
-//
-//        @Override
-//        public void close() {
-//            paused = true;
-//            fa.close();
-//        }
-//
-//        private void doRead() {
-//            Buffer readBuff = Buffer.buffer(READ_BUFFER_SIZE);
-//            CompletableFuture<Void> cf = fa.read(readBuff, READ_BUFFER_SIZE, readPos);
-//            cf.handle((v, t) -> {
-//                if (t == null) {
-//                    log.trace("Passing buffer length {} to parser", readBuff);
-//                    if (readBuff.length() > 0) {
-//                        parser.handle(readBuff);
-//                    }
-//                    if (readBuff.length() < READ_BUFFER_SIZE) {
-//                        // Move to next file
-//
-//                        // TODO thread safety
-//                        if (streamFileNumber < fileNumber) {
-//                            streamFileNumber++;
-//                            if (streamFileNumber == fileNumber) {
-//                                // TODO careful about last record
-//                            } else {
-//                                fa.close();
-//                                CompletableFuture<BasicFile> cfOpen =
-//                                        faf.openBasicFile(new File(options.getLogDir(), getFileName(streamFileNumber)));
-//                                cfOpen.handle((bf, t2) -> {
-//                                   if (t2 != null) {
-//                                       log.error("Failed to open file", t2);
-//                                   } else {
-//                                       fa = bf;
-//                                   }
-//                                   return null;
-//                                });
-//                            }
-//                        }
-//                    } else {
-//                        readPos += readBuff.length();
-//                        if (!paused) {
-//                            faf.scheduleOp(this::doRead);
-//                        }
-//                    }
-//                } else {
-//                    handleException(t);
-//                }
-//                return null;
-//            });
-//        }
-//
-//        private void handleException(Throwable t) {
-//            if (exceptionHandler != null) {
-//                exceptionHandler.accept(t);
-//            } else {
-//                log.error("Failed to read", t);
-//            }
-//        }
-//    }
 
 }

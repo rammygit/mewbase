@@ -36,6 +36,9 @@ public class AsyncFileFileAccessManager implements FileAccessManager {
         CompletableFuture<BasicFile> cf = new CompletableFuture<>();
         vertx.fileSystem().open(file.getPath(), new OpenOptions().setWrite(true), ar -> {
             if (ar.succeeded()) {
+                if (ar.result() == null) {
+                    log.error("Succeeded in opening file but result is null!");
+                }
                 cf.complete(new AsyncFileBasicFile(ar.result()));
             } else {
                 cf.completeExceptionally(ar.cause());

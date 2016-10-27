@@ -15,6 +15,8 @@ public interface ReadStream {
 
     void handler(BiConsumer<Long, BsonObject> handler);
 
+    void start();
+
     void pause();
 
     void resume();
