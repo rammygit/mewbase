@@ -1,7 +1,6 @@
 package com.tesco.mewbase.client;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.common.ReceivedEvent;
 
 import java.util.function.Consumer;

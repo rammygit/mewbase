@@ -105,15 +105,15 @@ public class ClientConnection implements Connection, ClientFrameHandler {
         Buffer buffer = Codec.encodeFrame(Codec.QUERY_FRAME, frame);
 
         write(buffer, resp -> {
-            if(resp.getInteger(Codec.QUERYRESPONSE_QUERYID) != queryID) {
+            if (resp.getInteger(Codec.QUERYRESPONSE_QUERYID) != queryID) {
                 cf.completeExceptionally(new IllegalStateException("Result query ID does not match handler expectation"));
                 return;
             }
 
             Integer numResults = resp.getInteger(Codec.QUERYRESPONSE_NUMRESULTS);
-            if(numResults == 1) {
+            if (numResults == 1) {
                 expectedQueryResults.put(queryID, cf);
-            } else if(numResults == 0) {
+            } else if (numResults == 0) {
                 cf.complete(null);
             } else {
                 cf.completeExceptionally(new IllegalStateException("Invalid result count for get by ID"));
@@ -161,7 +161,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
     public void handleQueryResult(BsonObject frame) {
         int queryID = frame.getInteger(Codec.QUERYRESULT_QUERYID);
         CompletableFuture<BsonObject> cf = expectedQueryResults.get(queryID);
-        if(cf != null) {
+        if (cf != null) {
             cf.complete(frame.getBsonObject(Codec.QUERYRESULT_RESULT));
             doQueryAck(queryID);
             expectedQueryResults.remove(queryID);

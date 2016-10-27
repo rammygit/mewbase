@@ -175,7 +175,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         long writeSeq = getWriteSeq();
 
         cf.thenAccept(result -> {
-            if(result == null) {
+            if (result == null) {
                 BsonObject resp = new BsonObject();
                 resp.put(Codec.QUERYRESPONSE_QUERYID, queryID);
                 resp.put(Codec.QUERYRESPONSE_NUMRESULTS, 0);
