@@ -172,23 +172,24 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         // TODO currently hardcoded to assume get by ID, implement properly for other query types
         String documentId = matcher.getBsonObject("$match").getString("id");
         CompletableFuture<BsonObject> cf = docManager.getByID(binder, documentId);
+        long writeSeq = getWriteSeq();
 
         cf.thenAccept(result -> {
             if(result == null) {
                 BsonObject resp = new BsonObject();
                 resp.put(Codec.QUERYRESPONSE_QUERYID, queryID);
                 resp.put(Codec.QUERYRESPONSE_NUMRESULTS, 0);
-                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, getWriteSeq());
+                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, writeSeq);
             } else {
                 BsonObject resp = new BsonObject();
                 resp.put(Codec.QUERYRESPONSE_QUERYID, queryID);
                 resp.put(Codec.QUERYRESPONSE_NUMRESULTS, 1);
-                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, getWriteSeq());
+                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, writeSeq);
 
                 BsonObject res = new BsonObject();
                 res.put(Codec.QUERYRESULT_QUERYID, queryID);
                 res.put(Codec.QUERYRESULT_RESULT, result);
-                writeResponse(Codec.QUERYRESULT_FRAME, res, getWriteSeq());
+                writeNonResponse(Codec.QUERYRESULT_FRAME, res);
             }
         });
     }
