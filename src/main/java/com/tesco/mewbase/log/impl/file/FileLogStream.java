@@ -25,42 +25,38 @@ import java.util.function.Consumer;
  *
  * Created by tim on 22/10/16.
  */
-public class SubHolder implements ReadStream {
+public class FileLogStream implements ReadStream {
 
-    private final static Logger log = LoggerFactory.getLogger(SubHolder.class);
+    private final static Logger log = LoggerFactory.getLogger(FileLogStream.class);
 
     private final FileLog fileLog;
     private final SubDescriptor subDescriptor;
     private final Context context;
     private final int readBufferSize;
     private final Queue<BufferedRecord> buffered = new LinkedList<>();
-
     private BiConsumer<Long, BsonObject> handler;
     private Consumer<Throwable> exceptionHandler;
 
     private boolean paused;
     private long deliveredPos = -1;
     private boolean retro;
-
     private long fileStreamPos;
     private boolean ignoreFirst;
     private int fileNumber;
     private int fileReadPos;
     private BasicFile streamFile;
     private int fileSize;
-
     private RecordParser parser;
     private int recordSize = -1;
 
-    public SubHolder(FileLog fileLog, SubDescriptor subDescriptor, int readBufferSize,
-                     int fileSize) {
+    public FileLogStream(FileLog fileLog, SubDescriptor subDescriptor, int readBufferSize,
+                         int fileSize) {
         this.fileLog = fileLog;
         this.subDescriptor = subDescriptor;
         this.context = Vertx.currentContext();
         this.readBufferSize = readBufferSize;
         this.fileSize = fileSize;
         resetParser();
-
     }
 
     @Override
@@ -73,6 +69,7 @@ public class SubHolder implements ReadStream {
         this.handler = handler;
     }
 
+    @Override
     public synchronized void start() {
         fileLog.readdSubHolder(this);
         if (subDescriptor.getStartPos() != -1) {
@@ -117,13 +114,14 @@ public class SubHolder implements ReadStream {
 
     @Override
     public synchronized void close() {
+        paused = true;
         fileLog.removeSubHolder(this);
         if (streamFile != null) {
             streamFile.close();
         }
     }
 
-    public synchronized boolean isRetro() {
+    synchronized boolean isRetro() {
         return retro;
     }
 
@@ -210,17 +208,22 @@ public class SubHolder implements ReadStream {
                 }
             }
             if (fileStreamPos == lwp) {
-                // We've got to the head
-                retro = false;
-                streamFile.close();
-                streamFile = null;
-                resetParser();
-                fileLog.readdSubHolder(this);
+                // Need to lock to prevent messages sneaking in before we readd the stream
+                synchronized (fileLog) {
+                    lwp = fileLog.getLastWrittenPos();
+                    if (fileStreamPos == lwp) {
+                        // We've got to the head
+                        retro = false;
+                        streamFile.close();
+                        streamFile = null;
+                        resetParser();
+                        fileLog.readdSubHolder(this);
+                    }
+                }
             }
         }
         fileStreamPos += bl;
     }
-
 
     private void handleException(Throwable t) {
         if (exceptionHandler != null) {
@@ -281,9 +284,15 @@ public class SubHolder implements ReadStream {
         final long pos;
         final BsonObject bson;
 
-        public BufferedRecord(long pos, BsonObject bson) {
+        BufferedRecord(long pos, BsonObject bson) {
             this.pos = pos;
             this.bson = bson;
+        }
+    }
+
+    private void checkContext() {
+        if (Vertx.currentContext() != context) {
+            throw new IllegalStateException("Wrong context");
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.tesco.mewbase.log.impl.file.faf.af;
+package com.tesco.mewbase.log.impl.file.faf;
 
 import com.tesco.mewbase.log.impl.file.BasicFile;
 import com.tesco.mewbase.util.AsyncResCF;
@@ -10,11 +10,11 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Created by tim on 11/10/16.
  */
-public class AsyncFileBasicFile implements BasicFile {
+public class AFBasicFile implements BasicFile {
 
     private final AsyncFile af;
 
-    public AsyncFileBasicFile(AsyncFile af) {
+    public AFBasicFile(AsyncFile af) {
         this.af = af;
     }
 

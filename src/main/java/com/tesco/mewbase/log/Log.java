@@ -13,8 +13,6 @@ public interface Log {
 
     ReadStream subscribe(SubDescriptor subDescriptor);
 
-    CompletableFuture<ReadStream> openReadStream(long pos);
-
     CompletableFuture<Long> append(BsonObject obj);
 
     CompletableFuture<Void> start();

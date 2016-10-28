@@ -9,7 +9,6 @@ import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.core.parsetools.RecordParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,8 +22,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  * TODO:
@@ -33,8 +30,6 @@ import java.util.function.Consumer;
  * 2. Version header
  * 3. Batching
  * 4. Configurable fsync
- *
- *
  *
  * Created by tim on 07/10/16.
  */
@@ -46,10 +41,10 @@ public class FileLog implements Log {
     private static final String LOG_INFO_FILE_TAIL = "-log-info.dat";
 
     private final Vertx vertx;
-    private final FileAccessManager faf;
+    private final FileAccess faf;
     private final String channel;
     private final FileLogManagerOptions options;
-    private final Set<SubHolder> subHolders = new ConcurrentHashSet<>();
+    private final Set<FileLogStream> fileLogStreams = new ConcurrentHashSet<>();
 
     private BasicFile currWriteFile;
     private BasicFile nextWriteFile;
@@ -60,7 +55,7 @@ public class FileLog implements Log {
 
     private CompletableFuture<Void> nextFileCF;
 
-    public FileLog(Vertx vertx, FileAccessManager faf, FileLogManagerOptions options, String channel) {
+    public FileLog(Vertx vertx, FileAccess faf, FileLogManagerOptions options, String channel) {
         this.vertx = vertx;
         this.channel = channel;
         this.options = options;
@@ -122,25 +117,8 @@ public class FileLog implements Log {
         if (subDescriptor.getStartPos() > getLastWrittenPos()) {
             throw new IllegalArgumentException("startPos cannot be past head");
         }
-        return new SubHolder(this, subDescriptor,
+        return new FileLogStream(this, subDescriptor,
                 options.getReadBufferSize(), options.getMaxLogChunkSize());
-    }
-
-    void removeSubHolder(SubHolder holder) {
-        subHolders.remove(holder);
-    }
-
-    void readdSubHolder(SubHolder holder) {
-        subHolders.add(holder);
-    }
-
-    @Override
-    public CompletableFuture<ReadStream> openReadStream(long pos) {
-//        // TODO limit number of open streams to avoid exhausting file handles
-//        // TODO pos
-//        File file = getFile(0);
-//        return faf.openBasicFile(file).thenApply(bf -> new LogReadStream((int)pos, bf));
-        return null;
     }
 
     @Override
@@ -198,52 +176,6 @@ public class FileLog implements Log {
         return cf;
     }
 
-    long getLastWrittenPos() {
-        return lastWrittenPos.get();
-    }
-
-    static final class FileCoord {
-        final long pos;
-        final int fileMaxSize;
-        final int fileNumber;
-        final int filePos;
-
-        public FileCoord(long pos, int fileMaxSize) {
-            this.pos = pos;
-            this.fileMaxSize = fileMaxSize;
-            this.fileNumber = (int)(pos / fileMaxSize);
-            this.filePos = (int)(pos % fileMaxSize);
-        }
-    }
-
-    FileCoord getCoord(long pos) {
-        return new FileCoord(pos, options.getMaxLogChunkSize());
-    }
-
-    CompletableFuture<BasicFile> openFile(int fileNumber) {
-        File file = new File(options.getLogDir(), getFileName(fileNumber));
-        return faf.openBasicFile(file);
-    }
-
-    void scheduleOp(Runnable runner) {
-        faf.scheduleOp(runner);
-    }
-
-    private synchronized void sendToSubs(long pos, BsonObject bsonObject) {
-        lastWrittenPos.set(pos);
-        for (SubHolder holder: subHolders) {
-            if (holder.matches(bsonObject)) {
-                try {
-                    if (!holder.handle(pos, bsonObject)) {
-                        // TODO could be improved by removing holder from live set when inactive
-                    }
-                } catch (Throwable t) {
-                    log.error("Failed to send to subs", t);
-                }
-            }
-        }
-    }
-
     @Override
     public synchronized CompletableFuture<Void> close() {
         saveInfo(true);
@@ -276,6 +208,47 @@ public class FileLog implements Log {
     @Override
     public synchronized int getFilePos() {
         return filePos;
+    }
+
+    void removeSubHolder(FileLogStream stream) {
+        fileLogStreams.remove(stream);
+    }
+
+    void readdSubHolder(FileLogStream stream) {
+        log.trace("Readding stream");
+        fileLogStreams.add(stream);
+    }
+
+    long getLastWrittenPos() {
+        return lastWrittenPos.get();
+    }
+
+    FileCoord getCoord(long pos) {
+        return new FileCoord(pos, options.getMaxLogChunkSize());
+    }
+
+    CompletableFuture<BasicFile> openFile(int fileNumber) {
+        File file = new File(options.getLogDir(), getFileName(fileNumber));
+        return faf.openBasicFile(file);
+    }
+
+    void scheduleOp(Runnable runner) {
+        faf.scheduleOp(runner);
+    }
+
+    private synchronized void sendToSubs(long pos, BsonObject bsonObject) {
+        lastWrittenPos.set(pos);
+        for (FileLogStream stream: fileLogStreams) {
+            if (stream.matches(bsonObject)) {
+                try {
+                    if (!stream.handle(pos, bsonObject)) {
+                        // TODO could be improved by removing holder from live set when inactive
+                    }
+                } catch (Throwable t) {
+                    log.error("Failed to send to subs", t);
+                }
+            }
+        }
     }
 
     private CompletableFuture<Long> append0(int len, Buffer record) {
@@ -490,14 +463,19 @@ public class FileLog implements Log {
         return channel + LOG_INFO_FILE_TAIL;
     }
 
-    private static final class QueueEntry {
-        final int receivedPos;
-        final BsonObject bson;
+    static final class FileCoord {
+        final long pos;
+        final int fileMaxSize;
+        final int fileNumber;
+        final int filePos;
 
-        public QueueEntry(int receivedPos, BsonObject bson) {
-            this.receivedPos = receivedPos;
-            this.bson = bson;
+        public FileCoord(long pos, int fileMaxSize) {
+            this.pos = pos;
+            this.fileMaxSize = fileMaxSize;
+            this.fileNumber = (int)(pos / fileMaxSize);
+            this.filePos = (int)(pos % fileMaxSize);
         }
     }
+
 
 }

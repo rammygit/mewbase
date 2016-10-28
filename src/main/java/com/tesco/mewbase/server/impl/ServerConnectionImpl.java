@@ -1,6 +1,9 @@
 package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.common.SubDescriptor;
+import com.tesco.mewbase.log.Log;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -40,6 +43,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
 
     @Override
     public void handleConnect(BsonObject frame) {
+        checkContext();
         // TODO auth
         // TODO version checking
         authorised = true;
@@ -50,6 +54,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
 
     @Override
     public void handleEmit(BsonObject frame) {
+        checkContext();
         checkAuthorised();
         String channel = frame.getString(Codec.EMIT_CHANNEL);
         BsonObject event = frame.getBsonObject(Codec.EMIT_EVENT);
@@ -61,9 +66,12 @@ public class ServerConnectionImpl implements ServerFrameHandler {
             logAndClose("No event in EMIT");
             return;
         }
-        ChannelProcessor processor = server.getChannelProcessor(channel);
         long order = getWriteSeq();
-        CompletableFuture<Long> cf = processor.handleEmit(event);
+        Log log = server.getLog(channel);
+        BsonObject record = new BsonObject();
+        record.put(Codec.RECEV_TIMESTAMP, System.currentTimeMillis());
+        record.put(Codec.RECEV_EVENT, event);
+        CompletableFuture<Long> cf = log.append(record);
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();
@@ -81,21 +89,25 @@ public class ServerConnectionImpl implements ServerFrameHandler {
 
     @Override
     public void handleStartTx(BsonObject frame) {
+        checkContext();
         checkAuthorised();
     }
 
     @Override
     public void handleCommitTx(BsonObject frame) {
+        checkContext();
         checkAuthorised();
     }
 
     @Override
     public void handleAbortTx(BsonObject frame) {
+        checkContext();
         checkAuthorised();
     }
 
     @Override
     public void handleSubscribe(BsonObject frame) {
+        checkContext();
         checkAuthorised();
         String channel = frame.getString(Codec.SUBSCRIBE_CHANNEL);
         if (channel == null) {
@@ -106,12 +118,14 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         Long startTimestamp = frame.getLong(Codec.SUBSCRIBE_STARTTIMESTAMP);
         String durableID = frame.getString(Codec.SUBSCRIBE_DURABLEID);
         BsonObject matcher = frame.getBsonObject(Codec.SUBSCRIBE_MATCHER);
+        SubDescriptor subDescriptor = new SubDescriptor().setStartPos(startSeq == null ? -1 : startSeq).setStartTimestamp(startTimestamp)
+                .setMatcher(matcher).setDurableID(durableID).setChannel(channel);
         int subID = subSeq++;
         checkWrap(subSeq);
-        ChannelProcessor processor = server.getChannelProcessor(channel);
-        SubscriptionImpl subscription = processor.createSubscription(this, subID, startSeq == null ? -1 : startSeq);
+        Log log = server.getLog(channel);
+        ReadStream readStream = log.subscribe(subDescriptor);
+        SubscriptionImpl subscription = new SubscriptionImpl(this, subID, readStream);
         subscriptionMap.put(subID, subscription);
-        processor.addSubScription(subscription);
         BsonObject resp = new BsonObject();
         resp.put(Codec.RESPONSE_OK, true);
         resp.put(Codec.SUBRESPONSE_SUBID, subID);
@@ -121,6 +135,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
 
     @Override
     public void handleUnsubscribe(BsonObject frame) {
+        checkContext();
         checkAuthorised();
         String subID = frame.getString(Codec.UNSUBSCRIBE_SUBID);
         if (subID == null) {
@@ -140,6 +155,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
 
     @Override
     public void handleAckEv(BsonObject frame) {
+        checkContext();
         checkAuthorised();
         String subID = frame.getString(Codec.ACKEV_SUBID);
         if (subID == null) {
@@ -161,16 +177,19 @@ public class ServerConnectionImpl implements ServerFrameHandler {
 
     @Override
     public void handleQuery(BsonObject frame) {
+        checkContext();
         checkAuthorised();
     }
 
     @Override
     public void handleQueryAck(BsonObject frame) {
+        checkContext();
         checkAuthorised();
     }
 
     @Override
     public void handlePing(BsonObject frame) {
+        checkContext();
         checkAuthorised();
     }
 
@@ -198,6 +217,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     }
 
     protected void writeResponseOrdered(Buffer buff, long order) {
+        checkContext();
         // Writes can come in in the wrong order, we need to make sure they are written in the correct order
         if (order == expectedRespNo) {
             writeResponseOrdered0(buff);
@@ -206,9 +226,9 @@ public class ServerConnectionImpl implements ServerFrameHandler {
             pq.add(new WriteHolder(order, buff));
             while (true) {
                 WriteHolder head = pq.peek();
-                if (head.order == expectedRespNo) {
+                if (head != null && head.order == expectedRespNo) {
                     pq.poll();
-                    writeResponseOrdered0(buff);
+                    writeResponseOrdered0(head.buff);
                 } else {
                     break;
                 }
@@ -276,6 +296,13 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         @Override
         public int compareTo(WriteHolder other) {
             return Long.compare(this.order, other.order);
+        }
+    }
+
+    // Sanity check - this should always be executed using the correct context
+    private void checkContext() {
+        if (Vertx.currentContext() != context) {
+            throw new IllegalStateException("Wrong context!");
         }
     }
 

@@ -148,6 +148,7 @@ public class InitialiseTest extends LogTestBase {
         } catch (MewException e) {
             // OK
         }
+        log = null;
     }
 
     @Test
@@ -172,6 +173,7 @@ public class InitialiseTest extends LogTestBase {
         } catch (MewException e) {
             // OK
         }
+        log = null;
     }
 
     @Test
@@ -358,6 +360,7 @@ public class InitialiseTest extends LogTestBase {
         } catch (MewException e) {
             // OK
         }
+        log = null;
     }
 
 

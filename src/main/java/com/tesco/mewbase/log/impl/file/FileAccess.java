@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * Created by tim on 11/10/16.
  */
-public interface FileAccessManager {
+public interface FileAccess {
 
     CompletableFuture<BasicFile> openBasicFile(File file);
 

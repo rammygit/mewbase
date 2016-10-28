@@ -1,9 +1,10 @@
 package com.tesco.mewbase.log.impl.file;
 
+import com.tesco.mewbase.MewbaseTestBase;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.log.Log;
-import com.tesco.mewbase.log.impl.file.faf.af.AsyncFileFileAccessManager;
+import com.tesco.mewbase.log.impl.file.faf.AFFileAccess;
 import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -12,8 +13,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,26 +30,30 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by tim on 14/10/16.
  */
-public class LogTestBase {
+public class LogTestBase extends MewbaseTestBase {
 
-    protected static final String TEST_CHANNEL_1 = "channel1";
-    protected static final String TEST_CHANNEL_2 = "channel2";
-
-    @Rule
-    public TemporaryFolder testFolder = new TemporaryFolder();
-
-    protected Vertx vertx;
-    protected FileAccessManager faf;
+    protected FileAccess faf;
     protected FileLogManagerOptions options;
     protected FileLogManager flm;
     protected Log log;
     protected File logDir;
 
-    @Before
-    public void before(TestContext context) throws Exception {
+    @Override
+    protected void setup(TestContext context) throws Exception {
+        super.setup(context);
         logDir = testFolder.newFolder();
-        vertx = Vertx.vertx();
-        faf = new AsyncFileFileAccessManager(vertx);
+        faf = new AFFileAccess(vertx);
+    }
+
+    @Override
+    protected void tearDown(TestContext context) throws Exception {
+        if (log != null) {
+            log.close().thenCompose(v -> {
+                AsyncResCF<Void> cf = new AsyncResCF<>();
+                vertx.close(cf);
+                return cf;
+            }).get();
+        }
     }
 
     protected FileLogManagerOptions getOptions() {
@@ -66,19 +69,9 @@ public class LogTestBase {
 
     protected void startLog(FileLogManagerOptions options, String channel) throws Exception {
         flm = new FileLogManager(vertx, options, faf);
+        flm.createLog(TEST_CHANNEL_1).thenCompose(l -> flm.createLog(TEST_CHANNEL_2)).get();
         log = flm.getLog(channel);
         log.start().get();
-    }
-
-    @After
-    public void after(TestContext context) throws Exception {
-        if (log != null) {
-            log.close().thenCompose(v -> {
-                AsyncResCF<Void> cf = new AsyncResCF<>();
-                vertx.close(cf);
-                return cf;
-            }).get();
-        }
     }
 
     protected void saveInfo(int fileNumber, int headPos, int fileHeadPos, boolean shutdown) {

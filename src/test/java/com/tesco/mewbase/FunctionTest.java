@@ -22,34 +22,13 @@ import java.util.concurrent.CompletableFuture;
  * Created by tim on 30/09/16.
  */
 @RunWith(VertxUnitRunner.class)
-public class FunctionTest {
+public class FunctionTest extends ServerTestBase {
 
     private final static Logger log = LoggerFactory.getLogger(FunctionTest.class);
 
-    private static final String TEST_CHANNEL = "com.tesco.basket";
-
-    private Server server;
-    private Client client;
-
-    @Before
-    public void before(TestContext context) throws Exception {
-        log.trace("in before");
-        server = new ServerImpl(new ServerOptions());
-        CompletableFuture<Void> cfStart = server.start();
-        cfStart.get();
-        client = new ClientImpl();
-    }
-
-    @After
-    public void after(TestContext context) throws Exception {
-        log.trace("in after");
-        client.close().get();
-        server.stop().get();
-    }
-
     @Test
     public void testSimpleFunction(TestContext context) throws Exception {
-        SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_CHANNEL);
+        SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_CHANNEL_1);
         server.installFunction("testfunc", descriptor, (ctx, re) -> {
             BsonObject event = re.event();
             long basketID = event.getInteger("basketID");

@@ -9,7 +9,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Server extends FunctionManager {
 
-    // Indexes
 
     CompletableFuture<Void> start();
 
