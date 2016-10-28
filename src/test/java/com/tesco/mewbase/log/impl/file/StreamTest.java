@@ -5,10 +5,7 @@ import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Repeat;
-import io.vertx.ext.unit.junit.RepeatRule;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
@@ -19,8 +16,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -39,7 +34,7 @@ public class StreamTest extends LogTestBase {
     public void test_stream_single_file_less_than_max_file_size(TestContext testContext) throws Exception {
         int fileSize = objLen * (numObjects + 10);
         test_stream(testContext, numObjects, fileSize, FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE, objLen,
-                          0, numObjects * objLen, objLen);
+                0, numObjects * objLen, objLen);
     }
 
     @Test
@@ -65,7 +60,7 @@ public class StreamTest extends LogTestBase {
 
     @Test
     public void test_stream_two_files_fill_both_exactly(TestContext testContext) throws Exception {
-        int fileSize = objLen * numObjects  / 2;
+        int fileSize = objLen * numObjects / 2;
         test_stream(testContext, numObjects, fileSize, FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE, objLen,
                 1, fileSize, objLen);
     }
@@ -114,7 +109,7 @@ public class StreamTest extends LogTestBase {
 
     @Test
     public void test_stream_two_files_fill_both_exactly_small_rb(TestContext testContext) throws Exception {
-        int fileSize = objLen * numObjects  / 2;
+        int fileSize = objLen * numObjects / 2;
         test_stream(testContext, numObjects, fileSize, objLen - 1, objLen,
                 1, fileSize, objLen);
     }
@@ -136,7 +131,7 @@ public class StreamTest extends LogTestBase {
     protected void test_stream(TestContext testContext, int numObjects, int maxLogChunkSize, int readBuffersize,
                                int maxRecordSize, int expectedEndFile, int expectedEndFileLength, int objLen) throws Exception {
         test_stream(testContext, numObjects, numObjects, maxLogChunkSize, readBuffersize, maxRecordSize, expectedEndFile, expectedEndFileLength,
-                    objLen, 0);
+                objLen, 0);
     }
 
     protected void test_stream(TestContext testContext, int numAppendObjects, int numReadObjects, int maxLogChunkSize, int readBuffersize,
@@ -159,7 +154,7 @@ public class StreamTest extends LogTestBase {
             testContext.assertEquals("bar", record.getString("foo"));
             testContext.assertEquals(cnt.get() + offset, record.getInteger("num"));
             long expectedPos = calcPos(cnt.get() + offset, maxLogChunkSize, objLen);
-            testContext.assertEquals(expectedPos, (long)pos);
+            testContext.assertEquals(expectedPos, (long) pos);
             if (cnt.incrementAndGet() == numReadObjects) {
                 rs.close();
                 testContext.assertEquals(expectedEndFile, log.getFileNumber());
@@ -167,12 +162,12 @@ public class StreamTest extends LogTestBase {
                 File[] files = super.listLogFiles(logDir, TEST_CHANNEL_1);
                 String headFileName = getLogFileName(TEST_CHANNEL_1, log.getFileNumber());
                 String preallocedFileName = getLogFileName(TEST_CHANNEL_1, log.getFileNumber() + 1);
-                for (File f: files) {
+                for (File f : files) {
                     String fname = f.getName();
                     if (fname.equals(headFileName)) {
-                        testContext.assertEquals((long)expectedEndFileLength, f.length());
+                        testContext.assertEquals((long) expectedEndFileLength, f.length());
                     } else if (!fname.equals(preallocedFileName)) {
-                        testContext.assertEquals((long)maxLogChunkSize, f.length());
+                        testContext.assertEquals((long) maxLogChunkSize, f.length());
                     }
                 }
                 async.complete();
@@ -191,7 +186,7 @@ public class StreamTest extends LogTestBase {
         BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
         appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
 
-        FileLogStream rs = (FileLogStream)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(0));
+        FileLogStream rs = (FileLogStream) log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(0));
         Async async = testContext.async();
         AtomicInteger cnt = new AtomicInteger();
         AtomicBoolean paused = new AtomicBoolean();
@@ -200,7 +195,7 @@ public class StreamTest extends LogTestBase {
             testContext.assertEquals("bar", record.getString("foo"));
             testContext.assertEquals(cnt.get(), record.getInteger("num"));
             long expectedPos = calcPos(cnt.get(), fileSize, objLen);
-            testContext.assertEquals(expectedPos, (long)pos);
+            testContext.assertEquals(expectedPos, (long) pos);
             if (cnt.incrementAndGet() == numObjects) {
                 rs.close();
                 async.complete();
@@ -210,7 +205,7 @@ public class StreamTest extends LogTestBase {
                 rs.pause();
                 paused.set(true);
                 vertx.setTimer(10, tid -> {
-                   paused.set(false);
+                    paused.set(false);
                     rs.resume();
                 });
             }
@@ -253,7 +248,7 @@ public class StreamTest extends LogTestBase {
         appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
 
         try {
-            ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog)log).getLastWrittenPos() + 1));
+            ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog) log).getLastWrittenPos() + 1));
             fail("Should throw exception");
         } catch (IllegalArgumentException e) {
             // OK
@@ -270,7 +265,7 @@ public class StreamTest extends LogTestBase {
         BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
         appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
 
-        ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog)log).getLastWrittenPos()));
+        ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog) log).getLastWrittenPos()));
 
         Async async1 = testContext.async();
         Async async2 = testContext.async();
@@ -278,12 +273,12 @@ public class StreamTest extends LogTestBase {
         rs.handler((pos, record) -> {
             testContext.assertEquals("bar", record.getString("foo"));
             int currCount = cnt.get();
-            if (currCount == numObjects -1) {
+            if (currCount == numObjects - 1) {
                 async1.complete();
             }
             testContext.assertEquals(currCount, record.getInteger("num"));
             long expectedPos = calcPos(currCount, fileSize, objLen);
-            testContext.assertEquals(expectedPos, (long)pos);
+            testContext.assertEquals(expectedPos, (long) pos);
             if (cnt.incrementAndGet() == numObjects * 2) {
                 rs.close();
                 async2.complete();
@@ -306,7 +301,7 @@ public class StreamTest extends LogTestBase {
         startLog();
         BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
 
-        FileLogStream rs = (FileLogStream)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-1));
+        FileLogStream rs = (FileLogStream) log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-1));
 
         Async async = testContext.async();
         AtomicInteger cnt = new AtomicInteger();
@@ -315,7 +310,7 @@ public class StreamTest extends LogTestBase {
             int currCount = cnt.get();
             testContext.assertEquals(currCount, record.getInteger("num"));
             long expectedPos = calcPos(currCount, fileSize, objLen);
-            testContext.assertEquals(expectedPos, (long)pos);
+            testContext.assertEquals(expectedPos, (long) pos);
             testContext.assertFalse(rs.isRetro());
             if (cnt.incrementAndGet() == numObjects) {
                 rs.close();
@@ -336,7 +331,7 @@ public class StreamTest extends LogTestBase {
         startLog();
         BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
 
-        FileLogStream rs = (FileLogStream)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-1));
+        FileLogStream rs = (FileLogStream) log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-1));
 
         Async async1 = testContext.async();
         Async async2 = testContext.async();
@@ -357,7 +352,7 @@ public class StreamTest extends LogTestBase {
             }
             testContext.assertEquals(currCount, record.getInteger("num"));
             long expectedPos = calcPos(currCount, fileSize, objLen);
-            testContext.assertEquals(expectedPos, (long)pos);
+            testContext.assertEquals(expectedPos, (long) pos);
             if (cnt.incrementAndGet() == numObjects) {
                 async1.complete();
             }
@@ -385,7 +380,7 @@ public class StreamTest extends LogTestBase {
         startLog();
         BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
 
-        FileLogStream rs = (FileLogStream)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-1));
+        FileLogStream rs = (FileLogStream) log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-1));
 
         testContext.assertFalse(rs.isRetro());
 
@@ -398,7 +393,7 @@ public class StreamTest extends LogTestBase {
 
             testContext.assertEquals(currCount, record.getInteger("num"));
             long expectedPos = calcPos(currCount, fileSize, objLen);
-            testContext.assertEquals(expectedPos, (long)pos);
+            testContext.assertEquals(expectedPos, (long) pos);
             testContext.assertFalse(rs.isRetro());
             if (cnt.incrementAndGet() == numObjects) {
                 // Pause then resume. Don't emit any more messages when paused so consumer stays
@@ -463,8 +458,8 @@ public class StreamTest extends LogTestBase {
 
         appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
 
-        FileLogStream rs1 = (FileLogStream)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(0));
-        FileLogStream rs2 = (FileLogStream)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(0));
+        FileLogStream rs1 = (FileLogStream) log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(0));
+        FileLogStream rs2 = (FileLogStream) log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(0));
 
         CountDownLatch latch = new CountDownLatch(2);
 
@@ -481,7 +476,7 @@ public class StreamTest extends LogTestBase {
             int currCount = cnt.get();
             testContext.assertEquals(currCount, record.getInteger("num"));
             long expectedPos = calcPos(currCount, fileSize, objLen);
-            testContext.assertEquals(expectedPos, (long)pos);
+            testContext.assertEquals(expectedPos, (long) pos);
             if (cnt.incrementAndGet() == numObjects) {
                 rs.close();
                 latch.countDown();

@@ -44,7 +44,7 @@ public class FileLogManager implements LogManager {
     public CompletableFuture<Void> close() {
         CompletableFuture[] arr = new CompletableFuture[logs.size()];
         int i = 0;
-        for (Log log: logs.values()) {
+        for (Log log : logs.values()) {
             arr[i++] = log.close();
         }
         return CompletableFuture.allOf(arr);

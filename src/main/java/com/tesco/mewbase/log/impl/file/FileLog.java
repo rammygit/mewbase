@@ -25,12 +25,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * TODO:
- *
+ * <p>
  * 1. Corruption detection, incl CRC checks
  * 2. Version header
  * 3. Batching
  * 4. Configurable fsync
- *
+ * <p>
  * Created by tim on 07/10/16.
  */
 public class FileLog implements Log {
@@ -106,7 +106,7 @@ public class FileLog implements Log {
         }
         return cf.thenApply(bf -> {
             currWriteFile = bf;
-            return (Void)null;
+            return (Void) null;
         });
     }
 
@@ -126,9 +126,9 @@ public class FileLog implements Log {
     public synchronized CompletableFuture<Long> append(BsonObject obj) {
 
         Buffer record = obj.encode();
-        int len  = record.length();
+        int len = record.length();
         if (record.length() > options.getMaxRecordSize()) {
-            throw new MewException("Record too long " +len + " max " + options.getMaxRecordSize());
+            throw new MewException("Record too long " + len + " max " + options.getMaxRecordSize());
         }
 
         CompletableFuture<Long> cf;
@@ -264,7 +264,7 @@ public class FileLog implements Log {
     private synchronized void sendToSubs(long pos, BsonObject bsonObject) {
         expectedSeq++;
         lastWrittenPos.set(pos);
-        for (FileLogStream stream: fileLogStreams) {
+        for (FileLogStream stream : fileLogStreams) {
             if (stream.matches(bsonObject)) {
                 try {
                     stream.handle(pos, bsonObject);
@@ -300,7 +300,7 @@ public class FileLog implements Log {
                 if (fNumber == null) {
                     throw new MewException("Invalid log info file, no fileNumber");
                 }
-                if (fNumber < 0){
+                if (fNumber < 0) {
                     throw new MewException("Invalid log info file, negative fileNumber");
                 }
                 this.fileNumber = fNumber;
@@ -308,7 +308,7 @@ public class FileLog implements Log {
                 if (hPos == null) {
                     throw new MewException("Invalid log info file, no headPos");
                 }
-                if (hPos < 0){
+                if (hPos < 0) {
                     throw new MewException("Invalid log info file, negative headPos");
                 }
                 this.headPos = hPos;
@@ -316,7 +316,7 @@ public class FileLog implements Log {
                 if (fhPos == null) {
                     throw new MewException("Invalid log info file, no fileHeadPos");
                 }
-                if (fhPos < 0){
+                if (fhPos < 0) {
                     throw new MewException("Invalid log info file, negative fileHeadPos");
                 }
                 this.filePos = fhPos;
@@ -397,7 +397,7 @@ public class FileLog implements Log {
 
     private CompletableFuture<Void> createAndFillFile(String fileName) {
         AsyncResCF<Void> cf = new AsyncResCF<>();
-        File next =  new File(options.getLogDir(), fileName);
+        File next = new File(options.getLogDir(), fileName);
         vertx.executeBlocking(fut -> {
             createAndFillFileBlocking(next, options.getPreallocateSize());
             fut.complete(null);
@@ -496,8 +496,8 @@ public class FileLog implements Log {
         public FileCoord(long pos, int fileMaxSize) {
             this.pos = pos;
             this.fileMaxSize = fileMaxSize;
-            this.fileNumber = (int)(pos / fileMaxSize);
-            this.filePos = (int)(pos % fileMaxSize);
+            this.fileNumber = (int) (pos / fileMaxSize);
+            this.filePos = (int) (pos % fileMaxSize);
         }
     }
 
@@ -518,7 +518,6 @@ public class FileLog implements Log {
             return Long.compare(this.seq, other.seq);
         }
     }
-
 
 
 }

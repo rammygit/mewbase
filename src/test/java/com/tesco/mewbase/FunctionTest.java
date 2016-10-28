@@ -1,20 +1,13 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.Client;
 import com.tesco.mewbase.client.Connection;
 import com.tesco.mewbase.client.ConnectionOptions;
 import com.tesco.mewbase.client.Producer;
-import com.tesco.mewbase.client.impl.ClientImpl;
 import com.tesco.mewbase.common.SubDescriptor;
-import com.tesco.mewbase.server.Server;
-import com.tesco.mewbase.server.ServerOptions;
-import com.tesco.mewbase.server.impl.ServerImpl;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;

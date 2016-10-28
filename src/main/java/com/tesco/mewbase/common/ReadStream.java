@@ -1,7 +1,6 @@
 package com.tesco.mewbase.common;
 
 import com.tesco.mewbase.bson.BsonObject;
-import io.vertx.core.Handler;
 
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;

@@ -7,7 +7,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Abstracts out the low level file access so we can provide different implementations that use
  * different techniques e.g. using RandomAccessFile, Vert.x AsyncFile, Memory mapped files etc
- *
+ * <p>
  * Created by tim on 11/10/16.
  */
 public interface BasicFile {

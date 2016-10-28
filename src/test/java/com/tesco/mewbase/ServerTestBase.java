@@ -7,7 +7,6 @@ import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 import com.tesco.mewbase.server.impl.ServerImpl;
 import io.vertx.ext.unit.TestContext;
-import org.junit.After;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +30,7 @@ public class ServerTestBase extends MewbaseTestBase {
         File logDir = testFolder.newFolder();
         log.trace("Log dir is {}", logDir);
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
-        ServerOptions options = new ServerOptions().setChannels(new String[] {TEST_CHANNEL_1, TEST_CHANNEL_2})
+        ServerOptions options = new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
                 .setFileLogManagerOptions(fileLogManagerOptions);
         server = new ServerImpl(options);
         CompletableFuture<Void> cfStart = server.start();

@@ -18,11 +18,10 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- *
  * Public methods always accessed from same event loop
- *
+ * <p>
  * Package protected methods accessed from event loop of emitter
- *
+ * <p>
  * Created by tim on 22/10/16.
  */
 public class FileLogStream implements ReadStream {

@@ -1,27 +1,19 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.*;
-import com.tesco.mewbase.client.impl.ClientImpl;
+import com.tesco.mewbase.client.Connection;
+import com.tesco.mewbase.client.ConnectionOptions;
+import com.tesco.mewbase.client.Producer;
+import com.tesco.mewbase.client.Subscription;
 import com.tesco.mewbase.common.SubDescriptor;
-import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
-import com.tesco.mewbase.server.Server;
-import com.tesco.mewbase.server.ServerOptions;
-import com.tesco.mewbase.server.impl.ServerImpl;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Repeat;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;

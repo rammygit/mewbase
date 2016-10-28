@@ -22,10 +22,8 @@ import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 
 /**
@@ -80,7 +78,7 @@ public class ServerImpl implements Server {
         }
         // Start the channels
         if (serverOptions.getChannels() != null) {
-            for (String channel: serverOptions.getChannels()) {
+            for (String channel : serverOptions.getChannels()) {
                 all[procs++] = logManager.createLog(channel);
             }
         }
