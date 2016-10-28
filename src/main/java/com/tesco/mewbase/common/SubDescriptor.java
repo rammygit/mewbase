@@ -7,9 +7,11 @@ import com.tesco.mewbase.bson.BsonObject;
  */
 public class SubDescriptor {
 
+    public static final long DEFAULT_START_POS = -1;
+
     private String channel;
     private String durableID;
-    private long startPos;
+    private long startPos = DEFAULT_START_POS;
     private long startTimestamp;
     private BsonObject matcher;
     private String group;

@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ServerConnectionImpl implements ServerFrameHandler {
 
-    private final static Logger log = LoggerFactory.getLogger(ServerConnectionImpl.class);
+    private final static Logger logger = LoggerFactory.getLogger(ServerConnectionImpl.class);
 
     private final ServerImpl server;
     private final NetSocket socket;
@@ -130,7 +130,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         resp.put(Codec.RESPONSE_OK, true);
         resp.put(Codec.SUBRESPONSE_SUBID, subID);
         writeResponse(Codec.SUBRESPONSE_FRAME, resp, getWriteSeq());
-        ServerConnectionImpl.log.trace("Subscribed channel: {} startSeq {}", channel, startSeq);
+        logger.trace("Subscribed channel: {} startSeq {}", channel, startSeq);
     }
 
     @Override
@@ -224,14 +224,14 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         } else {
             // Out of order
             pq.add(new WriteHolder(order, buff));
-            while (true) {
-                WriteHolder head = pq.peek();
-                if (head != null && head.order == expectedRespNo) {
-                    pq.poll();
-                    writeResponseOrdered0(head.buff);
-                } else {
-                    break;
-                }
+        }
+        while (true) {
+            WriteHolder head = pq.peek();
+            if (head != null && head.order == expectedRespNo) {
+                pq.poll();
+                writeResponseOrdered0(head.buff);
+            } else {
+                break;
             }
         }
     }
@@ -269,12 +269,12 @@ public class ServerConnectionImpl implements ServerFrameHandler {
 
     protected void checkAuthorised() {
         if (!authorised) {
-            log.error("Attempt to use unauthorised connection.");
+            logger.error("Attempt to use unauthorised connection.");
         }
     }
 
     protected void logAndClose(String errMsg) {
-        log.warn(errMsg + ". connection will be closed");
+        logger.warn(errMsg + ". connection will be closed");
         close();
     }
 

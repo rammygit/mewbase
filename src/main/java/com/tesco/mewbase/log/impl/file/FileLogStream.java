@@ -71,9 +71,10 @@ public class FileLogStream implements ReadStream {
 
     @Override
     public synchronized void start() {
-        fileLog.readdSubHolder(this);
         if (subDescriptor.getStartPos() != -1) {
             goRetro(false, subDescriptor.getStartPos());
+        } else {
+            fileLog.readdSubHolder(this);
         }
     }
 
@@ -129,12 +130,16 @@ public class FileLogStream implements ReadStream {
         return true;
     }
 
-    synchronized boolean handle(long pos, BsonObject bsonObject) {
+    synchronized void handle(long pos, BsonObject bsonObject) {
         if (paused) {
-            return false;
+            return;
+        }
+        if (pos <= deliveredPos) {
+            // This can happen if the stream is retro and a message is persisted, delivered from file, then
+            // the stream readded then the message delivered live, so we can just ignore it
+            return;
         }
         handle0(pos, bsonObject);
-        return true;
     }
 
     private void resetParser() {
@@ -143,12 +148,9 @@ public class FileLogStream implements ReadStream {
 
     private void handle0(long pos, BsonObject bsonObject) {
         if (handler != null) {
-            // Sanity check
-            if (pos <= deliveredPos) {
-                throw new IllegalStateException("Invalid pos");
-            }
             handler.accept(pos, bsonObject);
             deliveredPos = pos;
+
         } else {
             throw new IllegalStateException("No handler");
         }
@@ -199,19 +201,19 @@ public class FileLogStream implements ReadStream {
         if (ignoreFirst) {
             ignoreFirst = false;
         } else {
-            long lwp = fileLog.getLastWrittenPos();
-            if (fileStreamPos <= lwp) {
+            long lwep = fileLog.getLastWrittenEndPos();
+            if (fileStreamPos <= lwep) {
                 if (paused) {
                     buffered.add(new BufferedRecord(fileStreamPos, bson));
                 } else {
                     handle0(fileStreamPos, bson);
                 }
             }
-            if (fileStreamPos == lwp) {
+            if (fileStreamPos == lwep) {
                 // Need to lock to prevent messages sneaking in before we readd the stream
                 synchronized (fileLog) {
-                    lwp = fileLog.getLastWrittenPos();
-                    if (fileStreamPos == lwp) {
+                    lwep = fileLog.getLastWrittenEndPos();
+                    if (fileStreamPos == lwep) {
                         // We've got to the head
                         retro = false;
                         streamFile.close();
@@ -290,10 +292,5 @@ public class FileLogStream implements ReadStream {
         }
     }
 
-    private void checkContext() {
-        if (Vertx.currentContext() != context) {
-            throw new IllegalStateException("Wrong context");
-        }
-    }
 }
 

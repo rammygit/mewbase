@@ -51,9 +51,12 @@ public class FileLog implements Log {
     private int fileNumber; // Number of log file containing current head
     private int filePos;    // Position of head in head file
     private long headPos;   // Overall position of head in log
-    private AtomicLong lastWrittenPos = new AtomicLong();  // Position of last safely written record
-
+    private AtomicLong lastWrittenPos = new AtomicLong();  // Position of beginning of last safely written record
     private CompletableFuture<Void> nextFileCF;
+    private long writeSequence;
+    private long expectedSeq;
+    private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
+
 
     public FileLog(Vertx vertx, FileAccess faf, FileLogManagerOptions options, String channel) {
         this.vertx = vertx;
@@ -78,8 +81,6 @@ public class FileLog implements Log {
     }
 
     public synchronized CompletableFuture<Void> start() {
-        log.trace("Starting file log for channel {}", channel);
-
         loadInfo();
         checkAndLoadFiles();
         File currFile = getFile(fileNumber);
@@ -167,13 +168,34 @@ public class FileLog implements Log {
             }
         }
 
+        long seq = writeSequence++;
         cf = append0(len, record);
         cf.thenApply(pos -> {
-            sendToSubs(pos, obj);
+            sendToSubsOrdered(seq, pos, obj);
             return pos;
         });
         checkCreateNextFile();
         return cf;
+    }
+
+    protected synchronized void sendToSubsOrdered(long seq, long pos, BsonObject obj) {
+        // Writes can complete in a different order to which they were submitted, we we need to reorder to ensure
+        // records are delivered in the correct order
+        if (seq == expectedSeq) {
+            sendToSubs(pos, obj);
+        } else {
+            // Out of order
+            pq.add(new WriteHolder(seq, pos, obj));
+        }
+        while (true) {
+            WriteHolder head = pq.peek();
+            if (head != null && head.seq == expectedSeq) {
+                pq.poll();
+                sendToSubs(head.pos, head.obj);
+            } else {
+                break;
+            }
+        }
     }
 
     @Override
@@ -215,11 +237,14 @@ public class FileLog implements Log {
     }
 
     void readdSubHolder(FileLogStream stream) {
-        log.trace("Readding stream");
         fileLogStreams.add(stream);
     }
 
     long getLastWrittenPos() {
+        return lastWrittenPos.get();
+    }
+
+    long getLastWrittenEndPos() {
         return lastWrittenPos.get();
     }
 
@@ -237,13 +262,12 @@ public class FileLog implements Log {
     }
 
     private synchronized void sendToSubs(long pos, BsonObject bsonObject) {
+        expectedSeq++;
         lastWrittenPos.set(pos);
         for (FileLogStream stream: fileLogStreams) {
             if (stream.matches(bsonObject)) {
                 try {
-                    if (!stream.handle(pos, bsonObject)) {
-                        // TODO could be improved by removing holder from live set when inactive
-                    }
+                    stream.handle(pos, bsonObject);
                 } catch (Throwable t) {
                     log.error("Failed to send to subs", t);
                 }
@@ -476,6 +500,25 @@ public class FileLog implements Log {
             this.filePos = (int)(pos % fileMaxSize);
         }
     }
+
+    private static final class WriteHolder implements Comparable<WriteHolder> {
+        final long seq;
+
+        final long pos;
+        final BsonObject obj;
+
+        public WriteHolder(long seq, long pos, BsonObject obj) {
+            this.seq = seq;
+            this.pos = pos;
+            this.obj = obj;
+        }
+
+        @Override
+        public int compareTo(WriteHolder other) {
+            return Long.compare(this.seq, other.seq);
+        }
+    }
+
 
 
 }

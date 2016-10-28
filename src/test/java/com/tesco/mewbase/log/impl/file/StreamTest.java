@@ -181,8 +181,6 @@ public class StreamTest extends LogTestBase {
         rs.start();
     }
 
-
-
     @Test
     //@Repeat(value = 1000)
     public void test_pause_resume_in_retro(TestContext testContext) throws Exception {
@@ -193,7 +191,7 @@ public class StreamTest extends LogTestBase {
         BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
         appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
 
-        FileLogStream rs = (FileLogStream)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1));
+        FileLogStream rs = (FileLogStream)log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(0));
         Async async = testContext.async();
         AtomicInteger cnt = new AtomicInteger();
         AtomicBoolean paused = new AtomicBoolean();
@@ -263,7 +261,7 @@ public class StreamTest extends LogTestBase {
     }
 
     @Test
-    @Repeat(value = 10000)
+    //@Repeat(value = 10000)
     public void test_stream_from_last_written(TestContext testContext) throws Exception {
         int fileSize = objLen * numObjects + 10;
         options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
@@ -330,6 +328,7 @@ public class StreamTest extends LogTestBase {
     }
 
     @Test
+    //@Repeat(value=10000)
     public void test_pause_resume_active_retro_active(TestContext testContext) throws Exception {
         int fileSize = objLen * numObjects + 10;
         options = new FileLogManagerOptions().setMaxLogChunkSize(fileSize).
@@ -363,7 +362,6 @@ public class StreamTest extends LogTestBase {
                 async1.complete();
             }
             if (cnt.get() == numObjects * 2) {
-                testContext.assertFalse(rs.isRetro());
                 rs.close();
                 async2.complete();
             }

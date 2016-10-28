@@ -38,8 +38,8 @@ public class SubscriptionImpl {
         readStream.close();
     }
 
-    private void handleEvent0(long pos, BsonObject frame) {
-        checkContext();
+    // This can be called on different threads depending on whether the frame is coming from file or direct
+    private synchronized void handleEvent0(long pos, BsonObject frame) {
         frame = frame.copy();
         frame.put(Codec.RECEV_SUBID, id);
         frame.put(Codec.RECEV_POS, pos);
@@ -62,7 +62,7 @@ public class SubscriptionImpl {
     // Sanity check - this should always be executed using the correct context
     private void checkContext() {
         if (Vertx.currentContext() != ctx) {
-            throw new IllegalStateException("Wrong context!");
+            throw new IllegalStateException("Wrong context! " + Vertx.currentContext() + " expected: " + ctx);
         }
     }
 }

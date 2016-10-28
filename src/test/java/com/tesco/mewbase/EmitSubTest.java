@@ -35,7 +35,7 @@ public class EmitSubTest extends ServerTestBase {
     private final static Logger log = LoggerFactory.getLogger(EmitSubTest.class);
 
     @Test
-    @Repeat(value = 10000)
+    //@Repeat(value = 10000)
     public void testSimpleEmitSubscribe(TestContext context) throws Exception {
         Connection conn = client.connect(new ConnectionOptions()).get();
         SubDescriptor descriptor = new SubDescriptor();
@@ -57,6 +57,7 @@ public class EmitSubTest extends ServerTestBase {
     }
 
     @Test
+    //@Repeat(value = 10000)
     public void testSubscribeRetro(TestContext context) throws Exception {
         Connection conn = client.connect(new ConnectionOptions()).get();
         Producer prod = conn.createProducer(TEST_CHANNEL_1);
