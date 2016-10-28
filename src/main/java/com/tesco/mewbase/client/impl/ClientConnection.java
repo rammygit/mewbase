@@ -65,7 +65,6 @@ public class ClientConnection implements Connection, ClientFrameHandler {
         frame.put(Codec.SUBSCRIBE_DURABLEID, descriptor.getDurableID());
         frame.put(Codec.SUBSCRIBE_MATCHER, descriptor.getMatcher());
         Buffer buffer = Codec.encodeFrame(Codec.SUBSCRIBE_FRAME, frame);
-        log.trace("Writing subscribe");
         write(buffer, resp -> {
             boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
             if (ok) {
@@ -74,7 +73,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
                 subscriptionMap.put(subID, sub);
                 cf.complete(sub);
             } else {
-                cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
         });
         return cf;
@@ -193,7 +192,6 @@ public class ClientConnection implements Connection, ClientFrameHandler {
     protected synchronized void write(Buffer buff, Consumer<BsonObject> respHandler) {
         respQueue.add(respHandler);
         netSocket.write(buff);
-        log.trace("Client writing buff of length " + buff.length());
     }
 
 
@@ -209,15 +207,12 @@ public class ClientConnection implements Connection, ClientFrameHandler {
         BsonObject frame = new BsonObject();
         frame.put(Codec.CONNECT_VERSION, "0.1");
         Buffer buffer = Codec.encodeFrame(Codec.CONNECT_FRAME, frame);
-        int len = buffer.getInt(0);
-        log.trace("Length of connect buffer is " + len);
-
         write(buffer, resp -> {
             boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
             if (ok) {
                 cf.complete(ClientConnection.this);
             } else {
-                cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
         });
     }
@@ -249,7 +244,7 @@ public class ClientConnection implements Connection, ClientFrameHandler {
             if (ok) {
                 cf.complete(null);
             } else {
-                cf.completeExceptionally(new MuException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
             }
         });
         return cf;

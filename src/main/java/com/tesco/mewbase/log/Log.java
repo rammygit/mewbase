@@ -2,7 +2,7 @@ package com.tesco.mewbase.log;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.ReadStream;
-import com.tesco.mewbase.common.WriteStream;
+import com.tesco.mewbase.common.SubDescriptor;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -11,9 +11,17 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Log {
 
-    ReadStream openReadStream(long pos);
+    ReadStream subscribe(SubDescriptor subDescriptor);
 
-    WriteStream openWriteStream();
+    CompletableFuture<Long> append(BsonObject obj);
 
-    CompletableFuture<Void> append(BsonObject obj);
+    CompletableFuture<Void> start();
+
+    CompletableFuture<Void> close();
+
+    int getFileNumber();
+
+    long getHeadPos();
+
+    int getFilePos();
 }

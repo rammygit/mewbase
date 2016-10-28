@@ -26,35 +26,15 @@ import java.util.concurrent.CompletableFuture;
  * Created by tim on 30/09/16.
  */
 @RunWith(VertxUnitRunner.class)
-public class FunctionTest {
+public class FunctionTest extends ServerTestBase {
 
     private final static Logger log = LoggerFactory.getLogger(FunctionTest.class);
 
-    private static final String TEST_STREAM1 = "com.tesco.basket";
-
-    private Server server;
-    private Client client;
-
-    @Before
-    public void before() throws Exception {
-        log.trace("in before");
-        server = new ServerImpl(new ServerOptions());
-        CompletableFuture<Void> cfStart = server.start();
-        cfStart.get();
-        client = new ClientImpl();
-    }
-
-    @After
-    public void after() throws Exception {
-        log.trace("in after");
-        client.close().get();
-        server.stop().get();
-    }
 
     @Test
     public void testSimpleFunction(TestContext context) throws Exception {
         Async async = context.async();
-        SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_STREAM1);
+        SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_CHANNEL_1);
         server.installFunction("testfunc", descriptor, (ctx, re) -> {
             BsonObject event = re.event();
             long basketID = event.getInteger("basketID");
@@ -69,7 +49,7 @@ public class FunctionTest {
         });
 
         Connection conn = client.connect(new ConnectionOptions()).get();
-        Producer prod = conn.createProducer(TEST_STREAM1);
+        Producer prod = conn.createProducer(TEST_CHANNEL_1);
 
         prod.emit(new BsonObject().put("basketID", 1).put("productId", 1).put("quantity", 1)).get();
     }

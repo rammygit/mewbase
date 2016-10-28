@@ -1,5 +1,7 @@
 package com.tesco.mewbase.server;
 
+import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
+
 /**
  * Created by tim on 22/09/16.
  */
@@ -7,6 +9,8 @@ public class ServerOptions {
 
     private String host = "0.0.0.0";
     private int port = 7451;
+    private String[] channels;
+    private FileLogManagerOptions fileLogManagerOptions;
 
     public String getHost() {
         return host;
@@ -26,30 +30,21 @@ public class ServerOptions {
         return this;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ServerOptions that = (ServerOptions) o;
-
-        if (port != that.port) return false;
-        return host != null ? host.equals(that.host) : that.host == null;
-
+    public String[] getChannels() {
+        return channels;
     }
 
-    @Override
-    public int hashCode() {
-        int result = host != null ? host.hashCode() : 0;
-        result = 31 * result + port;
-        return result;
+    public ServerOptions setChannels(String[] channels) {
+        this.channels = channels;
+        return this;
     }
 
-    @Override
-    public String toString() {
-        return "ServerOptions{" +
-                "host='" + host + '\'' +
-                ", port=" + port +
-                '}';
+    public FileLogManagerOptions getFileLogManagerOptions() {
+        return fileLogManagerOptions;
+    }
+
+    public ServerOptions setFileLogManagerOptions(FileLogManagerOptions fileLogManagerOptions) {
+        this.fileLogManagerOptions = fileLogManagerOptions;
+        return this;
     }
 }

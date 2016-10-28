@@ -3,6 +3,7 @@ package com.tesco.mewbase.common;
 import com.tesco.mewbase.bson.BsonObject;
 import io.vertx.core.Handler;
 
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -10,9 +11,11 @@ import java.util.function.Consumer;
  */
 public interface ReadStream {
 
-    void exceptionHandler(Handler<Throwable> handler);
+    void exceptionHandler(Consumer<Throwable> handler);
 
-    void handler(Consumer<BsonObject> handler);
+    void handler(BiConsumer<Long, BsonObject> handler);
+
+    void start();
 
     void pause();
 

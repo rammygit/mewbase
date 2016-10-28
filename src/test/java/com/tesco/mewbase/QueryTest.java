@@ -28,30 +28,10 @@ import java.util.concurrent.ExecutionException;
  * Created by Jamie on 14/10/2016.
  */
 @RunWith(VertxUnitRunner.class)
-public class QueryTest {
-    private final static Logger log = LoggerFactory.getLogger(FunctionTest.class);
+public class QueryTest extends ServerTestBase {
+    private final static Logger log = LoggerFactory.getLogger(QueryTest.class);
 
-    private static final String TEST_STREAM1 = "com.tesco.basket";
     private static final String TEST_BINDER1 = "baskets";
-
-    private Server server;
-    private Client client;
-
-    @Before
-    public void before() throws Exception {
-        log.trace("in before");
-        server = new ServerImpl(new ServerOptions());
-        CompletableFuture<Void> cfStart = server.start();
-        cfStart.get();
-        client = new ClientImpl();
-    }
-
-    @After
-    public void after() throws Exception {
-        log.trace("in after");
-        client.close().get();
-        server.stop().get();
-    }
 
     @Test
     public void testGetById(TestContext context) throws Exception {
@@ -77,7 +57,7 @@ public class QueryTest {
     private CompletableFuture<Void> insertDocument(String binder, BsonObject document) throws Exception {
         CompletableFuture<Void> cf = new CompletableFuture<>();
 
-        SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_STREAM1);
+        SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_CHANNEL_1);
         server.installFunction("inserterfunc", descriptor, (ctx, re) -> {
             CompletableFuture<Void> cfUpsert = ctx.upsert(binder, document);
             cfUpsert.thenRun(() -> {
@@ -87,7 +67,7 @@ public class QueryTest {
         });
 
         Connection conn = client.connect(new ConnectionOptions()).get();
-        Producer prod = conn.createProducer(TEST_STREAM1);
+        Producer prod = conn.createProducer(TEST_CHANNEL_1);
 
         prod.emit(new BsonObject().put("foo", "bar")).get();
 

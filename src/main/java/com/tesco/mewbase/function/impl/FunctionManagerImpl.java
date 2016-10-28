@@ -43,7 +43,7 @@ public class FunctionManagerImpl implements FunctionManager {
 
             holder.init(connection, descriptor);
         } catch (Exception e) {
-            throw new MuException(e.getMessage(), e);
+            throw new MewException(e.getMessage(), e);
         }
         return true;
     }

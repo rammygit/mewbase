@@ -1,7 +1,7 @@
 package com.tesco.mewbase.doc.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.MuException;
+import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.client.QueryResult;
 import com.tesco.mewbase.doc.DocManager;
 
@@ -67,7 +67,7 @@ public class InMemoryDocManager implements DocManager {
         String id = doc.getString(ID_FIELD);
         if (id == null) {
             // TODO - should we always provide error codes?
-            cfResult.completeExceptionally(new MuException("No id field in BsonObject"));
+            cfResult.completeExceptionally(new MewException("No id field in BsonObject"));
         } else {
             binder.upsert(id, doc);
             cfResult.complete(null);

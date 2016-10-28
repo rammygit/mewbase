@@ -13,7 +13,7 @@ public interface ReceivedEvent {
 
     long timeStamp();
 
-    long sequenceNumber();
+    long channelPos();
 
     BsonObject event();
 

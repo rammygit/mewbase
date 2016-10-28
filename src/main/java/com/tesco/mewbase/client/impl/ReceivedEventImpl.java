@@ -36,7 +36,7 @@ public class ReceivedEventImpl implements ReceivedEvent {
     }
 
     @Override
-    public long sequenceNumber() {
+    public long channelPos() {
         return sequenceNumber;
     }
 

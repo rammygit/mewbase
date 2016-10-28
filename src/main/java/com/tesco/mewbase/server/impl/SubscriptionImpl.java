@@ -2,7 +2,6 @@ package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.ReadStream;
-import com.tesco.mewbase.log.Log;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -18,62 +17,36 @@ public class SubscriptionImpl {
 
     private static final int MAX_UNACKED_BYTES = 4 * 1024 * 1024; // TODO make configurable
 
-    private final ChannelProcessor channelProcessor;
     private final ServerConnectionImpl connection;
-    private final int idPerConn;
-    private final Log log;
-    private long deliveredSeq;
-    private long streamSeq;
-    private ReadStream readStream;
-    private boolean retro;
-    private boolean paused;
-    private int unackedBytes;
+    private final int id;
     private final Context ctx;
+    private final ReadStream readStream;
+    private int unackedBytes;
 
-    public SubscriptionImpl(ChannelProcessor channelProcessor, ServerConnectionImpl connection, int idPerConn,
-                            Log log, long startSeq, long streamSeq) {
-        this.channelProcessor = channelProcessor;
+    public SubscriptionImpl(ServerConnectionImpl connection, int id,
+                            ReadStream readStream) {
         this.connection = connection;
-        this.idPerConn = idPerConn;
-        this.log = log;
+        this.id = id;
         this.ctx = Vertx.currentContext();
-        this.streamSeq = streamSeq;
-        if (startSeq != -1) {
-            openReadStream(startSeq);
-        }
+        this.readStream = readStream;
+        readStream.handler(this::handleEvent0);
+        readStream.start();
     }
 
     protected void close() {
         checkContext();
-        channelProcessor.removeSubScription(this);
+        readStream.close();
     }
 
-    protected void handleEvent(long seq, BsonObject frame) {
-        checkContext();
-        this.streamSeq = seq;
-        if (retro || paused) {
-            return;
-        }
-        handleEvent0(seq, frame);
-    }
-
-    private void handleEvent0(long seq, BsonObject frame) {
-        logger.trace("sub for channel {} id {} handling event with seq {}", channelProcessor.getChannel(), idPerConn, seq);
-        checkContext();
+    // This can be called on different threads depending on whether the frame is coming from file or direct
+    private synchronized void handleEvent0(long pos, BsonObject frame) {
         frame = frame.copy();
-        frame.put(Codec.RECEV_SUBID, idPerConn);
+        frame.put(Codec.RECEV_SUBID, id);
+        frame.put(Codec.RECEV_POS, pos);
         Buffer buff = connection.writeNonResponse(Codec.RECEV_FRAME, frame);
-        deliveredSeq = seq;
         unackedBytes += buff.length();
         if (unackedBytes > MAX_UNACKED_BYTES) {
-            paused = true;
-            if (readStream != null) {
-                readStream.pause();
-            }
-        }
-        if (retro && streamSeq == deliveredSeq) {
-            readStream.close();
-            retro = false;
+            readStream.pause();
         }
     }
 
@@ -82,28 +55,14 @@ public class SubscriptionImpl {
         unackedBytes -= bytes;
         // Low watermark to prevent thrashing
         if (unackedBytes < MAX_UNACKED_BYTES / 2) {
-            paused = false;
-            if (readStream != null) {
-                readStream.resume();
-            } else if (streamSeq > deliveredSeq) {
-                // We've missed some messages
-                openReadStream(deliveredSeq + 1);
-            }
+            readStream.resume();
         }
     }
 
-    private void openReadStream(long pos) {
-        readStream = log.openReadStream(pos);
-        retro = true;
-        readStream.handler(bson -> handleEvent0(bson.getLong(Codec.RECEV_POS), bson));
-    }
-
-    // Sanity check - this should always be executed using the connection's context
+    // Sanity check - this should always be executed using the correct context
     private void checkContext() {
         if (Vertx.currentContext() != ctx) {
-            // TODO revisit handling of context within the subscription.
-            // Currently subscription handlers are executed on the context of the received event, not the context with which the subscription was created
-            //throw new IllegalStateException("Wrong context!");
+            throw new IllegalStateException("Wrong context! " + Vertx.currentContext() + " expected: " + ctx);
         }
     }
 }
