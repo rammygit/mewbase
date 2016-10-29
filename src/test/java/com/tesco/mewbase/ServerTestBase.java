@@ -32,7 +32,7 @@ public class ServerTestBase extends MewbaseTestBase {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
         ServerOptions options = new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
                 .setFileLogManagerOptions(fileLogManagerOptions);
-        server = new ServerImpl(options);
+        server = Server.newServer(options);
         CompletableFuture<Void> cfStart = server.start();
         cfStart.get();
         client = new ClientImpl();

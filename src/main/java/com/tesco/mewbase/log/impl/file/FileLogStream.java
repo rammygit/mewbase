@@ -70,6 +70,7 @@ public class FileLogStream implements ReadStream {
 
     @Override
     public synchronized void start() {
+        checkContext();
         if (subDescriptor.getStartPos() != -1) {
             goRetro(false, subDescriptor.getStartPos());
         } else {
@@ -288,6 +289,13 @@ public class FileLogStream implements ReadStream {
         BufferedRecord(long pos, BsonObject bson) {
             this.pos = pos;
             this.bson = bson;
+        }
+    }
+
+    // Sanity check - this should always be executed using the correct context
+    private void checkContext() {
+        if (Vertx.currentContext() != context) {
+            throw new IllegalStateException("Wrong context! " + Vertx.currentContext() + " expected: " + context);
         }
     }
 

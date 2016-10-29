@@ -12,7 +12,7 @@ public class ExampleServer {
 
     public static void main(String[] args) {
 
-        Server mewbase = new ServerImpl(new ServerOptions());
+        Server mewbase = Server.newServer(new ServerOptions());
         mewbase.installFunction("myfunc1", new SubDescriptor().setChannel("com.tesco.foo"), (ctx, re) -> {
             //do something
         });
