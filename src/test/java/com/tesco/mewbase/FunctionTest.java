@@ -23,7 +23,6 @@ public class FunctionTest extends ServerTestBase {
 
     private final static Logger log = LoggerFactory.getLogger(FunctionTest.class);
 
-
     @Test
     public void testSimpleFunction(TestContext context) throws Exception {
         Async async = context.async();

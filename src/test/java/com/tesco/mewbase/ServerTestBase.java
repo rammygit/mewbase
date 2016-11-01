@@ -35,7 +35,7 @@ public class ServerTestBase extends MewbaseTestBase {
         server = Server.newServer(options);
         CompletableFuture<Void> cfStart = server.start();
         cfStart.get();
-        client = new ClientImpl();
+        client = Client.newClient();
     }
 
     @Override

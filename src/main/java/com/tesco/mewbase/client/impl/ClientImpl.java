@@ -18,11 +18,11 @@ public class ClientImpl implements Client {
     private final Vertx vertx;
     private final NetClient netClient;
 
-    public ClientImpl() {
+    protected ClientImpl() {
         this(Vertx.vertx(), true);
     }
 
-    public ClientImpl(Vertx vertx) {
+    protected ClientImpl(Vertx vertx) {
         this(vertx, false);
     }
 

@@ -18,5 +18,4 @@ public interface DocQuerier {
 
     CompletableFuture<QueryResult> getAllMatching(String binderName, BsonObject matcher);
 
-
 }

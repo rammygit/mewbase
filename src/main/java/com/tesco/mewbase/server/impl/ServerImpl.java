@@ -41,7 +41,7 @@ public class ServerImpl implements Server {
     private final DocManager docManager;
     private final FunctionManager functionManager;
 
-    public ServerImpl(Vertx vertx, ServerOptions serverOptions) {
+    protected ServerImpl(Vertx vertx, ServerOptions serverOptions) {
         this.vertx = vertx;
         this.serverOptions = serverOptions;
         FileAccess faf = new AFFileAccess(vertx);
@@ -52,7 +52,7 @@ public class ServerImpl implements Server {
         this.functionManager = new FunctionManagerImpl(docManager);
     }
 
-    public ServerImpl(ServerOptions serverOptions) {
+    protected ServerImpl(ServerOptions serverOptions) {
         this(Vertx.vertx(), serverOptions);
     }
 

@@ -27,7 +27,7 @@ public class FunctionManagerImpl implements FunctionManager {
 
     public FunctionManagerImpl(DocManager docManager) {
         this.docManager = docManager;
-        this.localClient = new ClientImpl();
+        this.localClient = Client.newClient();
     }
 
     @Override
