@@ -2,7 +2,6 @@ package com.tesco.mewbase;
 
 import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.RepeatRule;
 import org.junit.After;

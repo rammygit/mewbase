@@ -3,7 +3,6 @@ package com.tesco.mewbase.server;
 import com.tesco.mewbase.function.FunctionManager;
 import com.tesco.mewbase.server.spi.ServerFactory;
 import io.vertx.core.ServiceHelper;
-import io.vertx.core.spi.VertxFactory;
 
 import java.util.concurrent.CompletableFuture;
 

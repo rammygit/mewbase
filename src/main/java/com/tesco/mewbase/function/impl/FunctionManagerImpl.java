@@ -1,6 +1,9 @@
 package com.tesco.mewbase.function.impl;
 
-import com.tesco.mewbase.client.*;
+import com.tesco.mewbase.client.Client;
+import com.tesco.mewbase.client.ClientOptions;
+import com.tesco.mewbase.client.MewException;
+import com.tesco.mewbase.client.Subscription;
 import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;

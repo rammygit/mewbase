@@ -3,7 +3,6 @@ package com.tesco.mewbase.shopping;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
-import com.tesco.mewbase.server.impl.ServerImpl;
 
 /**
  * Created by tim on 30/09/16.

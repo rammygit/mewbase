@@ -249,7 +249,6 @@ public class ClientImpl implements Client, ClientFrameHandler {
     }
 
 
-
     protected void doUnsubscribe(int subID) {
         subscriptionMap.remove(subID);
         BsonObject frame = new BsonObject();

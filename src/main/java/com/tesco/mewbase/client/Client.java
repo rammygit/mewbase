@@ -2,8 +2,8 @@ package com.tesco.mewbase.client;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.spi.ClientFactory;
-import com.tesco.mewbase.common.DocQuerier;
 import com.tesco.mewbase.common.Delivery;
+import com.tesco.mewbase.common.DocQuerier;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.core.ServiceHelper;
 import io.vertx.core.Vertx;

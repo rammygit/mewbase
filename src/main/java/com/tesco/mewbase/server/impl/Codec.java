@@ -4,7 +4,6 @@ import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.FrameHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.net.NetSocket;
 import io.vertx.core.parsetools.RecordParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
