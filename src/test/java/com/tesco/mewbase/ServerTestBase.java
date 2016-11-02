@@ -1,11 +1,10 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.client.Client;
-import com.tesco.mewbase.client.impl.ClientImpl;
+import com.tesco.mewbase.client.ClientOptions;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
-import com.tesco.mewbase.server.impl.ServerImpl;
 import io.vertx.ext.unit.TestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,14 +34,16 @@ public class ServerTestBase extends MewbaseTestBase {
         server = Server.newServer(options);
         CompletableFuture<Void> cfStart = server.start();
         cfStart.get();
-        client = Client.newClient();
+        client = Client.newClient(vertx, new ClientOptions());
     }
 
     @Override
     protected void tearDown(TestContext context) throws Exception {
         log.trace("in after");
         client.close().get();
+        log.trace("client closed");
         server.stop().get();
+        log.trace("server closed");
         super.tearDown(context);
     }
 }

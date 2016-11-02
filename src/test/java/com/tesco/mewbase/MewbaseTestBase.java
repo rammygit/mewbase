@@ -1,5 +1,6 @@
 package com.tesco.mewbase;
 
+import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -43,14 +44,9 @@ public class MewbaseTestBase {
     }
 
     protected void tearDown(TestContext context) throws Exception {
-        Async async = context.async();
-        vertx.close(ar -> {
-            if (ar.succeeded()) {
-                async.complete();
-            } else {
-                context.fail(ar.cause());
-            }
-        });
+        AsyncResCF<Void> cf = new AsyncResCF<>();
+        vertx.close(cf);
+        cf.get();
     }
 
     protected void waitUntil(BooleanSupplier supplier) {

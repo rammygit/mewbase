@@ -49,7 +49,7 @@ public class ServerImpl implements Server {
         FileLogManagerOptions options = sOptions == null ? new FileLogManagerOptions() : sOptions;
         this.logManager = new FileLogManager(vertx, options, faf);
         this.docManager = new InMemoryDocManager();
-        this.functionManager = new FunctionManagerImpl(docManager);
+        this.functionManager = new FunctionManagerImpl(vertx, docManager);
     }
 
     protected ServerImpl(ServerOptions serverOptions) {

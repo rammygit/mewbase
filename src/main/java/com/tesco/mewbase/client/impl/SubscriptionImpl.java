@@ -4,8 +4,11 @@ import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Subscription;
 import com.tesco.mewbase.common.ReceivedEvent;
 import com.tesco.mewbase.server.impl.Codec;
+import com.tesco.mewbase.server.impl.ServerConnectionImpl;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -16,14 +19,16 @@ import java.util.function.Consumer;
  */
 public class SubscriptionImpl implements Subscription {
 
+    private final static Logger logger = LoggerFactory.getLogger(SubscriptionImpl.class);
+
     private final int id;
     private final String channel;
-    private final ClientConnection conn;
+    private final ClientImpl conn;
     private final Queue<ReceivedEvent> buffered = new LinkedList<>();
     private Consumer<ReceivedEvent> handler;
     private final Context ctx;
 
-    public SubscriptionImpl(int id, String channel, ClientConnection conn) {
+    public SubscriptionImpl(int id, String channel, ClientImpl conn) {
         this.id = id;
         this.channel = channel;
         this.conn = conn;
@@ -81,8 +86,10 @@ public class SubscriptionImpl implements Subscription {
                 frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT), sizeBytes);
         Consumer<ReceivedEvent> h = handler; // Copy ref to avoid race if handler is unregistered
         if (h == null || !buffered.isEmpty()) {
+            logger.trace("adding recev buffered");
             buffered.add(re);
         } else {
+            logger.trace("handling recev direct");
             h.accept(re);
         }
     }

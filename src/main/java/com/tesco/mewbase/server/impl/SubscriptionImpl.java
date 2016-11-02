@@ -43,6 +43,7 @@ public class SubscriptionImpl {
         frame = frame.copy();
         frame.put(Codec.RECEV_SUBID, id);
         frame.put(Codec.RECEV_POS, pos);
+        logger.trace("Writing recev");
         Buffer buff = connection.writeNonResponse(Codec.RECEV_FRAME, frame);
         unackedBytes += buff.length();
         if (unackedBytes > MAX_UNACKED_BYTES) {

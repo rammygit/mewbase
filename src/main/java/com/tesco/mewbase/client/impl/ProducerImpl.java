@@ -10,12 +10,12 @@ import java.util.concurrent.CompletableFuture;
  */
 public class ProducerImpl implements Producer {
 
-    private final ClientConnection connection;
+    private final ClientImpl client;
     private final String channel;
     private final int id;
 
-    public ProducerImpl(ClientConnection connection, String channel, int id) {
-        this.connection = connection;
+    public ProducerImpl(ClientImpl client, String channel, int id) {
+        this.client = client;
         this.channel = channel;
         this.id = id;
     }
@@ -37,6 +37,6 @@ public class ProducerImpl implements Producer {
 
     @Override
     public CompletableFuture<Void> emit(BsonObject event) {
-        return connection.doEmit(channel, id, event);
+        return client.doEmit(channel, id, event);
     }
 }

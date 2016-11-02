@@ -26,7 +26,6 @@ public class ServerConnectionImpl implements ServerFrameHandler {
 
     private final ServerImpl server;
     private final NetSocket socket;
-    private final Codec codec;
     private final Context context;
     private final DocManager docManager;
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
@@ -37,7 +36,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     private long expectedRespNo;
 
     public ServerConnectionImpl(ServerImpl server, NetSocket netSocket, Context context, DocManager docManager) {
-        this.codec = new Codec(netSocket, this);
+        netSocket.handler(new Codec(this).recordParser());
         this.server = server;
         this.socket = netSocket;
         this.context = context;
@@ -75,6 +74,8 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         record.put(Codec.RECEV_TIMESTAMP, System.currentTimeMillis());
         record.put(Codec.RECEV_EVENT, event);
         CompletableFuture<Long> cf = log.append(record);
+
+        logger.trace("Handling emit " + event.getInteger("num"));
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();

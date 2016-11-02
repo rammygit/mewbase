@@ -1,8 +1,7 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.Connection;
-import com.tesco.mewbase.client.ConnectionOptions;
+import com.tesco.mewbase.client.ClientOptions;
 import com.tesco.mewbase.client.Producer;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.ext.unit.TestContext;
@@ -30,8 +29,7 @@ public class QueryTest extends ServerTestBase {
 
         insertDocument(TEST_BINDER1, new BsonObject().put("id", docId).put("foo", "bar")).get();
 
-        Connection conn = client.connect(new ConnectionOptions()).get();
-        BsonObject doc = conn.getByID(TEST_BINDER1, docId).get();
+        BsonObject doc = client.getByID(TEST_BINDER1, docId).get();
 
         Assert.assertEquals(docId, doc.getString("id"));
         Assert.assertEquals("bar", doc.getString("foo"));
@@ -39,8 +37,7 @@ public class QueryTest extends ServerTestBase {
 
     @Test
     public void testGetByIdReturnsNullForNonExistentDocument(TestContext context) throws Exception {
-        Connection conn = client.connect(new ConnectionOptions()).get();
-        BsonObject doc = conn.getByID(TEST_BINDER1, "non-existent-document").get();
+        BsonObject doc = client.getByID(TEST_BINDER1, "non-existent-document").get();
 
         Assert.assertEquals(null, doc);
     }
@@ -57,8 +54,7 @@ public class QueryTest extends ServerTestBase {
             });
         });
 
-        Connection conn = client.connect(new ConnectionOptions()).get();
-        Producer prod = conn.createProducer(TEST_CHANNEL_1);
+        Producer prod = client.createProducer(TEST_CHANNEL_1);
 
         prod.emit(new BsonObject().put("foo", "bar")).get();
 

@@ -1,8 +1,7 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.Connection;
-import com.tesco.mewbase.client.ConnectionOptions;
+import com.tesco.mewbase.client.ClientOptions;
 import com.tesco.mewbase.client.Producer;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.ext.unit.Async;
@@ -40,8 +39,7 @@ public class FunctionTest extends ServerTestBase {
             cf.thenRun(async::complete);
         });
 
-        Connection conn = client.connect(new ConnectionOptions()).get();
-        Producer prod = conn.createProducer(TEST_CHANNEL_1);
+        Producer prod = client.createProducer(TEST_CHANNEL_1);
 
         prod.emit(new BsonObject().put("basketID", 1).put("productId", 1).put("quantity", 1)).get();
     }

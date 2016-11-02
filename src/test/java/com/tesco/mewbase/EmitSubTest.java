@@ -1,13 +1,13 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.Connection;
-import com.tesco.mewbase.client.ConnectionOptions;
+import com.tesco.mewbase.client.ClientOptions;
 import com.tesco.mewbase.client.Producer;
 import com.tesco.mewbase.client.Subscription;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Repeat;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -29,11 +29,10 @@ public class EmitSubTest extends ServerTestBase {
     @Test
     //@Repeat(value = 10000)
     public void testSimpleEmitSubscribe(TestContext context) throws Exception {
-        Connection conn = client.connect(new ConnectionOptions()).get();
         SubDescriptor descriptor = new SubDescriptor();
         descriptor.setChannel(TEST_CHANNEL_1);
-        Subscription sub = conn.subscribe(descriptor).get();
-        Producer prod = conn.createProducer(TEST_CHANNEL_1);
+        Subscription sub = client.subscribe(descriptor).get();
+        Producer prod = client.createProducer(TEST_CHANNEL_1);
         Async async = context.async();
         long now = System.currentTimeMillis();
         BsonObject sent = new BsonObject().put("foo", "bar");
@@ -51,8 +50,7 @@ public class EmitSubTest extends ServerTestBase {
     @Test
     //@Repeat(value = 10000)
     public void testSubscribeRetro(TestContext context) throws Exception {
-        Connection conn = client.connect(new ConnectionOptions()).get();
-        Producer prod = conn.createProducer(TEST_CHANNEL_1);
+        Producer prod = client.createProducer(TEST_CHANNEL_1);
         int numEvents = 10;
         for (int i = 0; i < numEvents; i++) {
             BsonObject event = new BsonObject().put("foo", "bar").put("num", i);
@@ -64,7 +62,7 @@ public class EmitSubTest extends ServerTestBase {
         SubDescriptor descriptor = new SubDescriptor();
         descriptor.setChannel(TEST_CHANNEL_1);
         descriptor.setStartPos(0);
-        Subscription sub = conn.subscribe(descriptor).get();
+        Subscription sub = client.subscribe(descriptor).get();
         Async async = context.async();
         AtomicLong lastPos = new AtomicLong(-1);
         AtomicInteger receivedCount = new AtomicInteger();
@@ -80,6 +78,5 @@ public class EmitSubTest extends ServerTestBase {
                 async.complete();
             }
         });
-
     }
 }

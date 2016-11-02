@@ -93,10 +93,11 @@ public class Codec {
     private final static Logger log = LoggerFactory.getLogger(Codec.class);
 
     private final FrameHandler frameHandler;
+    private final RecordParser parser;
 
-    public Codec(NetSocket socket, FrameHandler frameHandler) {
+    public Codec(FrameHandler frameHandler) {
         this.frameHandler = frameHandler;
-        RecordParser parser = RecordParser.newFixed(4, null);
+        parser = RecordParser.newFixed(4, null);
         Handler<Buffer> handler = new Handler<Buffer>() {
             int size = -1;
 
@@ -112,7 +113,10 @@ public class Codec {
             }
         };
         parser.setOutput(handler);
-        socket.handler(parser);
+    }
+
+    public RecordParser recordParser() {
+        return parser;
     }
 
     private void handleFrame(int size, Buffer buffer) {
