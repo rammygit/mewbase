@@ -2,6 +2,7 @@ package com.tesco.mewbase.client.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.*;
+import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.server.impl.Codec;
 import com.tesco.mewbase.util.AsyncResCF;
@@ -70,7 +71,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
     }
 
     @Override
-    public CompletableFuture<Subscription> subscribe(SubDescriptor descriptor) {
+    public CompletableFuture<Subscription> subscribe(SubDescriptor descriptor, Consumer<Delivery> handler) {
         CompletableFuture<Subscription> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
         if (descriptor.getChannel() == null) {
@@ -86,7 +87,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
             boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
             if (ok) {
                 int subID = resp.getInteger(Codec.SUBRESPONSE_SUBID);
-                SubscriptionImpl sub = new SubscriptionImpl(subID, descriptor.getChannel(), this);
+                SubscriptionImpl sub = new SubscriptionImpl(subID, descriptor.getChannel(), this, handler);
                 subscriptionMap.put(subID, sub);
                 cf.complete(sub);
             } else {
@@ -97,14 +98,14 @@ public class ClientImpl implements Client, ClientFrameHandler {
     }
 
     @Override
-    public CompletableFuture<Void> emit(String channel, BsonObject event) {
-        return doEmit(channel, -1, event);
+    public CompletableFuture<Void> publish(String channel, BsonObject event) {
+        return doPublish(channel, -1, event);
     }
 
     @Override
-    public CompletableFuture<Void> emit(String channel, BsonObject event, Function<BsonObject, String> partitionFunc) {
+    public CompletableFuture<Void> publish(String channel, BsonObject event, Function<BsonObject, String> partitionFunc) {
         // TODO partitions
-        return doEmit(channel, -1, event);
+        return doPublish(channel, -1, event);
     }
 
     @Override
@@ -272,13 +273,13 @@ public class ClientImpl implements Client, ClientFrameHandler {
         write(buffer);
     }
 
-    protected CompletableFuture<Void> doEmit(String channel, int producerID, BsonObject event) {
+    protected CompletableFuture<Void> doPublish(String channel, int producerID, BsonObject event) {
         CompletableFuture<Void> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
-        frame.put(Codec.EMIT_CHANNEL, channel);
-        frame.put(Codec.EMIT_SESSID, producerID);
-        frame.put(Codec.EMIT_EVENT, event);
-        Buffer buffer = Codec.encodeFrame(Codec.EMIT_FRAME, frame);
+        frame.put(Codec.PUBLISH_CHANNEL, channel);
+        frame.put(Codec.PUBLISH_SESSID, producerID);
+        frame.put(Codec.PUBLISH_EVENT, event);
+        Buffer buffer = Codec.encodeFrame(Codec.PUBLISH_FRAME, frame);
         write(cf, buffer, resp -> {
             boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
             if (ok) {

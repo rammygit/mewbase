@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 /**
  * TODO we should write our own BSON parser and only decode fields when needed.
  * BSON is ordered and `type` should be the first field - we only need to decode that in order to know what to do
- * with the frame - in the case of an EMIT we should be able to pass the buffer direct to subscribers without
+ * with the frame - in the case of a PUB we should be able to pass the buffer direct to subscribers without
  * further decoding of the event, also to storage. I.e. we want to avoid decoding the entire frame in all cases
  * <p>
  * Created by tim on 23/09/16.
@@ -23,7 +23,7 @@ public class Codec {
 
     public static final String RESPONSE_FRAME = "RESPONSE";
     public static final String CONNECT_FRAME = "CONNECT";
-    public static final String EMIT_FRAME = "EMIT";
+    public static final String PUBLISH_FRAME = "PUB";
     public static final String STARTTX_FRAME = "STARTTX";
     public static final String COMMITTX_FRAME = "COMMITTX";
     public static final String ABORTTX_FRAME = "ABORTTX";
@@ -50,9 +50,9 @@ public class Codec {
     public static final String CONNECT_PASSWORD = "password";
     public static final String CONNECT_VERSION = "version";
 
-    public static final String EMIT_CHANNEL = "channel";
-    public static final String EMIT_EVENT = "event";
-    public static final String EMIT_SESSID = "sessID";
+    public static final String PUBLISH_CHANNEL = "channel";
+    public static final String PUBLISH_EVENT = "event";
+    public static final String PUBLISH_SESSID = "sessID";
 
     public static final String STARTTX_SESSID = "sessID";
 
@@ -137,8 +137,8 @@ public class Codec {
             case CONNECT_FRAME:
                 frameHandler.handleConnect(frame);
                 break;
-            case EMIT_FRAME:
-                frameHandler.handleEmit(frame);
+            case PUBLISH_FRAME:
+                frameHandler.handlePublish(frame);
                 break;
             case STARTTX_FRAME:
                 frameHandler.handleStartTx(frame);

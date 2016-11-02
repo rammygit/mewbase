@@ -396,7 +396,7 @@ public class StreamTest extends LogTestBase {
             testContext.assertEquals(expectedPos, (long) pos);
             testContext.assertFalse(rs.isRetro());
             if (cnt.incrementAndGet() == numObjects) {
-                // Pause then resume. Don't emit any more messages when paused so consumer stays
+                // Pause then resume. Don't publish any more messages when paused so consumer stays
                 // active
                 rs.pause();
                 vertx.setTimer(10, tid -> {

@@ -55,17 +55,17 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     }
 
     @Override
-    public void handleEmit(BsonObject frame) {
+    public void handlePublish(BsonObject frame) {
         checkContext();
         checkAuthorised();
-        String channel = frame.getString(Codec.EMIT_CHANNEL);
-        BsonObject event = frame.getBsonObject(Codec.EMIT_EVENT);
+        String channel = frame.getString(Codec.PUBLISH_CHANNEL);
+        BsonObject event = frame.getBsonObject(Codec.PUBLISH_EVENT);
         if (channel == null) {
-            logAndClose("No channel in EMIT");
+            logAndClose("No channel in PUB");
             return;
         }
         if (event == null) {
-            logAndClose("No event in EMIT");
+            logAndClose("No event in PUB");
             return;
         }
         long order = getWriteSeq();
@@ -75,7 +75,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
         record.put(Codec.RECEV_EVENT, event);
         CompletableFuture<Long> cf = log.append(record);
 
-        logger.trace("Handling emit " + event.getInteger("num"));
+        logger.trace("Handling publish " + event.getInteger("num"));
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();

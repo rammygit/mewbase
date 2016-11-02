@@ -5,7 +5,7 @@ import com.tesco.mewbase.bson.BsonObject;
 /**
  * Created by tim on 22/09/16.
  */
-public interface ReceivedEvent {
+public interface Delivery {
 
     // Metadata for event
 

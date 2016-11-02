@@ -1,12 +1,12 @@
 package com.tesco.mewbase.client.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReceivedEvent;
+import com.tesco.mewbase.common.Delivery;
 
 /**
  * Created by tim on 24/09/16.
  */
-public class ReceivedEventImpl implements ReceivedEvent {
+public class DeliveryImpl implements Delivery {
 
     private final SubscriptionImpl sub;
     private final String channel;
@@ -15,8 +15,8 @@ public class ReceivedEventImpl implements ReceivedEvent {
     private final BsonObject event;
     private final int sizeBytes;
 
-    public ReceivedEventImpl(SubscriptionImpl sub, String channel, long timestamp, long sequenceNumber, BsonObject event,
-                             int sizeBytes) {
+    public DeliveryImpl(SubscriptionImpl sub, String channel, long timestamp, long sequenceNumber, BsonObject event,
+                        int sizeBytes) {
         this.sub = sub;
         this.channel = channel;
         this.timestamp = timestamp;

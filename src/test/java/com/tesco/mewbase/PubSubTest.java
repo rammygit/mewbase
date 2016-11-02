@@ -1,13 +1,12 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.ClientOptions;
 import com.tesco.mewbase.client.Producer;
 import com.tesco.mewbase.client.Subscription;
+import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Repeat;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -17,34 +16,39 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 /**
  * Created by tim on 26/09/16.
  */
 @RunWith(VertxUnitRunner.class)
-public class EmitSubTest extends ServerTestBase {
+public class PubSubTest extends ServerTestBase {
 
-    private final static Logger log = LoggerFactory.getLogger(EmitSubTest.class);
+    private final static Logger log = LoggerFactory.getLogger(PubSubTest.class);
 
     @Test
     //@Repeat(value = 10000)
-    public void testSimpleEmitSubscribe(TestContext context) throws Exception {
+    public void testSimplePubSub(TestContext context) throws Exception {
         SubDescriptor descriptor = new SubDescriptor();
         descriptor.setChannel(TEST_CHANNEL_1);
-        Subscription sub = client.subscribe(descriptor).get();
+
         Producer prod = client.createProducer(TEST_CHANNEL_1);
         Async async = context.async();
         long now = System.currentTimeMillis();
         BsonObject sent = new BsonObject().put("foo", "bar");
-        sub.setHandler(re -> {
+
+        Consumer<Delivery> handler = re -> {
             context.assertEquals(TEST_CHANNEL_1, re.channel());
             context.assertEquals(0l, re.channelPos());
             context.assertTrue(re.timeStamp() >= now);
             BsonObject event = re.event();
             context.assertEquals(sent, event);
             async.complete();
-        });
-        prod.emit(sent).get();
+        };
+
+        Subscription sub = client.subscribe(descriptor, handler).get();
+
+        prod.publish(sent).get();
     }
 
     @Test
@@ -54,7 +58,7 @@ public class EmitSubTest extends ServerTestBase {
         int numEvents = 10;
         for (int i = 0; i < numEvents; i++) {
             BsonObject event = new BsonObject().put("foo", "bar").put("num", i);
-            CompletableFuture<Void> cf = prod.emit(event);
+            CompletableFuture<Void> cf = prod.publish(event);
             if (i == numEvents - 1) {
                 cf.get();
             }
@@ -62,11 +66,11 @@ public class EmitSubTest extends ServerTestBase {
         SubDescriptor descriptor = new SubDescriptor();
         descriptor.setChannel(TEST_CHANNEL_1);
         descriptor.setStartPos(0);
-        Subscription sub = client.subscribe(descriptor).get();
+
         Async async = context.async();
         AtomicLong lastPos = new AtomicLong(-1);
         AtomicInteger receivedCount = new AtomicInteger();
-        sub.setHandler(re -> {
+        Consumer<Delivery> handler = re -> {
             context.assertEquals(TEST_CHANNEL_1, re.channel());
             long last = lastPos.get();
             context.assertTrue(re.channelPos() > last);
@@ -77,6 +81,7 @@ public class EmitSubTest extends ServerTestBase {
             if (count == numEvents - 1) {
                 async.complete();
             }
-        });
+        };
+        Subscription sub = client.subscribe(descriptor, handler).get();
     }
 }

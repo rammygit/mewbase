@@ -14,7 +14,7 @@ public interface ClientFrameHandler extends FrameHandler {
     }
 
     @Override
-    default void handleEmit(BsonObject frame) {
+    default void handlePublish(BsonObject frame) {
         throw new UnsupportedOperationException();
     }
 

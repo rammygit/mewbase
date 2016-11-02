@@ -20,7 +20,7 @@ import java.util.function.Consumer;
 /**
  * Public methods always accessed from same event loop
  * <p>
- * Package protected methods accessed from event loop of emitter
+ * Package protected methods accessed from event loop of publisher
  * <p>
  * Created by tim on 22/10/16.
  */

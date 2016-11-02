@@ -1,7 +1,7 @@
 package com.tesco.mewbase.function.impl;
 
 import com.tesco.mewbase.client.*;
-import com.tesco.mewbase.common.ReceivedEvent;
+import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.function.FunctionContext;
@@ -32,7 +32,7 @@ public class FunctionManagerImpl implements FunctionManager {
 
     @Override
     public boolean installFunction(String functionName, SubDescriptor descriptor,
-                                   BiConsumer<FunctionContext, ReceivedEvent> function) {
+                                   BiConsumer<FunctionContext, Delivery> function) {
         try {
             FuncHolder holder = new FuncHolder(new FunctionContextImpl(docManager), function);
             if (functions.putIfAbsent(functionName, holder) != null) {
@@ -59,28 +59,27 @@ public class FunctionManagerImpl implements FunctionManager {
 
     private final class FuncHolder {
         final FunctionContext ctx;
-        final BiConsumer<FunctionContext, ReceivedEvent> function;
+        final BiConsumer<FunctionContext, Delivery> function;
         volatile Subscription sub;
 
-        public FuncHolder(FunctionContext ctx, BiConsumer<FunctionContext, ReceivedEvent> function) {
+        public FuncHolder(FunctionContext ctx, BiConsumer<FunctionContext, Delivery> function) {
             this.ctx = ctx;
             this.function = function;
         }
 
         void init(SubDescriptor subDescriptor) {
-            client.subscribe(subDescriptor).handle((sub, t) -> {
+            client.subscribe(subDescriptor, re -> {
+                try {
+                    function.accept(ctx, re);
+                } catch (Throwable t2) {
+                    // TODO do something
+                }
+            }).handle((sub, t) -> {
                 if (t != null) {
                     //TODO handle properly
                     log.error("Failed to subscribe function", t);
                 } else {
-                    FuncHolder.this.sub = sub;
-                    sub.setHandler(re -> {
-                        try {
-                            function.accept(ctx, re);
-                        } catch (Throwable t2) {
-                            // TODO do something
-                        }
-                    });
+                    this.sub = sub;
                 }
                 return null;
             });

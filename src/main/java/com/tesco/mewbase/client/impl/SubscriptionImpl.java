@@ -2,16 +2,13 @@ package com.tesco.mewbase.client.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Subscription;
-import com.tesco.mewbase.common.ReceivedEvent;
+import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.server.impl.Codec;
-import com.tesco.mewbase.server.impl.ServerConnectionImpl;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.function.Consumer;
 
 /**
@@ -24,39 +21,22 @@ public class SubscriptionImpl implements Subscription {
     private final int id;
     private final String channel;
     private final ClientImpl conn;
-    private final Queue<ReceivedEvent> buffered = new LinkedList<>();
-    private Consumer<ReceivedEvent> handler;
+    private final Consumer<Delivery> handler;
     private final Context ctx;
+    private boolean unsubscribed;
 
-    public SubscriptionImpl(int id, String channel, ClientImpl conn) {
+    public SubscriptionImpl(int id, String channel, ClientImpl conn, Consumer<Delivery> handler) {
         this.id = id;
         this.channel = channel;
         this.conn = conn;
+        this.handler = handler;
         this.ctx = Vertx.currentContext();
     }
 
     @Override
-    public synchronized void setHandler(Consumer<ReceivedEvent> handler) {
-        this.handler = handler;
-        if (handler != null && !buffered.isEmpty()) {
-            ctx.runOnContext(v -> {
-                checkContext();
-                while (true) {
-                    ReceivedEvent re = buffered.poll();
-                    if (re != null) {
-                        handler.accept(re);
-                    } else {
-                        break;
-                    }
-                }
-            });
-        }
-    }
-
-    @Override
-    public void unsubscribe() {
-        handler = null;
+    public synchronized void unsubscribe() {
         conn.doUnsubscribe(id);
+        unsubscribed = true;
     }
 
     @Override
@@ -80,18 +60,14 @@ public class SubscriptionImpl implements Subscription {
     }
 
     protected synchronized void handleRecevFrame(BsonObject frame) {
+        if (unsubscribed) {
+            return;
+        }
         checkContext();
         int sizeBytes = 1234; // FIXME
-        ReceivedEvent re = new ReceivedEventImpl(this, channel, frame.getLong(Codec.RECEV_TIMESTAMP),
+        Delivery re = new DeliveryImpl(this, channel, frame.getLong(Codec.RECEV_TIMESTAMP),
                 frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT), sizeBytes);
-        Consumer<ReceivedEvent> h = handler; // Copy ref to avoid race if handler is unregistered
-        if (h == null || !buffered.isEmpty()) {
-            logger.trace("adding recev buffered");
-            buffered.add(re);
-        } else {
-            logger.trace("handling recev direct");
-            h.accept(re);
-        }
+        handler.accept(re);
     }
 
     protected void acknowledge(int sizeBytes) {

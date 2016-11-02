@@ -36,7 +36,7 @@ public class ProducerImpl implements Producer {
     }
 
     @Override
-    public CompletableFuture<Void> emit(BsonObject event) {
-        return client.doEmit(channel, id, event);
+    public CompletableFuture<Void> publish(BsonObject event) {
+        return client.doPublish(channel, id, event);
     }
 }

@@ -3,14 +3,13 @@ package com.tesco.mewbase.client;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.spi.ClientFactory;
 import com.tesco.mewbase.common.DocQuerier;
+import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
-import com.tesco.mewbase.server.Server;
-import com.tesco.mewbase.server.ServerOptions;
-import com.tesco.mewbase.server.spi.ServerFactory;
 import io.vertx.core.ServiceHelper;
 import io.vertx.core.Vertx;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -29,13 +28,13 @@ public interface Client extends DocQuerier {
     ClientFactory factory = ServiceHelper.loadFactory(ClientFactory.class);
 
 
-    CompletableFuture<Subscription> subscribe(SubDescriptor subDescriptor);
+    CompletableFuture<Subscription> subscribe(SubDescriptor subDescriptor, Consumer<Delivery> handler);
 
     Producer createProducer(String channel);
 
-    CompletableFuture<Void> emit(String channel, BsonObject event);
+    CompletableFuture<Void> publish(String channel, BsonObject event);
 
-    CompletableFuture<Void> emit(String channel, BsonObject event, Function<BsonObject, String> partitionFunc);
+    CompletableFuture<Void> publish(String channel, BsonObject event, Function<BsonObject, String> partitionFunc);
 
     CompletableFuture<Void> close();
 

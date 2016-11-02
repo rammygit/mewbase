@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class ServerTestBase extends MewbaseTestBase {
 
-    private final static Logger log = LoggerFactory.getLogger(EmitSubTest.class);
+    private final static Logger log = LoggerFactory.getLogger(PubSubTest.class);
 
     protected Server server;
     protected Client client;

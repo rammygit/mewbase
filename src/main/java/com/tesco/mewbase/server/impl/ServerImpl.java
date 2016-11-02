@@ -1,6 +1,6 @@
 package com.tesco.mewbase.server.impl;
 
-import com.tesco.mewbase.common.ReceivedEvent;
+import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.impl.inmem.InMemoryDocManager;
@@ -108,7 +108,7 @@ public class ServerImpl implements Server {
 
     @Override
     public boolean installFunction(String functionName, SubDescriptor descriptor,
-                                   BiConsumer<FunctionContext, ReceivedEvent> function) {
+                                   BiConsumer<FunctionContext, Delivery> function) {
         return functionManager.installFunction(functionName, descriptor, function);
     }
 

@@ -11,7 +11,7 @@ public interface FrameHandler {
 
     void handleResponse(BsonObject frame);
 
-    void handleEmit(BsonObject frame);
+    void handlePublish(BsonObject frame);
 
     void handleStartTx(BsonObject frame);
 
