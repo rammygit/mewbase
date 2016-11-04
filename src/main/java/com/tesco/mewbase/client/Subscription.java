@@ -11,8 +11,6 @@ public interface Subscription {
 
     void resume();
 
-    void acknowledge();
-
     // TODO also provide RxJava Observable?
 
     // TODO return CompletableFuture<Void> ?

@@ -29,7 +29,6 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     private final static Logger log = LoggerFactory.getLogger(ClientImpl.class);
 
-
     private final AtomicInteger sessionSeq = new AtomicInteger();
     private final AtomicInteger nextQueryId = new AtomicInteger();
     private final Map<Integer, ProducerImpl> producerMap = new ConcurrentHashMap<>();
@@ -71,7 +70,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
     }
 
     @Override
-    public CompletableFuture<Subscription> subscribe(SubDescriptor descriptor, Consumer<Delivery> handler) {
+    public CompletableFuture<Subscription> subscribe(SubDescriptor descriptor, Consumer<ClientDelivery> handler) {
         CompletableFuture<Subscription> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
         if (descriptor.getChannel() == null) {
@@ -109,7 +108,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
     }
 
     @Override
-    public CompletableFuture<BsonObject> getByID(String binderName, String id) {
+    public CompletableFuture<BsonObject> findByID(String binderName, String id) {
         CompletableFuture<BsonObject> cf = new CompletableFuture<>();
         BsonObject matcher = new BsonObject().put("$match", new BsonObject().put("id", id));
         int queryID = nextQueryId.getAndIncrement();
@@ -141,12 +140,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
     }
 
     @Override
-    public CompletableFuture<BsonObject> getByMatch(String binderName, String id) {
-        return null;
-    }
-
-    @Override
-    public CompletableFuture<QueryResult> getAllMatching(String binderName, BsonObject matcher) {
+    public CompletableFuture<QueryResult> findMatching(String binderName, BsonObject matcher) {
         return null;
     }
 
@@ -165,13 +159,13 @@ public class ClientImpl implements Client, ClientFrameHandler {
     // FrameHandler
 
     @Override
-    public void handleRecev(BsonObject frame) {
+    public void handleRecev(int size, BsonObject frame) {
         int subID = frame.getInteger(Codec.RECEV_SUBID);
         SubscriptionImpl sub = subscriptionMap.get(subID);
         if (sub == null) {
             // No subscription for this - maybe closed - ignore
         } else {
-            sub.handleRecevFrame(frame);
+            sub.handleRecevFrame(size, frame);
         }
     }
 
@@ -195,7 +189,6 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     @Override
     public void handlePing(BsonObject frame) {
-
     }
 
     @Override

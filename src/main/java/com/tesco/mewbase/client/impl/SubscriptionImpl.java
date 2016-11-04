@@ -1,14 +1,18 @@
 package com.tesco.mewbase.client.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.client.ClientDelivery;
 import com.tesco.mewbase.client.Subscription;
 import com.tesco.mewbase.common.Delivery;
+import com.tesco.mewbase.common.impl.DeliveryImpl;
 import com.tesco.mewbase.server.impl.Codec;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.function.Consumer;
 
 /**
@@ -20,38 +24,44 @@ public class SubscriptionImpl implements Subscription {
 
     private final int id;
     private final String channel;
-    private final ClientImpl conn;
-    private final Consumer<Delivery> handler;
+    private final ClientImpl client;
+    private final Consumer<ClientDelivery> handler;
     private final Context ctx;
+    private final Queue<ClientDelivery> buffered = new LinkedList<>();
     private boolean unsubscribed;
+    private boolean paused;
 
-    public SubscriptionImpl(int id, String channel, ClientImpl conn, Consumer<Delivery> handler) {
+    public SubscriptionImpl(int id, String channel, ClientImpl client, Consumer<ClientDelivery> handler) {
         this.id = id;
         this.channel = channel;
-        this.conn = conn;
+        this.client = client;
         this.handler = handler;
         this.ctx = Vertx.currentContext();
     }
 
     @Override
     public synchronized void unsubscribe() {
-        conn.doUnsubscribe(id);
+        client.doUnsubscribe(id);
         unsubscribed = true;
     }
 
     @Override
-    public void pause() {
-
+    public synchronized void pause() {
+        paused = true;
     }
 
     @Override
-    public void resume() {
-
-    }
-
-    @Override
-    public void acknowledge() {
-
+    public synchronized void resume() {
+        if (paused) {
+            paused = false;
+            while (!paused) {
+                ClientDelivery del = buffered.poll();
+                if (del == null) {
+                    break;
+                }
+                handler.accept(del);
+            }
+        }
     }
 
     @Override
@@ -59,19 +69,22 @@ public class SubscriptionImpl implements Subscription {
         return null;
     }
 
-    protected synchronized void handleRecevFrame(BsonObject frame) {
+    protected synchronized void handleRecevFrame(int size, BsonObject frame) {
         if (unsubscribed) {
             return;
         }
         checkContext();
-        int sizeBytes = 1234; // FIXME
-        Delivery re = new DeliveryImpl(this, channel, frame.getLong(Codec.RECEV_TIMESTAMP),
-                frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT), sizeBytes);
-        handler.accept(re);
+        ClientDelivery delivery = new ClientDeliveryImpl(channel, frame.getLong(Codec.RECEV_TIMESTAMP),
+                frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT), this, size);
+        if (!paused) {
+            handler.accept(delivery);
+        } else {
+            buffered.add(delivery);
+        }
     }
 
     protected void acknowledge(int sizeBytes) {
-        conn.doAckEv(id, sizeBytes);
+        client.doAckEv(id, sizeBytes);
     }
 
     // Sanity check - this should always be executed using the connection's context

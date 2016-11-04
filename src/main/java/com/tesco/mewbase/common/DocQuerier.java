@@ -12,10 +12,8 @@ public interface DocQuerier {
 
     // TODO use RxJava for this too
 
-    CompletableFuture<BsonObject> getByID(String binderName, String id);
+    CompletableFuture<BsonObject> findByID(String binderName, String id);
 
-    CompletableFuture<BsonObject> getByMatch(String binderName, String id);
-
-    CompletableFuture<QueryResult> getAllMatching(String binderName, BsonObject matcher);
+    CompletableFuture<QueryResult> findMatching(String binderName, BsonObject matcher);
 
 }

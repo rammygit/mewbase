@@ -1,6 +1,7 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.client.ClientDelivery;
 import com.tesco.mewbase.client.Producer;
 import com.tesco.mewbase.client.Subscription;
 import com.tesco.mewbase.common.Delivery;
@@ -37,7 +38,7 @@ public class PubSubTest extends ServerTestBase {
         long now = System.currentTimeMillis();
         BsonObject sent = new BsonObject().put("foo", "bar");
 
-        Consumer<Delivery> handler = re -> {
+        Consumer<ClientDelivery> handler = re -> {
             context.assertEquals(TEST_CHANNEL_1, re.channel());
             context.assertEquals(0l, re.channelPos());
             context.assertTrue(re.timeStamp() >= now);
@@ -70,7 +71,7 @@ public class PubSubTest extends ServerTestBase {
         Async async = context.async();
         AtomicLong lastPos = new AtomicLong(-1);
         AtomicInteger receivedCount = new AtomicInteger();
-        Consumer<Delivery> handler = re -> {
+        Consumer<ClientDelivery> handler = re -> {
             context.assertEquals(TEST_CHANNEL_1, re.channel());
             long last = lastPos.get();
             context.assertTrue(re.channelPos() > last);

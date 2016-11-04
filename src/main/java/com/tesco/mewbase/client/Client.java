@@ -27,8 +27,7 @@ public interface Client extends DocQuerier {
 
     ClientFactory factory = ServiceHelper.loadFactory(ClientFactory.class);
 
-
-    CompletableFuture<Subscription> subscribe(SubDescriptor subDescriptor, Consumer<Delivery> handler);
+    CompletableFuture<Subscription> subscribe(SubDescriptor subDescriptor, Consumer<ClientDelivery> handler);
 
     Producer createProducer(String channel);
 

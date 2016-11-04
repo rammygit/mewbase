@@ -19,7 +19,7 @@ public interface ServerFrameHandler extends FrameHandler {
     }
 
     @Override
-    default void handleRecev(BsonObject frame) {
+    default void handleRecev(int size, BsonObject frame) {
         throw new UnsupportedOperationException();
     }
 

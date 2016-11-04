@@ -17,13 +17,13 @@ public class SubscriptionImpl {
 
     private static final int MAX_UNACKED_BYTES = 4 * 1024 * 1024; // TODO make configurable
 
-    private final ServerConnectionImpl connection;
+    private final ConnectionImpl connection;
     private final int id;
     private final Context ctx;
     private final ReadStream readStream;
     private int unackedBytes;
 
-    public SubscriptionImpl(ServerConnectionImpl connection, int id,
+    public SubscriptionImpl(ConnectionImpl connection, int id,
                             ReadStream readStream) {
         this.connection = connection;
         this.id = id;

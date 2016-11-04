@@ -1,21 +1,24 @@
 package com.tesco.mewbase.function.impl;
 
-import com.tesco.mewbase.client.Client;
-import com.tesco.mewbase.client.ClientOptions;
-import com.tesco.mewbase.client.MewException;
-import com.tesco.mewbase.client.Subscription;
+import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
+import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
+import com.tesco.mewbase.common.impl.DeliveryImpl;
 import com.tesco.mewbase.doc.DocManager;
-import com.tesco.mewbase.function.FunctionContext;
 import com.tesco.mewbase.function.FunctionManager;
-import io.vertx.core.Vertx;
+import com.tesco.mewbase.log.Log;
+import com.tesco.mewbase.log.LogManager;
+import com.tesco.mewbase.server.impl.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiFunction;
+
+import static com.tesco.mewbase.doc.DocManager.ID_FIELD;
 
 /**
  * Created by tim on 30/09/16.
@@ -24,33 +27,29 @@ public class FunctionManagerImpl implements FunctionManager {
 
     private final static Logger log = LoggerFactory.getLogger(FunctionManagerImpl.class);
 
-    private final Map<String, FuncHolder> functions = new ConcurrentHashMap<>();
-    private final DocManager docManager;
-    private final Client client; // TODO this should use invm connection
+    private final Map<String, FuncHolder> functions = new HashMap<>();
 
-    public FunctionManagerImpl(Vertx vertx, DocManager docManager) {
+    private final DocManager docManager;
+    private final LogManager logManager;
+
+    public FunctionManagerImpl(DocManager docManager, LogManager logManager) {
         this.docManager = docManager;
-        this.client = Client.newClient(vertx, new ClientOptions());
+        this.logManager = logManager;
     }
 
     @Override
-    public boolean installFunction(String functionName, SubDescriptor descriptor,
-                                   BiConsumer<FunctionContext, Delivery> function) {
-        try {
-            FuncHolder holder = new FuncHolder(new FunctionContextImpl(docManager), function);
-            if (functions.putIfAbsent(functionName, holder) != null) {
-                return false;
-            }
-
-            holder.init(descriptor);
-        } catch (Exception e) {
-            throw new MewException(e.getMessage(), e);
+    public synchronized boolean installFunction(String name, SubDescriptor descriptor, String binderName,
+                                                String docIDField, BiFunction<BsonObject, Delivery, BsonObject> function) {
+        if (functions.containsKey(name)) {
+            return false;
         }
+        FuncHolder holder = new FuncHolder(descriptor, binderName, docIDField, function);
+        functions.put(name, holder);
         return true;
     }
 
     @Override
-    public boolean deleteFunction(String functionName) {
+    public synchronized boolean deleteFunction(String functionName) {
         FuncHolder holder = functions.remove(functionName);
         if (holder != null) {
             holder.close();
@@ -60,37 +59,68 @@ public class FunctionManagerImpl implements FunctionManager {
         }
     }
 
-    private final class FuncHolder {
-        final FunctionContext ctx;
-        final BiConsumer<FunctionContext, Delivery> function;
-        volatile Subscription sub;
+    private class FuncHolder {
 
-        public FuncHolder(FunctionContext ctx, BiConsumer<FunctionContext, Delivery> function) {
-            this.ctx = ctx;
+        final SubDescriptor descriptor;
+        final String binderName;
+        final String docIDField;
+        final ReadStream readStream;
+        final  BiFunction<BsonObject, Delivery, BsonObject> function;
+
+        public FuncHolder(SubDescriptor subDescriptor, String binderName, String docIDField,
+                          BiFunction<BsonObject, Delivery, BsonObject> function) {
+            this.descriptor = subDescriptor;
+            this.binderName = binderName;
+            this.docIDField = docIDField;
             this.function = function;
+            Log log = logManager.getLog(descriptor.getChannel());
+            this.readStream = log.subscribe(descriptor);
+            readStream.handler(this::handler);
+            readStream.start();
         }
 
-        void init(SubDescriptor subDescriptor) {
-            client.subscribe(subDescriptor, re -> {
-                try {
-                    function.accept(ctx, re);
-                } catch (Throwable t2) {
-                    // TODO do something
-                }
-            }).handle((sub, t) -> {
-                if (t != null) {
-                    //TODO handle properly
-                    log.error("Failed to subscribe function", t);
+        void handler(long seq, BsonObject frame) {
+            frame.put(Codec.RECEV_POS, seq);
+            BsonObject event = frame.getBsonObject(Codec.RECEV_EVENT);
+            String docID = event.getString(docIDField);
+            if (docID == null) {
+                throw new IllegalArgumentException("No field " + docIDField + " in event " + event);
+            }
+            docManager.findByID(binderName, docID).handle((doc, t) -> {
+                if (t == null) {
+                    try {
+                        if (doc == null) {
+                            doc = new BsonObject().put(ID_FIELD, docID);
+                        }
+                        Delivery delivery = new DeliveryImpl(descriptor.getChannel(), frame.getLong(Codec.RECEV_TIMESTAMP),
+                                frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT));
+                        BsonObject updated = function.apply(doc, delivery);
+                        CompletableFuture<Void> cfSaved = docManager.save(binderName, docID, updated);
+                        cfSaved.handle((v, t3) -> {
+                            if (t3 == null) {
+                                // Saved OK update last update sequence TODO
+                            } else {
+                                // TODO how to handle exceptions?
+                                log.error("Failed to save document", t3);
+                            }
+                           return null;
+                        });
+                    } catch (Throwable t2) {
+                        // TODO how to handle exceptions?
+                        log.error("Failed to call function", t2);
+                    }
                 } else {
-                    this.sub = sub;
+                    // TODO how to handle exceptions?
+                    log.error("Failed to find document");
                 }
                 return null;
             });
         }
 
         void close() {
-            sub.unsubscribe();
+            readStream.close();
         }
+
     }
 
 }

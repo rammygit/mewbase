@@ -1,6 +1,8 @@
-package com.tesco.mewbase.client.impl;
+package com.tesco.mewbase.common.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.client.Subscription;
+import com.tesco.mewbase.client.impl.SubscriptionImpl;
 import com.tesco.mewbase.common.Delivery;
 
 /**
@@ -8,21 +10,16 @@ import com.tesco.mewbase.common.Delivery;
  */
 public class DeliveryImpl implements Delivery {
 
-    private final SubscriptionImpl sub;
     private final String channel;
     private final long timestamp;
     private final long sequenceNumber;
     private final BsonObject event;
-    private final int sizeBytes;
 
-    public DeliveryImpl(SubscriptionImpl sub, String channel, long timestamp, long sequenceNumber, BsonObject event,
-                        int sizeBytes) {
-        this.sub = sub;
+    public DeliveryImpl(String channel, long timestamp, long sequenceNumber, BsonObject event) {
         this.channel = channel;
         this.timestamp = timestamp;
         this.sequenceNumber = sequenceNumber;
         this.event = event;
-        this.sizeBytes = sizeBytes;
     }
 
     @Override
@@ -45,8 +42,4 @@ public class DeliveryImpl implements Delivery {
         return event;
     }
 
-    @Override
-    public void acknowledge() {
-        sub.acknowledge(sizeBytes);
-    }
 }

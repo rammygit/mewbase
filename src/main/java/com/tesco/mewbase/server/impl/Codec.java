@@ -123,10 +123,10 @@ public class Codec {
         Buffer buff2 = Buffer.buffer(buffer.length() + 4);
         buff2.appendIntLE(size + 4).appendBuffer(buffer);
         BsonObject bson = new BsonObject(buff2);
-        handleBson(bson);
+        handleBson(size, bson);
     }
 
-    private void handleBson(BsonObject bson) {
+    private void handleBson(int size, BsonObject bson) {
         String type = bson.getString("type");
         BsonObject frame = bson.getBsonObject("frame");
         switch (type) {
@@ -158,7 +158,7 @@ public class Codec {
                 frameHandler.handleSubResponse(frame);
                 break;
             case RECEV_FRAME:
-                frameHandler.handleRecev(frame);
+                frameHandler.handleRecev(size, frame);
                 break;
             case ACKEV_FRAME:
                 frameHandler.handleAckEv(frame);

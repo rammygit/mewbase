@@ -1,10 +1,10 @@
 package com.tesco.mewbase.server.impl;
 
+import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.impl.inmem.InMemoryDocManager;
-import com.tesco.mewbase.function.FunctionContext;
 import com.tesco.mewbase.function.FunctionManager;
 import com.tesco.mewbase.function.impl.FunctionManagerImpl;
 import com.tesco.mewbase.log.Log;
@@ -25,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 /**
  * Created by tim on 22/09/16.
@@ -35,7 +36,7 @@ public class ServerImpl implements Server {
 
     private final ServerOptions serverOptions;
     private final Vertx vertx;
-    private final Set<ServerConnectionImpl> connections = new ConcurrentHashSet<>();
+    private final Set<ConnectionImpl> connections = new ConcurrentHashSet<>();
     private final Set<NetServer> netServers = new ConcurrentHashSet<>();
     private final LogManager logManager;
     private final DocManager docManager;
@@ -49,7 +50,7 @@ public class ServerImpl implements Server {
         FileLogManagerOptions options = sOptions == null ? new FileLogManagerOptions() : sOptions;
         this.logManager = new FileLogManager(vertx, options, faf);
         this.docManager = new InMemoryDocManager();
-        this.functionManager = new FunctionManagerImpl(vertx, docManager);
+        this.functionManager = new FunctionManagerImpl(docManager, logManager);
     }
 
     protected ServerImpl(ServerOptions serverOptions) {
@@ -107,9 +108,9 @@ public class ServerImpl implements Server {
     }
 
     @Override
-    public boolean installFunction(String functionName, SubDescriptor descriptor,
-                                   BiConsumer<FunctionContext, Delivery> function) {
-        return functionManager.installFunction(functionName, descriptor, function);
+    public boolean installFunction(String name, SubDescriptor descriptor, String binderName, String docIDField,
+                                   BiFunction<BsonObject, Delivery, BsonObject> function) {
+        return functionManager.installFunction(name, descriptor, binderName, docIDField, function);
     }
 
     @Override
@@ -118,11 +119,11 @@ public class ServerImpl implements Server {
     }
 
     private void connectHandler(NetSocket socket) {
-        ServerConnectionImpl conn = new ServerConnectionImpl(this, socket, Vertx.currentContext(), docManager);
+        ConnectionImpl conn = new ConnectionImpl(this, socket, Vertx.currentContext(), docManager);
         connections.add(conn);
     }
 
-    protected void removeConnection(ServerConnectionImpl connection) {
+    protected void removeConnection(ConnectionImpl connection) {
         connections.remove(connection);
     }
 

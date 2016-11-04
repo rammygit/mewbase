@@ -25,7 +25,7 @@ public interface FrameHandler {
 
     void handleSubResponse(BsonObject frame);
 
-    void handleRecev(BsonObject frame);
+    void handleRecev(int size, BsonObject frame);
 
     void handleAckEv(BsonObject frame);
 

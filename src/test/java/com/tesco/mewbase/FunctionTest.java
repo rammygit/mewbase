@@ -1,8 +1,11 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.bson.BsonPath;
 import com.tesco.mewbase.client.Producer;
+import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
+import com.tesco.mewbase.doc.DocManager;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -11,7 +14,11 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Created by tim on 30/09/16.
@@ -23,23 +30,32 @@ public class FunctionTest extends ServerTestBase {
 
     @Test
     public void testSimpleFunction(TestContext context) throws Exception {
-        Async async = context.async();
-        SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_CHANNEL_1);
-        server.installFunction("testfunc", descriptor, (ctx, re) -> {
-            BsonObject event = re.event();
-            long basketID = event.getInteger("basketID");
-            String productID = event.getString("productID");
-            int quant = event.getInteger("quantity");
-            String quantPath = "items." + productID + ".quantity";
+        SubDescriptor descriptor =
+                new SubDescriptor().setChannel(TEST_CHANNEL_1).setMatcher(new BsonObject().put("eventType", "add_item"));
 
-            CompletableFuture<Void> cf =
-                    ctx.upsert("baskets", new BsonObject().put("id", "basket" + basketID).put("$inc", new BsonObject().put(quantPath, quant)));
-            // updated ok
-            cf.thenRun(async::complete);
-        });
+        String binderName = "baskets";
+
+        server.installFunction("testfunc", descriptor, binderName, "basketID", (basket, del) ->
+            BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
+        );
 
         Producer prod = client.createProducer(TEST_CHANNEL_1);
 
-        prod.publish(new BsonObject().put("basketID", 1).put("productId", 1).put("quantity", 1)).get();
+        String basketID = "basket1234";
+
+        prod.publish(new BsonObject().put("basketID", basketID).put("productID", "prod1").put("quantity", 10)).get();
+
+        BsonObject basket =
+                waitForNonNull(() -> {
+                    try {
+                        return client.findByID(binderName, basketID).get();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        assertEquals(basketID, basket.getString(DocManager.ID_FIELD));
+        assertEquals(10, (int)basket.getBsonObject("products").getInteger("prod1"));
     }
+
 }

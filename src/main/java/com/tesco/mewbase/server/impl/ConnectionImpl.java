@@ -20,9 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Created by tim on 23/09/16.
  */
-public class ServerConnectionImpl implements ServerFrameHandler {
+public class ConnectionImpl implements ServerFrameHandler {
 
-    private final static Logger logger = LoggerFactory.getLogger(ServerConnectionImpl.class);
+    private final static Logger logger = LoggerFactory.getLogger(ConnectionImpl.class);
 
     private final ServerImpl server;
     private final NetSocket socket;
@@ -35,7 +35,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
     private long writeSeq;
     private long expectedRespNo;
 
-    public ServerConnectionImpl(ServerImpl server, NetSocket netSocket, Context context, DocManager docManager) {
+    public ConnectionImpl(ServerImpl server, NetSocket netSocket, Context context, DocManager docManager) {
         netSocket.handler(new Codec(this).recordParser());
         this.server = server;
         this.socket = netSocket;
@@ -189,7 +189,7 @@ public class ServerConnectionImpl implements ServerFrameHandler {
 
         // TODO currently hardcoded to assume get by ID, implement properly for other query types
         String documentId = matcher.getBsonObject("$match").getString("id");
-        CompletableFuture<BsonObject> cf = docManager.getByID(binder, documentId);
+        CompletableFuture<BsonObject> cf = docManager.findByID(binder, documentId);
         long writeSeq = getWriteSeq();
 
         cf.thenAccept(result -> {
