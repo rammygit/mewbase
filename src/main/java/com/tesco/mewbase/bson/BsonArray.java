@@ -22,6 +22,7 @@ import io.vertx.core.buffer.Buffer;
 import java.io.*;
 import java.time.Instant;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.time.format.DateTimeFormatter.ISO_INSTANT;
@@ -88,14 +89,7 @@ public class BsonArray implements Iterable<Object> {
      * @throws ClassCastException if the value cannot be converted to Integer
      */
     public Integer getInteger(int pos) {
-        Number number = (Number) list.get(pos);
-        if (number == null) {
-            return null;
-        } else if (number instanceof Integer) {
-            return (Integer) number; // Avoids unnecessary unbox/box
-        } else {
-            return number.intValue();
-        }
+        return getNumber(pos, Integer.class, Number::intValue);
     }
 
     /**
@@ -106,14 +100,7 @@ public class BsonArray implements Iterable<Object> {
      * @throws ClassCastException if the value cannot be converted to Long
      */
     public Long getLong(int pos) {
-        Number number = (Number) list.get(pos);
-        if (number == null) {
-            return null;
-        } else if (number instanceof Long) {
-            return (Long) number; // Avoids unnecessary unbox/box
-        } else {
-            return number.longValue();
-        }
+        return getNumber(pos, Long.class, Number::longValue);
     }
 
     /**
@@ -124,14 +111,7 @@ public class BsonArray implements Iterable<Object> {
      * @throws ClassCastException if the value cannot be converted to Double
      */
     public Double getDouble(int pos) {
-        Number number = (Number) list.get(pos);
-        if (number == null) {
-            return null;
-        } else if (number instanceof Double) {
-            return (Double) number; // Avoids unnecessary unbox/box
-        } else {
-            return number.doubleValue();
-        }
+        return getNumber(pos, Double.class, Number::doubleValue);
     }
 
     /**
@@ -142,14 +122,18 @@ public class BsonArray implements Iterable<Object> {
      * @throws ClassCastException if the value cannot be converted to Float
      */
     public Float getFloat(int pos) {
-        Number number = (Number) list.get(pos);
-        if (number == null) {
+        return getNumber(pos, Float.class, Number::floatValue);
+    }
+
+    private <T> T getNumber(int pos, Class<T> clazz, Function<Number, T> conversion) {
+        Object element = list.get(pos);
+        if (element == null) {
             return null;
-        } else if (number instanceof Float) {
-            return (Float) number; // Avoids unnecessary unbox/box
-        } else {
-            return number.floatValue();
         }
+        if (clazz.isInstance(element)) {
+            return clazz.cast(element); // Avoids unnecessary object creation
+        }
+        return conversion.apply((Number) element);
     }
 
     /**
@@ -505,7 +489,7 @@ public class BsonArray implements Iterable<Object> {
     }
 
     /**
-     * Get the unerlying List
+     * Get the underlying List
      *
      * @return the underlying List
      */
