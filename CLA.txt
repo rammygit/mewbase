@@ -1,0 +1,81 @@
+Thank you for your interest in contributing to Tesco software projects ("Tesco", “we”, “our” or “us”).
+In order to clarify the intellectual property license granted with contributions from any person or entity, we must have
+a Contributor License Agreement ("CLA") on file that has been signed by each contributor, indicating agreement to the
+license terms below. This license is for your protection as a contributor as well as the protection of Tesco, its staff,
+contractors and licensees as well as its users; it does not change your rights to use your own contributions for any
+other purpose.
+
+You (as defined below) accept and agree to the following terms and conditions for your present and future Contributions
+(as defined below) submitted to us. Except for the license granted in this CLA to Tesco and recipients of software
+distributed by Tesco, you reserve all right, title, and interest in and to your Contributions.
+
+This CLA has been derived from the Apache Contributor Licence Agreement with some small changes.  Please read this CLA
+carefully before agreeing and keep a copy for your records.
+
+1. Definitions.
+"You" or "your" shall mean the copyright owner or legal entity authorised by the copyright owner that is making this
+agreement with us. For legal entities, the entity making a Contribution and all other entities that control, are
+controlled by, or are under common control with that entity are considered to be a single Contributor. For the purposes
+of this definition, "control" means (i) the power, direct or indirect, to cause the direction or management of such
+entity, whether by contract or otherwise, or (ii) ownership of fifty percent (50%) or more of the outstanding shares,
+or (iii) beneficial ownership of such entity.
+
+"Contribution" shall mean any original work of authorship or invention, including any modification or addition to an
+existing work, that is intentionally submitted by you to us for inclusion in, or documentation of, any of the open
+source products or projects owned or managed by Tesco to which Contributions may be made (the "Work"). For the purposes
+of this definition, "submitted" means any form of electronic, verbal, or written communication sent to us or its
+representatives, including but not limited to communication on electronic mailing lists, source code control systems,
+and issue tracking systems that are managed by, or on behalf of, us for the purpose of discussing and improving the
+Work, but excluding communication that is conspicuously marked or otherwise designated in writing by you as "Not a
+Contribution."
+
+2. Grant of Copyright License.
+Subject to the terms and conditions of this Agreement, you hereby grant to Tesco and to recipients of software
+distributed by Tesco a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable copyright license to
+reproduce, prepare derivative works of, publicly display, publicly perform, sublicense, and distribute your
+Contributions and such derivative works.
+
+3. Grant of Patent License.
+Subject to the terms and conditions of this CLA, you hereby grant to Tesco and to recipients of software distributed by
+Tesco a perpetual, worldwide, non-exclusive, no-charge, royalty-free, irrevocable (except as stated in this section)
+patent license to make, have made, use, offer to sell, sell, import, and otherwise transfer the Work, where such license
+applies only to those patent claims licensable by you that are necessarily infringed by your Contribution(s) alone or by
+combination of your Contribution(s) with the Work to which such Contribution(s) was submitted. If any entity institutes
+patent litigation against you or any other entity (including a cross-claim or counterclaim in a lawsuit) alleging that
+your Contribution, or the Work to which you have contributed, constitutes direct or contributory patent infringement,
+then any patent licenses granted to that entity under this Agreement for that Contribution or Work shall terminate as of
+ the date such litigation is filed.
+
+4. You represent that you are legally entitled to grant the above license. If your employer(s) has rights to
+intellectual property that you create that includes your Contributions, you represent that you have received permission
+to make Contributions on behalf of that employer, that your employer has waived such rights for your Contributions to us.
+
+5. You represent that each of your Contributions is your original creation (see section 7 for submissions on behalf of
+others) and, to the best of your knowledge, your Contribution does not infringe the intellectual property rights of any
+third party. You represent that your Contribution submissions include complete details of any third-party license or
+other restriction (including, but not limited to, related patents and trademarks) of which you are personally aware and
+which are associated with any part of your Contributions.
+
+6. You are not expected to provide support for your Contributions, except to the extent you desire to provide support.
+You may provide support for free, for a fee, or not at all. Save as otherwise set out in this CLA or unless required by
+applicable law or agreed to in writing, you provide your Contributions on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied, including, without limitation, any warranties or conditions of TITLE,
+NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A PARTICULAR PURPOSE.
+
+7. Should you wish to submit work that is not your original creation, you may submit it to us separately from any
+Contribution, identifying the complete details of its source and of any license or other restriction (including, but not
+limited to, related patents, trademarks, and license agreements) of which you are personally aware, and conspicuously
+marking the work as "Submitted on behalf of a third-party: [named here]".
+
+8. You agree to notify us of any facts or circumstances of which you become aware that would make these representations
+inaccurate in any respect.
+
+9. We will only use any personal information you provide to us for the purposes of our open source software projects.
+We will not share your personal information with any organisation outside of our group of companies unless we have a
+legal obligation to do so, or if we have to enforce or apply our terms of use and other agreements.
+
+
+Please sign: __________________________________
+
+
+Date: ________________

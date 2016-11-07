@@ -9,7 +9,7 @@ Please read this if you intend to contribute to the project.
 ## What to contribute?
 
 * Have a look at the GitHub issues - is there something that catches your eye?
-* Ask on the google group for something to do - one of the permanent team should be able to point you 
+* Ask on the [google group](https://groups.google.com/forum/#!forum/mewbase) for something to do - one of the permanent team should be able to point you 
 in the direction of an appropriate task
 * If you haven't contributed to the project before, best to start with something small
 
@@ -21,7 +21,8 @@ in the direction of an appropriate task
 
 ## Before committing
 
-* If you don't own your own copyright make sure you have permission from your employer before committing.
+* Please sign the [Contributor License Agreement](CLA.txt) - for now this can be done electronically by sending an email to the project
+lead. We will automate this going ahead
 
 ## Making your changes
 
