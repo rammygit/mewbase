@@ -12,6 +12,9 @@
  *     http://www.opensource.org/licenses/apache2.0.php
  *
  * You may elect to redistribute this code under either of these licenses.
+ *
+ *
+ * Derived from original file JsonObject.java from Vert.x
  */
 
 package com.tesco.mewbase.bson;
