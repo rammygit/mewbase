@@ -18,7 +18,7 @@ Storing logs of events provides many advantages including
 * Events can be replayed to for back-testing or debugging
 * Analytics can be run on the events to extract business value
 * Machine learning models can be trained in the events to do all sorts of funky stuff
-* Events can be used to co-ordinated busines processes between different services
+* Events can be used to co-ordinate busines processes between different services
 * Functions can be used to implement distributed eventually consistent transactions
 
 But many applications typically want to deal with *aggregated* event data, not the raw event data. Examples would
