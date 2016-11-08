@@ -1,7 +1,5 @@
 # mewbase
 
-*Please note Mewbase is a very new project and very much a work in progress. Don't use it in production yet!*
-
 ## The problem
 
 Smart organisations now realise that its vital to keep track of all the streams of events they produce.
@@ -12,27 +10,24 @@ Exammples of streams of events might be:
 * Events from IoT sensors
 * Stock movement events in a supply chain
 
-There are many examples!
-
 These events often need to be persisted fast and in high volume and potentially stored for very long periods of time. 
 
 Storing logs of events provides many advantages including
 
 * Complete audit trail of everything that happened
 * Events can be replayed to for back-testing or debugging
-* Analytics can be run on the events to extract business value (e.g. customers who deleted items from their basket
-before placing an order are likely to still want the item- opportunity for a recommendation!)
+* Analytics can be run on the events to extract business value
 * Machine learning models can be trained in the events to do all sorts of funky stuff
 * Events can be used to co-ordinated busines processes between different services
 * Functions can be used to implement distributed eventually consistent transactions
 
-But many applications typically want to deal with *aggregated* event data, not the raw event data. Examples would include:
+But many applications typically want to deal with *aggregated* event data, not the raw event data. Examples would
+include:
 
 * A website wants to see the *current* state of a shopping basket, not deal with the raw add/remove item events
 * A report needs to display average temperature from IoT sensors broken down by region in real-time
-* A stock inventory needs to maintain current stock of products per warehouse not deal with individual stock movement
-events
-* A business process needs to listen to events and maintain state
+* A stock inventory needs to maintain current stock of products per warehouse
+* A business process/saga needs to listen to events and maintain state
 
 This leads many applications either to either:
 
@@ -47,7 +42,7 @@ pieces of technology - a messaging system and a database.
 
 ## Introducing mewbase
 
-The idea behind mewbase is to provide an engine that functions as a very high performance streaming engine but also
+Mewbase provides an engine that functions as a high performance streaming event store but also
  allows you to run persistent *functions* in the engine that listen to raw events and maintain multiple *views* of
  the event data.
  
@@ -65,9 +60,12 @@ they are only updated in the engine by the functions.
 The client simply sends events (*add item to basket*), and issues queries (*give me current state of basket 1234*).
 That means the client has no access to shared mutable state - a big win!  
 
-Since the events, functions and documents are all maintained in the same engine, mewbase keeps track of synchronization
+The events, functions and documents are all maintained in the same engine, mewbase keeps track of synchronization
 between the events and the views so you know they are always up to date, irrespective of whether any client
 applications or services are connected.
+
+Since the functions run on the server so you can write them in your normal programming language - no need to learn
+another language like SQL. The same applies to queries.
 
 All this functionality will be accessible over a simple wire protocol and via a simple client API which we will
 provide in Java, JavaScript and potentially other languages going ahead.
@@ -82,7 +80,7 @@ Mewbase will be designed from scratch to cope with very large datasets and optim
 
 ### Features
 
-Some of the features we're looking at implementing:
+Some of the features / future features:
 
 * Multiple event logs scaling to petabyte size
 * Horizontal scalability via sharding/partitioning
@@ -113,8 +111,8 @@ Some of the features we're looking at implementing:
 
 ### What does this look like from a client perspective?
 
-Let's take a simple example of an order microservice whose job it is to maintain shopping baskets for customers. It has
-a REST API and is designed using CQRS/event sourcing principles. It implements the following commands:
+Let's take a simple example of an order microservice whose job it is to maintain shopping baskets for customers.
+It has a REST API and is designed using CQRS/event sourcing principles. It implements the following commands:
 
 * Add item to basket
 * Remove item from basket
