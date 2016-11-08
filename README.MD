@@ -4,7 +4,7 @@
 
 Smart organisations now realise that its vital to keep track of all the streams of events they produce.
 
-Exammples of streams of events might be:
+Examples of streams of events might be:
 
 * Shopping basket events (add/remove/order) from a website
 * Events from IoT sensors
@@ -108,34 +108,6 @@ Some of the features / future features:
 * Completely non blocking, and reactive APIS
 * Live persistent queries - sends more matching data to client as it arrives on server 
 * Sidecars for node.js/go
-
-### What does this look like from a client perspective?
-
-Let's take a simple example of an order microservice whose job it is to maintain shopping baskets for customers.
-It has a REST API and is designed using CQRS/event sourcing principles. It implements the following commands:
-
-* Add item to basket
-* Remove item from basket
-* Place order
-
-and provide the following queries:
-
-* View shoping basket
-
-As commands come in the service processes them and emits events by sending them to the mewbase engine. When the service
-wants to get current state of a shopping basket it simply asks mewbase for it. The service provides a function that
-maps the events to the basket which runs in the engine.
-
-Each service can have its own engine - this plays nicely with the microservice architectural style where 
-services maintain their own data. Or alternatively different services can share a standalone engine or a cluster,
-depending on which architectural style you prefer.
-
-The mewbase client will provide caching at the client side and live results which update automatically so you don't
-need to reissue the same queries every time you want to get the information.
-
-Mewbase works really well with event driven microservices but is not limited to applications that use that
-architectural style - it's applicable to any application that wants high performance event streaming and/or
-document style views on the events.
 
 ### Why the name "mewbase"?
 
