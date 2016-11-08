@@ -54,7 +54,7 @@ public class QueryTest extends ServerTestBase {
 
         SubDescriptor descriptor = new SubDescriptor().setChannel(TEST_CHANNEL_1);
 
-        server.installFunction("testfunc", descriptor, binder, "docID", (basket, del) -> document);
+        server.installFunction("testfunc", TEST_CHANNEL_1, ev -> true, binder, ev -> ev.getString("docID"), (basket, del) -> document);
 
         Producer prod = client.createProducer(TEST_CHANNEL_1);
 

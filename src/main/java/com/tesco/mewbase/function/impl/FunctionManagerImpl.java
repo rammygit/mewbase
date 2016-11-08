@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import static com.tesco.mewbase.doc.DocManager.ID_FIELD;
 
@@ -38,12 +39,13 @@ public class FunctionManagerImpl implements FunctionManager {
     }
 
     @Override
-    public synchronized boolean installFunction(String name, SubDescriptor descriptor, String binderName,
-                                                String docIDField, BiFunction<BsonObject, Delivery, BsonObject> function) {
+    public boolean installFunction(String name, String channel, Function<BsonObject, Boolean> eventFilter,
+                                   String binderName, Function<BsonObject, String> docIDSelector,
+                                   BiFunction<BsonObject, Delivery, BsonObject> function) {
         if (functions.containsKey(name)) {
             return false;
         }
-        FuncHolder holder = new FuncHolder(descriptor, binderName, docIDField, function);
+        FuncHolder holder = new FuncHolder(channel, binderName, eventFilter, docIDSelector, function);
         functions.put(name, holder);
         return true;
     }
@@ -61,20 +63,23 @@ public class FunctionManagerImpl implements FunctionManager {
 
     private class FuncHolder {
 
-        final SubDescriptor descriptor;
+        final String channel;
         final String binderName;
-        final String docIDField;
         final ReadStream readStream;
-        final  BiFunction<BsonObject, Delivery, BsonObject> function;
+        final Function<BsonObject, Boolean> eventFilter;
+        final Function<BsonObject, String> docIDSelector;
+        final BiFunction<BsonObject, Delivery, BsonObject> function;
 
-        public FuncHolder(SubDescriptor subDescriptor, String binderName, String docIDField,
+        public FuncHolder(String channel, String binderName, Function<BsonObject, Boolean> eventFilter,
+                          Function<BsonObject, String> docIDSelector,
                           BiFunction<BsonObject, Delivery, BsonObject> function) {
-            this.descriptor = subDescriptor;
+            this.channel = channel;
             this.binderName = binderName;
-            this.docIDField = docIDField;
+            this.eventFilter = eventFilter;
+            this.docIDSelector = docIDSelector;
             this.function = function;
-            Log log = logManager.getLog(descriptor.getChannel());
-            this.readStream = log.subscribe(descriptor);
+            Log log = logManager.getLog(channel);
+            this.readStream = log.subscribe(new SubDescriptor().setChannel(channel));
             readStream.handler(this::handler);
             readStream.start();
         }
@@ -82,9 +87,12 @@ public class FunctionManagerImpl implements FunctionManager {
         void handler(long seq, BsonObject frame) {
             frame.put(Codec.RECEV_POS, seq);
             BsonObject event = frame.getBsonObject(Codec.RECEV_EVENT);
-            String docID = event.getString(docIDField);
+            if (!eventFilter.apply(event)) {
+                return;
+            }
+            String docID = docIDSelector.apply(event);
             if (docID == null) {
-                throw new IllegalArgumentException("No field " + docIDField + " in event " + event);
+                throw new IllegalArgumentException("No doc ID found in event " + event);
             }
             docManager.findByID(binderName, docID).handle((doc, t) -> {
                 if (t == null) {
@@ -92,7 +100,7 @@ public class FunctionManagerImpl implements FunctionManager {
                         if (doc == null) {
                             doc = new BsonObject().put(ID_FIELD, docID);
                         }
-                        Delivery delivery = new DeliveryImpl(descriptor.getChannel(), frame.getLong(Codec.RECEV_TIMESTAMP),
+                        Delivery delivery = new DeliveryImpl(channel, frame.getLong(Codec.RECEV_TIMESTAMP),
                                 frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT));
                         BsonObject updated = function.apply(doc, delivery);
                         CompletableFuture<Void> cfSaved = docManager.save(binderName, docID, updated);

@@ -15,8 +15,8 @@ import java.util.function.Function;
  */
 public interface FunctionManager {
 
-    boolean installFunction(String name, SubDescriptor descriptor,
-                            String binderName, String docIDField,
+    boolean installFunction(String name, String channel, Function<BsonObject, Boolean> eventFilter,
+                            String binderName, Function<BsonObject, String> docIDSelector,
                             BiFunction<BsonObject, Delivery, BsonObject> function);
 
     boolean deleteFunction(String functionName);

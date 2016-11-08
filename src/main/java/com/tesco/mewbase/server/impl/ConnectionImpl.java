@@ -127,6 +127,10 @@ public class ConnectionImpl implements ServerFrameHandler {
         int subID = subSeq++;
         checkWrap(subSeq);
         Log log = server.getLog(channel);
+        if (log == null) {
+            // TODO send error back to client
+            throw new IllegalStateException("No such channel " + channel);
+        }
         ReadStream readStream = log.subscribe(subDescriptor);
         SubscriptionImpl subscription = new SubscriptionImpl(this, subID, readStream);
         subscriptionMap.put(subID, subscription);

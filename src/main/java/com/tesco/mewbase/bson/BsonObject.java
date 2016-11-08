@@ -754,6 +754,41 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
         return this;
     }
 
+    public String encodeToString() {
+        StringBuilder sb = new StringBuilder();
+        encodeToString(sb);
+        return sb.toString();
+    }
+
+    protected void encodeToString(StringBuilder sb) {
+        sb.append("{");
+        Iterator<Map.Entry<String, Object>> iter = iterator();
+        while (iter.hasNext()) {
+            Map.Entry<String, Object> entry = iter.next();
+            sb.append(entry.getKey()).append(":");
+            if (entry.getValue() instanceof BsonObject) {
+                ((BsonObject)entry.getValue()).encodeToString(sb);
+            } else if (entry.getValue() instanceof BsonArray) {
+                ((BsonArray)entry.getValue()).encodeToString(sb);
+            } else if (entry.getValue() instanceof String){
+                sb.append("\"");
+                sb.append(entry.getValue().toString());
+                sb.append("\"");
+            } else {
+                sb.append(entry.getValue().toString());
+            }
+            if (iter.hasNext()) {
+                sb.append(",");
+            }
+        }
+        sb.append("}");
+    }
+
+    @Override
+    public String toString() {
+        return encodeToString();
+    }
+
     /**
      * Is this object entry?
      *

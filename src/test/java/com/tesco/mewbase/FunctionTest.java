@@ -30,13 +30,11 @@ public class FunctionTest extends ServerTestBase {
 
     @Test
     public void testSimpleFunction(TestContext context) throws Exception {
-        SubDescriptor descriptor =
-                new SubDescriptor().setChannel(TEST_CHANNEL_1).setMatcher(new BsonObject().put("eventType", "add_item"));
 
         String binderName = "baskets";
 
-        server.installFunction("testfunc", descriptor, binderName, "basketID", (basket, del) ->
-            BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
+        server.installFunction("testfunc", TEST_CHANNEL_1, ev -> true, binderName, ev -> ev.getString("basketID"), (basket, del) ->
+                BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
         );
 
         Producer prod = client.createProducer(TEST_CHANNEL_1);

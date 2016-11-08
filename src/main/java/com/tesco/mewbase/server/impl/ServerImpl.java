@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Created by tim on 22/09/16.
@@ -107,10 +108,13 @@ public class ServerImpl implements Server {
         return CompletableFuture.allOf(all);
     }
 
+
     @Override
-    public boolean installFunction(String name, SubDescriptor descriptor, String binderName, String docIDField,
-                                   BiFunction<BsonObject, Delivery, BsonObject> function) {
-        return functionManager.installFunction(name, descriptor, binderName, docIDField, function);
+    public boolean installFunction(String name, String channel, Function<BsonObject, Boolean> eventFilter,
+                           String binderName, Function<BsonObject, String> docIDSelector,
+                           BiFunction<BsonObject, Delivery, BsonObject> function) {
+
+        return functionManager.installFunction(name, channel, eventFilter, binderName, docIDSelector, function);
     }
 
     @Override
