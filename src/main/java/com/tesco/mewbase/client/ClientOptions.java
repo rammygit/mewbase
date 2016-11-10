@@ -1,5 +1,7 @@
 package com.tesco.mewbase.client;
 
+import io.vertx.core.net.NetClientOptions;
+
 /**
  * Created by tim on 22/09/16.
  */
@@ -7,6 +9,7 @@ public class ClientOptions {
 
     private String host = "localhost";
     private int port = 7451;
+    private NetClientOptions netClientOptions;
 
     public String getHost() {
         return host;
@@ -26,6 +29,15 @@ public class ClientOptions {
         return this;
     }
 
+    public NetClientOptions getNetClientOptions() {
+        return netClientOptions;
+    }
+
+    public ClientOptions setNetClientOptions(NetClientOptions netClientOptions) {
+        this.netClientOptions = netClientOptions;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -34,6 +46,8 @@ public class ClientOptions {
         ClientOptions that = (ClientOptions) o;
 
         if (port != that.port) return false;
+        if (netClientOptions != null && !netClientOptions.equals(that.getNetClientOptions())) return false;
+
         return host != null ? host.equals(that.host) : that.host == null;
 
     }

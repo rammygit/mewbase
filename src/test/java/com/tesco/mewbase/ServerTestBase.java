@@ -5,6 +5,10 @@ import com.tesco.mewbase.client.ClientOptions;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
+import io.vertx.core.net.NetClientOptions;
+import io.vertx.core.net.NetServerOptions;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PemTrustOptions;
 import io.vertx.ext.unit.TestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +23,8 @@ public class ServerTestBase extends MewbaseTestBase {
 
     private final static Logger log = LoggerFactory.getLogger(PubSubTest.class);
 
+    private final static String CERT_PATH = "src/test/resources/server-cert.pem";
+    private final static String KEY_PATH = "src/test/resources/server-key.pem";
     protected Server server;
     protected Client client;
 
@@ -28,13 +34,15 @@ public class ServerTestBase extends MewbaseTestBase {
         log.trace("in before");
         File logDir = testFolder.newFolder();
         log.trace("Log dir is {}", logDir);
-        FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
-        ServerOptions options = new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions);
-        server = Server.newServer(options);
+
+        ServerOptions serverOptions = createServerOptions(logDir);
+        ClientOptions clientOptions = createClientOptions();
+
+        server = Server.newServer(serverOptions);
         CompletableFuture<Void> cfStart = server.start();
         cfStart.get();
-        client = Client.newClient(vertx, new ClientOptions());
+
+        client = Client.newClient(vertx, clientOptions);
     }
 
     @Override
@@ -45,5 +53,28 @@ public class ServerTestBase extends MewbaseTestBase {
         server.stop().get();
         log.trace("server closed");
         super.tearDown(context);
+    }
+
+    private ServerOptions createServerOptions(File logDir) {
+        FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
+
+        NetServerOptions netServerOptions = new NetServerOptions().setSsl(true).setPemKeyCertOptions(
+                new PemKeyCertOptions()
+                        .setKeyPath(KEY_PATH)
+                        .setCertPath(CERT_PATH)
+        );
+
+        return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
+                .setFileLogManagerOptions(fileLogManagerOptions)
+                .setNetServerOptions(netServerOptions);
+    }
+
+    private ClientOptions createClientOptions() {
+        NetClientOptions netClientOptions = new NetClientOptions()
+                .setSsl(true)
+                .setPemTrustOptions(
+                        new PemTrustOptions().addCertPath(CERT_PATH)
+                );
+        return new ClientOptions().setNetClientOptions(netClientOptions);
     }
 }

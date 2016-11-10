@@ -17,8 +17,7 @@ import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.core.net.NetServer;
-import io.vertx.core.net.NetSocket;
+import io.vertx.core.net.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,8 +63,9 @@ public class ServerImpl implements Server {
         log.trace("Starting " + procs + " instances");
         String[] channels = serverOptions.getChannels();
         CompletableFuture[] all = new CompletableFuture[procs + (channels != null ? channels.length : 0)];
+
         for (int i = 0; i < procs; i++) {
-            NetServer netServer = vertx.createNetServer();
+            NetServer netServer = vertx.createNetServer(serverOptions.getNetServerOptions());
             netServer.connectHandler(this::connectHandler);
             CompletableFuture<Void> cf = new CompletableFuture<>();
             netServer.listen(serverOptions.getPort(), serverOptions.getHost(), ar -> {
