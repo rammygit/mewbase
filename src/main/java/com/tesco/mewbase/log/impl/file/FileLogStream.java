@@ -1,7 +1,7 @@
 package com.tesco.mewbase.log.impl.file;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -24,7 +24,7 @@ import java.util.function.Consumer;
  * <p>
  * Created by tim on 22/10/16.
  */
-public class FileLogStream implements ReadStream {
+public class FileLogStream implements LogReadStream {
 
     private final static Logger log = LoggerFactory.getLogger(FileLogStream.class);
 
