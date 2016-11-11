@@ -55,26 +55,16 @@ public class ServerTestBase extends MewbaseTestBase {
         super.tearDown(context);
     }
 
-    private ServerOptions createServerOptions(File logDir) {
+    protected ServerOptions createServerOptions(File logDir) {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
 
-        NetServerOptions netServerOptions = new NetServerOptions().setSsl(true).setPemKeyCertOptions(
-                new PemKeyCertOptions()
-                        .setKeyPath(KEY_PATH)
-                        .setCertPath(CERT_PATH)
-        );
 
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
                 .setFileLogManagerOptions(fileLogManagerOptions)
-                .setNetServerOptions(netServerOptions);
+                .setNetServerOptions(new NetServerOptions());
     }
 
-    private ClientOptions createClientOptions() {
-        NetClientOptions netClientOptions = new NetClientOptions()
-                .setSsl(true)
-                .setPemTrustOptions(
-                        new PemTrustOptions().addCertPath(CERT_PATH)
-                );
-        return new ClientOptions().setNetClientOptions(netClientOptions);
+    protected ClientOptions createClientOptions() {
+        return new ClientOptions().setNetClientOptions(new NetClientOptions());
     }
 }
