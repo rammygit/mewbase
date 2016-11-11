@@ -9,5 +9,7 @@ public interface QueryResult {
 
     int numResults();
 
-    void resultHandler(Consumer<QueryResultHolder> resultHandler);
+    boolean done();
+
+    void handle(QueryResultHolder resultHolder);
 }

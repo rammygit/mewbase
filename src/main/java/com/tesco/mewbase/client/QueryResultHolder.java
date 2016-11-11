@@ -8,6 +8,4 @@ import com.tesco.mewbase.bson.BsonObject;
 public interface QueryResultHolder {
 
     BsonObject document();
-
-    void done();
 }

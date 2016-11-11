@@ -3,11 +3,13 @@ package com.tesco.mewbase.doc.impl.inmem;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.client.QueryResult;
+import com.tesco.mewbase.client.QueryResultHolder;
 import com.tesco.mewbase.doc.DocManager;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * Created by tim on 30/09/16.
@@ -35,7 +37,7 @@ public class InMemoryDocManager implements DocManager {
     }
 
     @Override
-    public CompletableFuture<QueryResult> findMatching(String binderName, BsonObject matcher) {
+    public CompletableFuture<QueryResult> findMatching(String binderName, BsonObject matcher, Consumer<QueryResultHolder> resultHandler) {
         return null;
     }
 
