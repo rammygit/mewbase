@@ -9,6 +9,7 @@ import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetClient;
+import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +57,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     ClientImpl(Vertx vertx, ClientOptions clientOptions, boolean ownVertx) {
         this.vertx = vertx;
-        this.netClient = vertx.createNetClient();
+        this.netClient = vertx.createNetClient(clientOptions.getNetClientOptions());
         this.clientOptions = clientOptions;
         this.ownVertx = ownVertx;
     }
