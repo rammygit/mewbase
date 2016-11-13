@@ -2,7 +2,6 @@ package com.tesco.mewbase.client.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.*;
-import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.server.impl.Codec;
 import com.tesco.mewbase.util.AsyncResCF;
@@ -35,7 +34,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
     private final Map<Integer, ProducerImpl> producerMap = new ConcurrentHashMap<>();
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final Queue<Consumer<BsonObject>> respQueue = new ConcurrentLinkedQueue<>();
-    private final Map<Integer, CompletableFuture<BsonObject>> expectedQueryResults = new ConcurrentHashMap<>();
+    private final Map<Integer, QueryResultHandler> expectedQueryResults = new ConcurrentHashMap<>();
     private final Vertx vertx;
     private final NetClient netClient;
     private final ClientOptions clientOptions;
@@ -128,20 +127,25 @@ public class ClientImpl implements Client, ClientFrameHandler {
             }
 
             Integer numResults = resp.getInteger(Codec.QUERYRESPONSE_NUMRESULTS);
-            if (numResults == 1) {
-                expectedQueryResults.put(queryID, cf);
-            } else if (numResults == 0) {
+
+            if (numResults == 0) {
                 cf.complete(null);
-            } else {
+            } else if(numResults > 1) {
                 cf.completeExceptionally(new IllegalStateException("Invalid result count for get by ID"));
             }
+
+            QueryResultHandler qr = new QueryResultHandlerImpl(res ->  {
+                        cf.complete(res.document());
+                        res.acknowledge();
+                    }, numResults);
+            expectedQueryResults.put(queryID, qr);
         });
 
         return cf;
     }
 
     @Override
-    public CompletableFuture<QueryResult> findMatching(String binderName, BsonObject matcher) {
+    public CompletableFuture<QueryResultHandler> findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler) {
         return null;
     }
 
@@ -178,11 +182,15 @@ public class ClientImpl implements Client, ClientFrameHandler {
     @Override
     public void handleQueryResult(BsonObject frame) {
         int queryID = frame.getInteger(Codec.QUERYRESULT_QUERYID);
-        CompletableFuture<BsonObject> cf = expectedQueryResults.get(queryID);
-        if (cf != null) {
-            cf.complete(frame.getBsonObject(Codec.QUERYRESULT_RESULT));
-            doQueryAck(queryID);
-            expectedQueryResults.remove(queryID);
+        QueryResultHandler qr = expectedQueryResults.get(queryID);
+        if (qr != null) {
+            QueryResult resultHolder = new QueryResultImpl(frame.getBsonObject(Codec.QUERYRESULT_RESULT));
+            resultHolder.onAcknowledge(() -> doQueryAck(queryID));
+
+            qr.handle(resultHolder);
+            if(qr.isDone()) {
+                expectedQueryResults.remove(queryID);
+            }
         } else {
             throw new IllegalStateException("Received unexpected query result");
         }

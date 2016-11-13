@@ -1,13 +1,15 @@
 package com.tesco.mewbase.client;
 
-import java.util.function.Consumer;
+import com.tesco.mewbase.bson.BsonObject;
 
 /**
  * Created by tim on 22/09/16.
  */
 public interface QueryResult {
 
-    int numResults();
+    BsonObject document();
 
-    void resultHandler(Consumer<QueryResultHolder> resultHandler);
+    void acknowledge();
+
+    void onAcknowledge(Runnable acknowledger);
 }
