@@ -3,11 +3,9 @@ package com.tesco.mewbase.client;
 /**
  * Created by tim on 22/09/16.
  */
-public interface QueryResultHandler {
+public interface QueryResponse {
 
     int numResults();
 
     boolean isDone();
-
-    void handle(QueryResult resultHolder);
 }

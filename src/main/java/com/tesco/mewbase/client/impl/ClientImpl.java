@@ -33,7 +33,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
     private final Map<Integer, ProducerImpl> producerMap = new ConcurrentHashMap<>();
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final Queue<Consumer<BsonObject>> respQueue = new ConcurrentLinkedQueue<>();
-    private final Map<Integer, QueryResultHandler> expectedQueryResults = new ConcurrentHashMap<>();
+    private final Map<Integer, QueryResponseImpl> expectedQueryResults = new ConcurrentHashMap<>();
     private final Vertx vertx;
     private final NetClient netClient;
     private final ClientOptions clientOptions;
@@ -133,10 +133,10 @@ public class ClientImpl implements Client, ClientFrameHandler {
                 cf.completeExceptionally(new IllegalStateException("Invalid result count for get by ID"));
             }
 
-            QueryResultHandler qr = new QueryResultHandlerImpl(res ->  {
-                        cf.complete(res.document());
-                        res.acknowledge();
-                    }, numResults);
+            QueryResponseImpl qr = new QueryResponseImpl(res ->  {
+                                        cf.complete(res.document());
+                                        res.acknowledge();
+                                    }, numResults);
             expectedQueryResults.put(queryID, qr);
         });
 
@@ -144,7 +144,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
     }
 
     @Override
-    public CompletableFuture<QueryResultHandler> findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler) {
+    public CompletableFuture<QueryResponse> findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler) {
         return null;
     }
 
@@ -181,9 +181,9 @@ public class ClientImpl implements Client, ClientFrameHandler {
     @Override
     public void handleQueryResult(BsonObject frame) {
         int queryID = frame.getInteger(Codec.QUERYRESULT_QUERYID);
-        QueryResultHandler qr = expectedQueryResults.get(queryID);
+        QueryResponseImpl qr = expectedQueryResults.get(queryID);
         if (qr != null) {
-            QueryResult resultHolder = new QueryResultImpl(frame.getBsonObject(Codec.QUERYRESULT_RESULT));
+            QueryResultImpl resultHolder = new QueryResultImpl(frame.getBsonObject(Codec.QUERYRESULT_RESULT));
             resultHolder.onAcknowledge(() -> doQueryAck(queryID));
 
             qr.handle(resultHolder);

@@ -1,7 +1,7 @@
 package com.tesco.mewbase.doc.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.QueryResultHandler;
+import com.tesco.mewbase.client.QueryResponse;
 import com.tesco.mewbase.client.QueryResult;
 import com.tesco.mewbase.doc.DocManager;
 
@@ -36,7 +36,7 @@ public class InMemoryDocManager implements DocManager {
     }
 
     @Override
-    public CompletableFuture<QueryResultHandler> findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler) {
+    public CompletableFuture<QueryResponse> findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler) {
         return null;
     }
 
