@@ -66,7 +66,6 @@ public class LogTestBase extends MewbaseTestBase {
         flm = new FileLogManager(vertx, options, faf);
         flm.createLog(TEST_CHANNEL_1).thenCompose(l -> flm.createLog(TEST_CHANNEL_2)).get();
         log = flm.getLog(channel);
-        log.start().get();
     }
 
     protected void saveInfo(int fileNumber, int headPos, int fileHeadPos, boolean shutdown) {
