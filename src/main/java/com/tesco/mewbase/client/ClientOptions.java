@@ -7,9 +7,12 @@ import io.vertx.core.net.NetClientOptions;
  */
 public class ClientOptions {
 
-    private String host = "localhost";
-    private int port = 7451;
-    private NetClientOptions netClientOptions;
+    public static final String DEFAULT_HOST = "localhost";
+    public static final int DEFAULT_PORT = 7451;
+
+    private String host = DEFAULT_HOST;
+    private int port = DEFAULT_PORT;
+    private NetClientOptions netClientOptions = new NetClientOptions();
 
     public String getHost() {
         return host;
