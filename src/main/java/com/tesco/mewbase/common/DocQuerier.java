@@ -1,7 +1,7 @@
 package com.tesco.mewbase.common;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.QueryResultHandler;
+import com.tesco.mewbase.client.QueryResponse;
 import com.tesco.mewbase.client.QueryResult;
 
 import java.util.concurrent.CompletableFuture;
@@ -16,6 +16,6 @@ public interface DocQuerier {
 
     CompletableFuture<BsonObject> findByID(String binderName, String id);
 
-    CompletableFuture<QueryResultHandler> findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler);
+    CompletableFuture<QueryResponse> findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler);
 
 }

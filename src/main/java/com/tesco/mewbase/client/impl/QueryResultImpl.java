@@ -24,7 +24,6 @@ public class QueryResultImpl implements QueryResult {
         acknowledger.run();
     }
 
-    @Override
     public void onAcknowledge(Runnable acknowledger) {
         this.acknowledger = acknowledger;
     }

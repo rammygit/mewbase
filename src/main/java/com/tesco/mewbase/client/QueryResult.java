@@ -10,6 +10,4 @@ public interface QueryResult {
     BsonObject document();
 
     void acknowledge();
-
-    void onAcknowledge(Runnable acknowledger);
 }
