@@ -68,7 +68,8 @@ public class ServerImpl implements Server {
             NetServer netServer = vertx.createNetServer(serverOptions.getNetServerOptions());
             netServer.connectHandler(this::connectHandler);
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            netServer.listen(serverOptions.getPort(), serverOptions.getHost(), ar -> {
+            netServer.listen(serverOptions.getNetServerOptions().getPort(),
+                    serverOptions.getNetServerOptions().getHost(), ar -> {
                 if (ar.succeeded()) {
                     cf.complete(null);
                 } else {
