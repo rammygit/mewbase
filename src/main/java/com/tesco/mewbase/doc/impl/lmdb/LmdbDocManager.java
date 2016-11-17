@@ -6,6 +6,7 @@ import com.tesco.mewbase.doc.DocReadStream;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
+import io.vertx.core.WorkerExecutor;
 import io.vertx.core.buffer.Buffer;
 import org.fusesource.lmdbjni.*;
 
@@ -21,21 +22,35 @@ import java.util.function.Function;
  *
  * DocManager using lmdb.
  *
- * (I don't like the blocking API!)
+ * lmdb is fast but unfortunately has a blocking API so we have to execute everything on worker threads
+ *
+ * We use one lmdb database per binder
  *
  * Created by tim on 09/11/16.
  */
 public class LmdbDocManager implements DocManager {
 
+    // TODO make configurable
+    private static final String LMDB_DOCMANAGER_POOL_NAME = "mewbase.docmanagerpool";
+    private static final int LMDB_DOCMANAGER_POOL_SIZE = 10;
+
     private final Vertx vertx;
     private final File docsDir;
     private final Map<String, DBHolder> databases = new ConcurrentHashMap<>();
+    private final WorkerExecutor exec;
+
+    public LmdbDocManager(String docsDir, Vertx vertx) {
+        this.docsDir = new File(docsDir);
+        this.vertx = vertx;
+        exec = vertx.createSharedWorkerExecutor(LMDB_DOCMANAGER_POOL_NAME, LMDB_DOCMANAGER_POOL_SIZE);
+    }
 
     @Override
     public CompletableFuture<BsonObject> get(String binderName, String id) {
+
         DBHolder holder = getDBHolder(binderName);
         AsyncResCF<BsonObject> res = new AsyncResCF<>();
-        vertx.executeBlocking(fut -> {
+        exec.executeBlocking(fut -> {
             byte[] key = getKey(id);
             byte[] val = holder.db.get(key);
             if (val != null) {
@@ -58,7 +73,7 @@ public class LmdbDocManager implements DocManager {
     public CompletableFuture<Void> put(String binderName, String id, BsonObject doc) {
         DBHolder holder = getDBHolder(binderName);
         AsyncResCF<Void> res = new AsyncResCF<>();
-        vertx.executeBlocking(fut -> {
+        exec.executeBlocking(fut -> {
             byte[] key = getKey(id);
             byte[] val = doc.encode().getBytes();
             holder.db.put(key, val);
@@ -71,7 +86,7 @@ public class LmdbDocManager implements DocManager {
     public CompletableFuture<Boolean> delete(String binderName, String id) {
         DBHolder holder = getDBHolder(binderName);
         AsyncResCF<Boolean> res = new AsyncResCF<>();
-        vertx.executeBlocking(fut -> {
+        exec.executeBlocking(fut -> {
             byte[] key = getKey(id);
             boolean deleted = holder.db.delete(key);
             fut.complete(deleted);
@@ -79,18 +94,14 @@ public class LmdbDocManager implements DocManager {
         return res;
     }
 
-    public LmdbDocManager(String docsDir, Vertx vertx) {
-        this.docsDir = new File(docsDir);
-        this.vertx = vertx;
-    }
-
     public CompletableFuture<Void> close() {
         AsyncResCF<Void> res = new AsyncResCF<>();
-        vertx.executeBlocking(fut -> {
+        exec.executeBlocking(fut -> {
             for (DBHolder holder: databases.values()) {
                 holder.db.close();
                 holder.env.close();
             }
+            exec.close();
             fut.complete(null);
         }, res);
         return res;
@@ -98,7 +109,7 @@ public class LmdbDocManager implements DocManager {
 
     public CompletableFuture<Void> start() {
         AsyncResCF<Void> res = new AsyncResCF<>();
-        vertx.executeBlocking(fut -> {
+        exec.executeBlocking(fut -> {
             createIfDoesntExists(docsDir);
             fut.complete(null);
         }, res);
@@ -111,7 +122,7 @@ public class LmdbDocManager implements DocManager {
             throw new MewException("Already a binder called " + binderName);
         }
         AsyncResCF<Void> res = new AsyncResCF<>();
-        vertx.executeBlocking(fut -> {
+        exec.executeBlocking(fut -> {
             File dbDir = new File(docsDir, "binder-" + binderName);
             createIfDoesntExists(dbDir);
             Env env = new Env(dbDir.getPath());
@@ -145,13 +156,14 @@ public class LmdbDocManager implements DocManager {
 
     private class LmdbReadStream implements DocReadStream {
 
-        private Transaction tx;
-        private EntryIterator iter;
+        private static final int MAX_DELIVER_BATCH = 100;
+
+        private final Transaction tx;
+        private final EntryIterator iter;
+        private final Function<BsonObject, Boolean> matcher;
         private Consumer<BsonObject> handler;
-        private Consumer<Throwable> exceptionHandler;
         private boolean paused;
         private boolean closed;
-        private Function<BsonObject, Boolean> matcher;
 
         LmdbReadStream(DBHolder holder, Function<BsonObject, Boolean> matcher) {
             this.tx = holder.env.createReadTransaction();
@@ -161,7 +173,6 @@ public class LmdbDocManager implements DocManager {
 
         @Override
         public void exceptionHandler(Consumer<Throwable> handler) {
-            this.exceptionHandler = handler;
         }
 
         @Override
@@ -196,8 +207,6 @@ public class LmdbDocManager implements DocManager {
             return closed;
         }
 
-        private static final int MAX_DELIVER_BATCH = 100;
-
         private void iterNext() {
             if (paused) {
                 return;
@@ -226,7 +235,7 @@ public class LmdbDocManager implements DocManager {
         final Env env;
         final Database db;
 
-        public DBHolder(Env env, Database db) {
+        DBHolder(Env env, Database db) {
             this.env = env;
             this.db = db;
         }
