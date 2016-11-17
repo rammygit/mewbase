@@ -19,4 +19,8 @@ public class Binder {
     public void save(String id, BsonObject doc) {
         docs.put(id, doc);
     }
+
+    public boolean delete(String id) {
+        return docs.remove(id) != null;
+    }
 }

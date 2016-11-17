@@ -1,7 +1,7 @@
 package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.log.Log;
@@ -131,7 +131,7 @@ public class ConnectionImpl implements ServerFrameHandler {
             // TODO send error back to client
             throw new IllegalStateException("No such channel " + channel);
         }
-        ReadStream readStream = log.subscribe(subDescriptor);
+        LogReadStream readStream = log.subscribe(subDescriptor);
         SubscriptionImpl subscription = new SubscriptionImpl(this, subID, readStream);
         subscriptionMap.put(subID, subscription);
         BsonObject resp = new BsonObject();
@@ -193,7 +193,7 @@ public class ConnectionImpl implements ServerFrameHandler {
 
         // TODO currently hardcoded to assume get by ID, implement properly for other query types
         String documentId = matcher.getBsonObject("$match").getString("id");
-        CompletableFuture<BsonObject> cf = docManager.findByID(binder, documentId);
+        CompletableFuture<BsonObject> cf = docManager.get(binder, documentId);
         long writeSeq = getWriteSeq();
 
         cf.thenAccept(result -> {
