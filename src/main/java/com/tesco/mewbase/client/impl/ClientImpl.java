@@ -34,7 +34,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
     private final Map<Integer, ProducerImpl> producerMap = new ConcurrentHashMap<>();
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final Queue<Consumer<BsonObject>> respQueue = new ConcurrentLinkedQueue<>();
-    private final Map<Integer, QueryResponseImpl> expectedQueryResults = new ConcurrentHashMap<>();
+    private final Map<Integer, Consumer<QueryResult>> queryResultHandlers = new ConcurrentHashMap<>();
     private final Vertx vertx;
     private final NetClient netClient;
     private final ClientOptions clientOptions;
@@ -110,43 +110,42 @@ public class ClientImpl implements Client, ClientFrameHandler {
     @Override
     public CompletableFuture<BsonObject> findByID(String binderName, String id) {
         CompletableFuture<BsonObject> cf = new CompletableFuture<>();
-        BsonObject matcher = new BsonObject().put("$match", new BsonObject().put("id", id));
-        int queryID = nextQueryId.getAndIncrement();
-
         BsonObject frame = new BsonObject();
-        frame.put(Codec.QUERY_QUERYID, queryID);
         frame.put(Codec.QUERY_BINDER, binderName);
-        frame.put(Codec.QUERY_MATCHER, matcher);
-
-        Buffer buffer = Codec.encodeFrame(Codec.QUERY_FRAME, frame);
-
-        write(cf, buffer, resp -> {
-            if (resp.getInteger(Codec.QUERYRESPONSE_QUERYID) != queryID) {
-                cf.completeExceptionally(new IllegalStateException("Result query ID does not match handler expectation"));
-                return;
-            }
-
-            Integer numResults = resp.getInteger(Codec.QUERYRESPONSE_NUMRESULTS);
-
-            if (numResults == 0) {
-                cf.complete(null);
-            } else if(numResults > 1) {
-                cf.completeExceptionally(new IllegalStateException("Invalid result count for get by ID"));
-            }
-
-            QueryResponseImpl qr = new QueryResponseImpl(res ->  {
-                                        cf.complete(res.document());
-                                        res.acknowledge();
-                                    }, numResults);
-            expectedQueryResults.put(queryID, qr);
-        });
-
+        frame.put(Codec.QUERY_DOCID, id);
+        Consumer<QueryResult> resultHandler = qr -> {
+            BsonObject doc = qr.document();
+            cf.complete(doc);
+            qr.acknowledge();
+        };
+        writeQuery(frame, resultHandler, cf);
         return cf;
     }
 
+    private void writeQuery(BsonObject frame, Consumer<QueryResult> resultHandler, CompletableFuture cf) {
+        int queryID = nextQueryId.getAndIncrement();
+        frame.put(Codec.QUERY_QUERYID, queryID);
+        Buffer buffer = Codec.encodeFrame(Codec.QUERY_FRAME, frame);
+        queryResultHandlers.put(queryID, resultHandler);
+        write(cf, buffer, null);
+    }
+
+
     @Override
-    public CompletableFuture<QueryResponse> findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler) {
-        return null;
+    public void findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler,
+                             Consumer<Throwable> exceptionHandler) {
+        CompletableFuture<Void> cf = new CompletableFuture<>();
+        if (exceptionHandler != null) {
+            cf.exceptionally(t -> {
+                exceptionHandler.accept(t);
+                return null;
+            });
+        }
+        BsonObject frame = new BsonObject();
+        frame.put(Codec.QUERY_BINDER, binderName);
+        frame.put(Codec.QUERY_MATCHER, matcher);
+
+        writeQuery(frame, resultHandler, cf);
     }
 
     @Override
@@ -164,6 +163,24 @@ public class ClientImpl implements Client, ClientFrameHandler {
     // FrameHandler
 
     @Override
+    public void handleQueryResult(BsonObject resp) {
+        int rQueryID = resp.getInteger(Codec.QUERYRESULT_QUERYID);
+        Consumer<QueryResult> qrh = queryResultHandlers.get(rQueryID);
+        if (qrh == null) {
+            throw new IllegalStateException("Can't find query result handler");
+        }
+        boolean last = resp.getBoolean(Codec.QUERYRESULT_LAST);
+        QueryResult qr = new QueryResultImpl(resp.getBsonObject(Codec.QUERYRESULT_RESULT), last, rQueryID);
+        try {
+            qrh.accept(qr);
+        } finally {
+            if (last) {
+                queryResultHandlers.remove(rQueryID);
+            }
+        }
+    }
+
+    @Override
     public void handleRecev(int size, BsonObject frame) {
         int subID = frame.getInteger(Codec.RECEV_SUBID);
         SubscriptionImpl sub = subscriptionMap.get(subID);
@@ -174,27 +191,6 @@ public class ClientImpl implements Client, ClientFrameHandler {
         }
     }
 
-    @Override
-    public void handleQueryResponse(BsonObject frame) {
-        handleResponse(frame);
-    }
-
-    @Override
-    public void handleQueryResult(BsonObject frame) {
-        int queryID = frame.getInteger(Codec.QUERYRESULT_QUERYID);
-        QueryResponseImpl qr = expectedQueryResults.get(queryID);
-        if (qr != null) {
-            QueryResultImpl resultHolder = new QueryResultImpl(frame.getBsonObject(Codec.QUERYRESULT_RESULT));
-            resultHolder.onAcknowledge(() -> doQueryAck(queryID));
-
-            qr.handle(resultHolder);
-            if(qr.isDone()) {
-                expectedQueryResults.remove(queryID);
-            }
-        } else {
-            throw new IllegalStateException("Received unexpected query result");
-        }
-    }
 
     @Override
     public void handlePing(BsonObject frame) {
@@ -319,6 +315,35 @@ public class ClientImpl implements Client, ClientFrameHandler {
             cfConnect.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG),
                     resp.getString(Codec.RESPONSE_ERRCODE)));
         }
+    }
+
+    private class QueryResultImpl implements QueryResult {
+
+        private final BsonObject document;
+        private final boolean last;
+        private final int queryID;
+
+        public QueryResultImpl(BsonObject document, boolean last, int queryID) {
+            this.document = document;
+            this.last = last;
+            this.queryID = queryID;
+        }
+
+        @Override
+        public BsonObject document() {
+            return document;
+        }
+
+        @Override
+        public void acknowledge() {
+            doQueryAck(queryID);
+        }
+
+        @Override
+        public boolean isLast() {
+            return last;
+        }
+
     }
 
 }

@@ -1,14 +1,13 @@
 package com.tesco.mewbase.doc.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.QueryResponse;
-import com.tesco.mewbase.client.QueryResult;
+import com.tesco.mewbase.doc.DocReadStream;
 import com.tesco.mewbase.doc.DocManager;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Created by tim on 30/09/16.
@@ -18,7 +17,7 @@ public class InMemoryDocManager implements DocManager {
     private final Map<String, Binder> binders = new ConcurrentHashMap<>();
 
     @Override
-    public CompletableFuture<BsonObject> findByID(String binderName, String id) {
+    public CompletableFuture<BsonObject> get(String binderName, String id) {
         Binder binder = getOrCreateBinder(binderName);
         CompletableFuture<BsonObject> cfResult = new CompletableFuture<>();
         BsonObject doc = binder.getDocument(id);
@@ -27,7 +26,7 @@ public class InMemoryDocManager implements DocManager {
     }
 
     @Override
-    public CompletableFuture<Void> save(String binderName, String id, BsonObject doc) {
+    public CompletableFuture<Void> put(String binderName, String id, BsonObject doc) {
         Binder binder = getOrCreateBinder(binderName);
         CompletableFuture<Void> cfResult = new CompletableFuture<>();
         binder.save(id, doc);
@@ -36,9 +35,33 @@ public class InMemoryDocManager implements DocManager {
     }
 
     @Override
-    public CompletableFuture<QueryResponse> findMatching(String binderName, BsonObject matcher, Consumer<QueryResult> resultHandler) {
+    public CompletableFuture<Boolean> delete(String binderName, String id) {
+        Binder binder = getOrCreateBinder(binderName);
+        CompletableFuture<Boolean> cfResult = new CompletableFuture<>();
+        cfResult.complete(binder.delete(id));
+        return cfResult;
+    }
+
+    @Override
+    public DocReadStream getMatching(String binderName, Function<BsonObject, Boolean> matcher) {
         return null;
     }
+
+    @Override
+    public CompletableFuture<Void> createBinder(String binderName) {
+        return null;
+    }
+
+    @Override
+    public CompletableFuture<Void> close() {
+        return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> start() {
+        return CompletableFuture.completedFuture(null);
+    }
+
 
     private Binder getOrCreateBinder(String binderName) {
         Binder binder = binders.get(binderName);

@@ -20,6 +20,10 @@ public class MewbaseTestBase {
     protected static final String TEST_CHANNEL_1 = "channel1";
     protected static final String TEST_CHANNEL_2 = "channel2";
 
+    protected static final String TEST_BINDER1 = "binder1";
+    protected static final String TEST_BINDER2 = "binder2";
+
+
     @Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
 

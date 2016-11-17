@@ -1,7 +1,6 @@
 package com.tesco.mewbase.log;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 
 import java.util.concurrent.CompletableFuture;
@@ -11,7 +10,8 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Log {
 
-    ReadStream subscribe(SubDescriptor subDescriptor);
+    // TODO make this into lambda
+    LogReadStream subscribe(SubDescriptor subDescriptor);
 
     CompletableFuture<Long> append(BsonObject obj);
 

@@ -31,9 +31,7 @@ public class FunctionTest extends ServerTestBase {
     @Test
     public void testSimpleFunction(TestContext context) throws Exception {
 
-        String binderName = "baskets";
-
-        server.installFunction("testfunc", TEST_CHANNEL_1, ev -> true, binderName, ev -> ev.getString("basketID"), (basket, del) ->
+        server.installFunction("testfunc", TEST_CHANNEL_1, ev -> true, TEST_BINDER1, ev -> ev.getString("basketID"), (basket, del) ->
                 BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
         );
 
@@ -46,7 +44,7 @@ public class FunctionTest extends ServerTestBase {
         BsonObject basket =
                 waitForNonNull(() -> {
                     try {
-                        return client.findByID(binderName, basketID).get();
+                        return client.findByID(TEST_BINDER1, basketID).get();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

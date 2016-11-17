@@ -1,7 +1,9 @@
 package com.tesco.mewbase.server.impl;
 
+import com.sun.org.apache.xalan.internal.xsltc.dom.KeyIndex;
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.doc.DocReadStream;
+import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.log.Log;
@@ -24,12 +26,15 @@ public class ConnectionImpl implements ServerFrameHandler {
 
     private final static Logger logger = LoggerFactory.getLogger(ConnectionImpl.class);
 
+    private static final int INITIAL_QUERY_CREDITS = 1000;
+
     private final ServerImpl server;
     private final NetSocket socket;
     private final Context context;
     private final DocManager docManager;
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
+    private final Map<Integer, QueryHolder> queryStreams = new ConcurrentHashMap<>();
     private boolean authorised;
     private int subSeq;
     private long writeSeq;
@@ -74,8 +79,6 @@ public class ConnectionImpl implements ServerFrameHandler {
         record.put(Codec.RECEV_TIMESTAMP, System.currentTimeMillis());
         record.put(Codec.RECEV_EVENT, event);
         CompletableFuture<Long> cf = log.append(record);
-
-        logger.trace("Handling publish " + event.getInteger("num"));
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();
@@ -131,7 +134,7 @@ public class ConnectionImpl implements ServerFrameHandler {
             // TODO send error back to client
             throw new IllegalStateException("No such channel " + channel);
         }
-        ReadStream readStream = log.subscribe(subDescriptor);
+        LogReadStream readStream = log.subscribe(subDescriptor);
         SubscriptionImpl subscription = new SubscriptionImpl(this, subID, readStream);
         subscriptionMap.put(subID, subscription);
         BsonObject resp = new BsonObject();
@@ -183,50 +186,90 @@ public class ConnectionImpl implements ServerFrameHandler {
         subscription.handleAckEv(bytes);
     }
 
+    private static final class QueryHolder {
+        final DocReadStream readStream;
+        int credits;
+
+        public QueryHolder(DocReadStream readStream, int credits) {
+            this.readStream = readStream;
+            this.credits = credits;
+        }
+
+        // TODO this should be based on size of records not number of records, like we do with subscriptions!
+        void handleAck() {
+            credits++;
+            // TODO better flow control
+            if (credits == INITIAL_QUERY_CREDITS / 2) {
+                readStream.resume();
+            }
+        }
+
+        void decCredits() {
+            credits--;
+        }
+
+        int credits() {
+            return credits;
+        }
+    }
+
+
     @Override
     public void handleQuery(BsonObject frame) {
         checkContext();
         checkAuthorised();
         int queryID = frame.getInteger(Codec.QUERY_QUERYID);
+        String docID = frame.getString(Codec.QUERY_DOCID);
         String binder = frame.getString(Codec.QUERY_BINDER);
         BsonObject matcher = frame.getBsonObject(Codec.QUERY_MATCHER);
+        if (docID != null) {
+            CompletableFuture<BsonObject> cf = docManager.get(binder, docID);
+            cf.thenAccept(doc -> writeQueryResult(doc, queryID, true));
+        } else if (matcher != null) {
+            // TODO currently just use select all
+            DocReadStream rs = docManager.getMatching(binder, doc -> true);
+            QueryHolder holder = new QueryHolder(rs, INITIAL_QUERY_CREDITS);
+            rs.handler(doc -> {
+                boolean last = !rs.hasMore();
+                writeQueryResult(doc, queryID, last);
+                if (last) {
+                    queryStreams.remove(queryID);
+                } else {
+                    holder.decCredits();
+                    if (holder.credits() == 0) {
+                        rs.pause();
+                    }
+                }
+            });
 
-        // TODO currently hardcoded to assume get by ID, implement properly for other query types
-        String documentId = matcher.getBsonObject("$match").getString("id");
-        CompletableFuture<BsonObject> cf = docManager.findByID(binder, documentId);
-        long writeSeq = getWriteSeq();
+            queryStreams.put(queryID, holder);
+            rs.start();
+        }
+    }
 
-        cf.thenAccept(result -> {
-            if (result == null) {
-                BsonObject resp = new BsonObject();
-                resp.put(Codec.QUERYRESPONSE_QUERYID, queryID);
-                resp.put(Codec.QUERYRESPONSE_NUMRESULTS, 0);
-                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, writeSeq);
-            } else {
-                BsonObject resp = new BsonObject();
-                resp.put(Codec.QUERYRESPONSE_QUERYID, queryID);
-                resp.put(Codec.QUERYRESPONSE_NUMRESULTS, 1);
-                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, writeSeq);
-
-                BsonObject res = new BsonObject();
-                res.put(Codec.QUERYRESULT_QUERYID, queryID);
-                res.put(Codec.QUERYRESULT_RESULT, result);
-                writeNonResponse(Codec.QUERYRESULT_FRAME, res);
-            }
-        });
+    private void writeQueryResult(BsonObject doc, int queryID, boolean last) {
+        BsonObject res = new BsonObject();
+        res.put(Codec.QUERYRESULT_QUERYID, queryID);
+        res.put(Codec.QUERYRESULT_RESULT, doc);
+        res.put(Codec.QUERYRESULT_LAST, last);
+        writeNonResponse(Codec.QUERYRESULT_FRAME, res);
     }
 
     @Override
     public void handleQueryAck(BsonObject frame) {
         checkContext();
         checkAuthorised();
-
         Integer queryID = frame.getInteger(Codec.QUERYACK_QUERYID);
-
         if (queryID == null) {
             logAndClose("No queryID in QueryAck");
+        } else {
+            QueryHolder holder = queryStreams.get(queryID);
+            if (holder != null) {
+                holder.handleAck();
+            }
         }
     }
+
 
     @Override
     public void handlePing(BsonObject frame) {

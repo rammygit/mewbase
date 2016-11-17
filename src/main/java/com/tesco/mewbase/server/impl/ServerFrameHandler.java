@@ -24,11 +24,6 @@ public interface ServerFrameHandler extends FrameHandler {
     }
 
     @Override
-    default void handleQueryResponse(BsonObject frame) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     default void handleQueryResult(BsonObject frame) {
         throw new UnsupportedOperationException();
     }

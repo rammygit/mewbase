@@ -1,7 +1,7 @@
 package com.tesco.mewbase.storage;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.log.LogReadStream;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -16,6 +16,6 @@ public interface StorageManager {
 
     CompletableFuture<Boolean> remove(String id);
 
-    ReadStream rangeQuery(String start, String end);
+    LogReadStream rangeQuery(String start, String end);
 
 }

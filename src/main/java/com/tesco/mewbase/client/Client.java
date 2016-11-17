@@ -2,8 +2,6 @@ package com.tesco.mewbase.client;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.spi.ClientFactory;
-import com.tesco.mewbase.common.Delivery;
-import com.tesco.mewbase.common.DocQuerier;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.core.ServiceHelper;
 import io.vertx.core.Vertx;
@@ -15,7 +13,7 @@ import java.util.function.Function;
 /**
  * Created by tim on 21/09/16.
  */
-public interface Client extends DocQuerier {
+public interface Client {
 
     static Client newClient(ClientOptions options) {
         return factory.newClient(options);
@@ -26,6 +24,11 @@ public interface Client extends DocQuerier {
     }
 
     ClientFactory factory = ServiceHelper.loadFactory(ClientFactory.class);
+
+    CompletableFuture<BsonObject> findByID(String binderName, String id);
+
+    void findMatching(String binderName, BsonObject matcher,
+                      Consumer<QueryResult> resultHandler, Consumer<Throwable> exceptionHandler);
 
     CompletableFuture<Subscription> subscribe(SubDescriptor subDescriptor, Consumer<ClientDelivery> handler);
 

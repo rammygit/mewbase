@@ -32,7 +32,6 @@ public class Codec {
     public static final String RECEV_FRAME = "RECEV";
     public static final String ACKEV_FRAME = "ACKEV";
     public static final String QUERY_FRAME = "QUERY";
-    public static final String QUERYRESPONSE_FRAME = "QUERYRESPONSE";
     public static final String QUERYRESULT_FRAME = "QUERYRESULT";
     public static final String QUERYACK_FRAME = "QUERYACK";
     public static final String PING_FRAME = "PING";
@@ -79,12 +78,14 @@ public class Codec {
     public static final String QUERY_QUERYID = "queryID";
     public static final String QUERY_BINDER = "binder";
     public static final String QUERY_MATCHER = "matcher";
+    public static final String QUERY_DOCID = "docID";
 
-    public static final String QUERYRESPONSE_QUERYID = "queryID";
-    public static final String QUERYRESPONSE_NUMRESULTS = "numResults";
+//    public static final String QUERYRESPONSE_QUERYID = "queryID";
+//    public static final String QUERYRESPONSE_NUMRESULTS = "numResults";
 
     public static final String QUERYRESULT_QUERYID = "queryID";
     public static final String QUERYRESULT_RESULT = "result";
+    public static final String QUERYRESULT_LAST = "last";
 
     public static final String QUERYACK_QUERYID = "queryID";
 
@@ -129,6 +130,7 @@ public class Codec {
     private void handleBson(int size, BsonObject bson) {
         String type = bson.getString("type");
         BsonObject frame = bson.getBsonObject("frame");
+        //log.trace("Reading {}", type);
         switch (type) {
             case RESPONSE_FRAME:
                 frameHandler.handleResponse(frame);
@@ -165,9 +167,6 @@ public class Codec {
                 break;
             case QUERY_FRAME:
                 frameHandler.handleQuery(frame);
-                break;
-            case QUERYRESPONSE_FRAME:
-                frameHandler.handleQueryResponse(frame);
                 break;
             case QUERYRESULT_FRAME:
                 frameHandler.handleQueryResult(frame);

@@ -10,4 +10,6 @@ public interface QueryResult {
     BsonObject document();
 
     void acknowledge();
+
+    boolean isLast();
 }
