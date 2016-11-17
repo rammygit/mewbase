@@ -1,6 +1,5 @@
 package com.tesco.mewbase.server.impl;
 
-import com.sun.org.apache.xalan.internal.xsltc.dom.KeyIndex;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.doc.DocReadStream;
 import com.tesco.mewbase.log.LogReadStream;
@@ -26,15 +25,13 @@ public class ConnectionImpl implements ServerFrameHandler {
 
     private final static Logger logger = LoggerFactory.getLogger(ConnectionImpl.class);
 
-    private static final int INITIAL_QUERY_CREDITS = 1000;
-
     private final ServerImpl server;
     private final NetSocket socket;
     private final Context context;
     private final DocManager docManager;
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
-    private final Map<Integer, QueryHolder> queryStreams = new ConcurrentHashMap<>();
+    private final Map<Integer, QueryState> queryStates = new ConcurrentHashMap<>();
     private boolean authorised;
     private int subSeq;
     private long writeSeq;
@@ -186,34 +183,6 @@ public class ConnectionImpl implements ServerFrameHandler {
         subscription.handleAckEv(bytes);
     }
 
-    private static final class QueryHolder {
-        final DocReadStream readStream;
-        int credits;
-
-        public QueryHolder(DocReadStream readStream, int credits) {
-            this.readStream = readStream;
-            this.credits = credits;
-        }
-
-        // TODO this should be based on size of records not number of records, like we do with subscriptions!
-        void handleAck() {
-            credits++;
-            // TODO better flow control
-            if (credits == INITIAL_QUERY_CREDITS / 2) {
-                readStream.resume();
-            }
-        }
-
-        void decCredits() {
-            credits--;
-        }
-
-        int credits() {
-            return credits;
-        }
-    }
-
-
     @Override
     public void handleQuery(BsonObject frame) {
         checkContext();
@@ -228,31 +197,11 @@ public class ConnectionImpl implements ServerFrameHandler {
         } else if (matcher != null) {
             // TODO currently just use select all
             DocReadStream rs = docManager.getMatching(binder, doc -> true);
-            QueryHolder holder = new QueryHolder(rs, INITIAL_QUERY_CREDITS);
-            rs.handler(doc -> {
-                boolean last = !rs.hasMore();
-                writeQueryResult(doc, queryID, last);
-                if (last) {
-                    queryStreams.remove(queryID);
-                } else {
-                    holder.decCredits();
-                    if (holder.credits() == 0) {
-                        rs.pause();
-                    }
-                }
-            });
-
-            queryStreams.put(queryID, holder);
+            QueryState holder = new QueryState(this, queryID, rs);
+            rs.handler(holder);
+            queryStates.put(queryID, holder);
             rs.start();
         }
-    }
-
-    private void writeQueryResult(BsonObject doc, int queryID, boolean last) {
-        BsonObject res = new BsonObject();
-        res.put(Codec.QUERYRESULT_QUERYID, queryID);
-        res.put(Codec.QUERYRESULT_RESULT, doc);
-        res.put(Codec.QUERYRESULT_LAST, last);
-        writeNonResponse(Codec.QUERYRESULT_FRAME, res);
     }
 
     @Override
@@ -263,18 +212,30 @@ public class ConnectionImpl implements ServerFrameHandler {
         if (queryID == null) {
             logAndClose("No queryID in QueryAck");
         } else {
-            QueryHolder holder = queryStreams.get(queryID);
-            if (holder != null) {
-                holder.handleAck();
+            Integer bytes = frame.getInteger(Codec.QUERYACK_BYTES);
+            if (bytes == null) {
+                logAndClose("No bytes in QueryAck");
+                return;
+            }
+            QueryState queryState = queryStates.get(queryID);
+            if (queryState != null) {
+                queryState.handleAck(bytes);
             }
         }
     }
-
 
     @Override
     public void handlePing(BsonObject frame) {
         checkContext();
         checkAuthorised();
+    }
+
+    protected Buffer writeQueryResult(BsonObject doc, int queryID, boolean last) {
+        BsonObject res = new BsonObject();
+        res.put(Codec.QUERYRESULT_QUERYID, queryID);
+        res.put(Codec.QUERYRESULT_RESULT, doc);
+        res.put(Codec.QUERYRESULT_LAST, last);
+        return writeNonResponse(Codec.QUERYRESULT_FRAME, res);
     }
 
     protected Buffer writeNonResponse(String frameName, BsonObject frame) {
@@ -362,6 +323,17 @@ public class ConnectionImpl implements ServerFrameHandler {
         close();
     }
 
+    // Sanity check - this should always be executed using the correct context
+    protected void checkContext() {
+        if (Vertx.currentContext() != context) {
+            throw new IllegalStateException("Wrong context!");
+        }
+    }
+
+    protected void removeQueryState(int queryID) {
+        queryStates.remove(queryID);
+    }
+
     protected void close() {
         authorised = false;
         socket.close();
@@ -372,7 +344,7 @@ public class ConnectionImpl implements ServerFrameHandler {
         final long order;
         final Buffer buff;
 
-        public WriteHolder(long order, Buffer buff) {
+        WriteHolder(long order, Buffer buff) {
             this.order = order;
             this.buff = buff;
         }
@@ -383,11 +355,5 @@ public class ConnectionImpl implements ServerFrameHandler {
         }
     }
 
-    // Sanity check - this should always be executed using the correct context
-    private void checkContext() {
-        if (Vertx.currentContext() != context) {
-            throw new IllegalStateException("Wrong context!");
-        }
-    }
 
 }

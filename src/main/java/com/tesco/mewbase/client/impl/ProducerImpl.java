@@ -39,4 +39,9 @@ public class ProducerImpl implements Producer {
     public CompletableFuture<Void> publish(BsonObject event) {
         return client.doPublish(channel, id, event);
     }
+
+    @Override
+    public void close() {
+        client.removeProducer(id);
+    }
 }

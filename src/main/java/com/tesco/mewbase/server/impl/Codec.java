@@ -74,21 +74,18 @@ public class Codec {
     public static final String ACKEV_SUBID = "subID";
     public static final String ACKEV_BYTES = "bytes";
 
-    // Query stuff TODO
+    // Query stuff
     public static final String QUERY_QUERYID = "queryID";
     public static final String QUERY_BINDER = "binder";
     public static final String QUERY_MATCHER = "matcher";
     public static final String QUERY_DOCID = "docID";
-
-//    public static final String QUERYRESPONSE_QUERYID = "queryID";
-//    public static final String QUERYRESPONSE_NUMRESULTS = "numResults";
 
     public static final String QUERYRESULT_QUERYID = "queryID";
     public static final String QUERYRESULT_RESULT = "result";
     public static final String QUERYRESULT_LAST = "last";
 
     public static final String QUERYACK_QUERYID = "queryID";
-
+    public static final String QUERYACK_BYTES = "bytes";
 
     private final static Logger log = LoggerFactory.getLogger(Codec.class);
 
@@ -169,7 +166,7 @@ public class Codec {
                 frameHandler.handleQuery(frame);
                 break;
             case QUERYRESULT_FRAME:
-                frameHandler.handleQueryResult(frame);
+                frameHandler.handleQueryResult(size, frame);
                 break;
             case QUERYACK_FRAME:
                 frameHandler.handleQueryAck(frame);

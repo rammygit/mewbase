@@ -31,7 +31,7 @@ public interface FrameHandler {
 
     void handleQuery(BsonObject frame);
 
-    void handleQueryResult(BsonObject frame);
+    void handleQueryResult(int size, BsonObject frame);
 
     void handleQueryAck(BsonObject frame);
 

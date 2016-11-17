@@ -45,7 +45,6 @@ public class ClientImpl implements Client, ClientFrameHandler {
     private Queue<Buffer> bufferedWrites = new ConcurrentLinkedQueue<>();
     private Consumer<BsonObject> connectResponse;
 
-
     ClientImpl(ClientOptions clientOptions) {
         this(Vertx.vertx(), clientOptions, true);
     }
@@ -163,14 +162,14 @@ public class ClientImpl implements Client, ClientFrameHandler {
     // FrameHandler
 
     @Override
-    public void handleQueryResult(BsonObject resp) {
+    public void handleQueryResult(int size, BsonObject resp) {
         int rQueryID = resp.getInteger(Codec.QUERYRESULT_QUERYID);
         Consumer<QueryResult> qrh = queryResultHandlers.get(rQueryID);
         if (qrh == null) {
             throw new IllegalStateException("Can't find query result handler");
         }
         boolean last = resp.getBoolean(Codec.QUERYRESULT_LAST);
-        QueryResult qr = new QueryResultImpl(resp.getBsonObject(Codec.QUERYRESULT_RESULT), last, rQueryID);
+        QueryResult qr = new QueryResultImpl(resp.getBsonObject(Codec.QUERYRESULT_RESULT), size, last, rQueryID);
         try {
             qrh.accept(qr);
         } finally {
@@ -263,9 +262,10 @@ public class ClientImpl implements Client, ClientFrameHandler {
         write(buffer);
     }
 
-    protected void doQueryAck(int queryID) {
+    protected void doQueryAck(int queryID, int bytes) {
         BsonObject frame = new BsonObject();
         frame.put(Codec.QUERYACK_QUERYID, queryID);
+        frame.put(Codec.QUERYACK_BYTES, bytes);
         Buffer buffer = Codec.encodeFrame(Codec.QUERYACK_FRAME, frame);
         write(buffer);
     }
@@ -286,6 +286,10 @@ public class ClientImpl implements Client, ClientFrameHandler {
             }
         });
         return cf;
+    }
+
+    protected void removeProducer(int producerID) {
+        producerMap.remove(producerID);
     }
 
     private synchronized void sendConnect(CompletableFuture cfConnect, NetSocket ns) {
@@ -320,11 +324,13 @@ public class ClientImpl implements Client, ClientFrameHandler {
     private class QueryResultImpl implements QueryResult {
 
         private final BsonObject document;
+        private final int bytes;
         private final boolean last;
         private final int queryID;
 
-        public QueryResultImpl(BsonObject document, boolean last, int queryID) {
+        public QueryResultImpl(BsonObject document, int bytes, boolean last, int queryID) {
             this.document = document;
+            this.bytes = bytes;
             this.last = last;
             this.queryID = queryID;
         }
@@ -336,7 +342,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
         @Override
         public void acknowledge() {
-            doQueryAck(queryID);
+            doQueryAck(queryID, bytes);
         }
 
         @Override
