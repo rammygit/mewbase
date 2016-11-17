@@ -33,9 +33,14 @@ public class ShoppingBasketExample {
         server.start().get();
 
         // Install a function that will respond to add_item events and increase/decrease the quantity of the item in the basket
-        server.installFunction("basket_add", "orders", ev -> ev.getString("eventType").equals("add_item"), "baskets",
-                ev -> ev.getString("basketID"), (basket, del) ->
-                    BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
+        server.installFunction(
+                "basket_add",                                           // function name
+                "orders",                                               // channel name
+                ev -> ev.getString("eventType").equals("add_item"),     // event filter
+                "baskets",                                              // binder name
+                ev -> ev.getString("basketID"),                         // document id selector; how to obtain the doc id from the event bson
+                (basket, del) ->                                        // function to run
+                        BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
         );
 
         // Create a client
