@@ -1,4 +1,4 @@
-package com.tesco.mewbase.common;
+package com.tesco.mewbase.log;
 
 import com.tesco.mewbase.bson.BsonObject;
 
@@ -8,7 +8,7 @@ import java.util.function.Consumer;
 /**
  * Created by tim on 27/09/16.
  */
-public interface ReadStream {
+public interface LogReadStream {
 
     void exceptionHandler(Consumer<Throwable> handler);
 

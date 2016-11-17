@@ -1,7 +1,7 @@
 package com.tesco.mewbase.log.impl.file;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -149,7 +149,7 @@ public class StreamTest extends LogTestBase {
         Async async = testContext.async();
         AtomicInteger cnt = new AtomicInteger();
         int offset = numAppendObjects - numReadObjects;
-        ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(startPos));
+        LogReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(startPos));
         rs.handler((pos, record) -> {
             testContext.assertEquals("bar", record.getString("foo"));
             testContext.assertEquals(cnt.get() + offset, record.getInteger("num"));
@@ -231,7 +231,7 @@ public class StreamTest extends LogTestBase {
         appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
 
         try {
-            ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-2));
+            LogReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(-2));
             fail("Should throw exception");
         } catch (IllegalArgumentException e) {
             // OK
@@ -248,7 +248,7 @@ public class StreamTest extends LogTestBase {
         appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
 
         try {
-            ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog) log).getLastWrittenPos() + 1));
+            LogReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog) log).getLastWrittenPos() + 1));
             fail("Should throw exception");
         } catch (IllegalArgumentException e) {
             // OK
@@ -265,7 +265,7 @@ public class StreamTest extends LogTestBase {
         BsonObject obj = new BsonObject().put("foo", "bar").put("num", 0);
         appendObjectsSequentially(numObjects, i -> obj.copy().put("num", i));
 
-        ReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog) log).getLastWrittenPos()));
+        LogReadStream rs = log.subscribe(new SubDescriptor().setChannel(TEST_CHANNEL_1).setStartPos(((FileLog) log).getLastWrittenPos()));
 
         Async async1 = testContext.async();
         Async async2 = testContext.async();
