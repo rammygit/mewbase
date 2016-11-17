@@ -13,6 +13,13 @@ public interface DocManager {
     //TODO: should probably be public static final
     String ID_FIELD = "id";
 
+
+    /**
+     * Get a document in a named binder matching the filter
+     *
+     * @param binder name of binder to put the document to
+     * @param matcher matching function for documents
+     */
     DocReadStream getMatching(String binder, Function<BsonObject, Boolean> matcher);
 
     /**
@@ -20,9 +27,8 @@ public interface DocManager {
      *
      * @param binder name of binder to put the document to
      * @param id     the name of the document within the binder
-     * @return
+     * @return a CompleteableFuture of the document
      */
-
     CompletableFuture<BsonObject> get(String binder, String id);
 
     /**
