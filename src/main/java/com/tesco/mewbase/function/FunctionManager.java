@@ -26,6 +26,12 @@ public interface FunctionManager {
                             String binderName, Function<BsonObject, String> docIDSelector,
                             BiFunction<BsonObject, Delivery, BsonObject> function);
 
+    /**
+     * Removes the function with the given name from the function manager
+     *
+     * @param functionName the name of the function to remove
+     * @return true if the function is successfully removed
+     */
     boolean deleteFunction(String functionName);
 
 }
