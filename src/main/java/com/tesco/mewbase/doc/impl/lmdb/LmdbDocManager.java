@@ -164,7 +164,6 @@ public class LmdbDocManager implements DocManager {
 
         private static final int MAX_DELIVER_BATCH = 100;
 
-        private final DBHolder holder;
         private final Transaction tx;
         private final EntryIterator iter;
         private final Function<BsonObject, Boolean> matcher;
@@ -175,7 +174,6 @@ public class LmdbDocManager implements DocManager {
         private boolean closed;
 
         LmdbReadStream(DBHolder holder, Function<BsonObject, Boolean> matcher) {
-            this.holder = holder;
             this.tx = holder.env.createReadTransaction();
             this.iter = holder.db.iterate(tx);
             this.matcher = matcher;
@@ -277,7 +275,5 @@ public class LmdbDocManager implements DocManager {
             closed = true;
         }
     }
-
-
 
 }
