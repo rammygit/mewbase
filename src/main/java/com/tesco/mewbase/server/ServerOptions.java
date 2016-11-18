@@ -12,10 +12,13 @@ public class ServerOptions {
 
     public static final String DEFAULT_HOST = "0.0.0.0";
     public static final int DEFAULT_PORT = 7451;
+    public static final String DEFAULT_DOCS_DIR = "docs";
 
     private String[] channels;
     private FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions();
     private NetServerOptions netServerOptions = new NetServerOptions().setPort(DEFAULT_PORT).setHost(DEFAULT_HOST);
+    private String docsDir = DEFAULT_DOCS_DIR;
+    private String[] binders;
 
     public String[] getChannels() {
         return channels;
@@ -44,6 +47,24 @@ public class ServerOptions {
         return this;
     }
 
+    public String getDocsDir() {
+        return docsDir;
+    }
+
+    public ServerOptions setDocsDir(String docsDir) {
+        this.docsDir = docsDir;
+        return this;
+    }
+
+    public String[] getBinders() {
+        return binders;
+    }
+
+    public ServerOptions setBinders(String[] binders) {
+        this.binders = binders;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -55,7 +76,11 @@ public class ServerOptions {
         if (!Arrays.equals(channels, that.channels)) return false;
         if (fileLogManagerOptions != null ? !fileLogManagerOptions.equals(that.fileLogManagerOptions) : that.fileLogManagerOptions != null)
             return false;
-        return netServerOptions != null ? netServerOptions.equals(that.netServerOptions) : that.netServerOptions == null;
+        if (netServerOptions != null ? !netServerOptions.equals(that.netServerOptions) : that.netServerOptions != null)
+            return false;
+        if (docsDir != null ? !docsDir.equals(that.docsDir) : that.docsDir != null) return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        return Arrays.equals(binders, that.binders);
 
     }
 
@@ -64,6 +89,8 @@ public class ServerOptions {
         int result = Arrays.hashCode(channels);
         result = 31 * result + (fileLogManagerOptions != null ? fileLogManagerOptions.hashCode() : 0);
         result = 31 * result + (netServerOptions != null ? netServerOptions.hashCode() : 0);
+        result = 31 * result + (docsDir != null ? docsDir.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(binders);
         return result;
     }
 }

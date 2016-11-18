@@ -2,7 +2,6 @@ package com.tesco.mewbase.doc.impl.inmem;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.doc.DocReadStream;
-import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.doc.DocManager;
 
 import java.util.Map;

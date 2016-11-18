@@ -31,11 +31,9 @@ public abstract class DocManagerTest extends MewbaseTestBase {
 
     private final static Logger logger = LoggerFactory.getLogger(DocManagerTest.class);
 
-    protected static final String TEST_BINDER1 = "testbinder1";
-    protected static final String TEST_BINDER2 = "testbinder2";
-
     protected DocManager docManager;
     protected File docsDir;
+    protected DocReadStream stream;
 
     @Override
     protected void setup(TestContext context) throws Exception {
@@ -47,9 +45,11 @@ public abstract class DocManagerTest extends MewbaseTestBase {
         createBinder(TEST_BINDER2);
     }
 
-
     @Override
     protected void tearDown(TestContext context) throws Exception {
+        if (stream != null) {
+            stream.close();
+        }
         docManager.close().get();
     }
 
@@ -127,7 +127,7 @@ public abstract class DocManagerTest extends MewbaseTestBase {
         // Add some docs in another binder
         addDocs(TEST_BINDER2, numDocs);
 
-        DocReadStream stream = docManager.getMatching(TEST_BINDER1, doc -> true);
+        stream = docManager.getMatching(TEST_BINDER1, doc -> true);
 
         Async async = testContext.async();
 
@@ -154,7 +154,7 @@ public abstract class DocManagerTest extends MewbaseTestBase {
         // Add some docs in another binder
         addDocs(TEST_BINDER2, numDocs);
 
-        DocReadStream stream = docManager.getMatching(TEST_BINDER1, doc -> {
+        stream = docManager.getMatching(TEST_BINDER1, doc -> {
             int docNum = doc.getInteger("docNum");
             return docNum >= 10 && docNum < 90;
         });
@@ -184,7 +184,7 @@ public abstract class DocManagerTest extends MewbaseTestBase {
         // Add some docs in another binder
         addDocs(TEST_BINDER2, numDocs);
 
-        DocReadStream stream = docManager.getMatching(TEST_BINDER1, doc -> true);
+        stream = docManager.getMatching(TEST_BINDER1, doc -> true);
 
         Async async = testContext.async();
 

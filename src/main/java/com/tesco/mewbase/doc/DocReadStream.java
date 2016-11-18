@@ -22,5 +22,5 @@ public interface DocReadStream {
 
     void close();
 
-    boolean isClosed();
+    boolean hasMore();
 }

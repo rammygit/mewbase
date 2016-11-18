@@ -5,6 +5,7 @@ import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.impl.inmem.InMemoryDocManager;
+import com.tesco.mewbase.doc.impl.lmdb.LmdbDocManager;
 import com.tesco.mewbase.function.FunctionManager;
 import com.tesco.mewbase.function.impl.FunctionManagerImpl;
 import com.tesco.mewbase.log.Log;
@@ -49,7 +50,7 @@ public class ServerImpl implements Server {
         FileLogManagerOptions sOptions = serverOptions.getFileLogManagerOptions();
         FileLogManagerOptions options = sOptions == null ? new FileLogManagerOptions() : sOptions;
         this.logManager = new FileLogManager(vertx, options, faf);
-        this.docManager = new InMemoryDocManager();
+        this.docManager = new LmdbDocManager(serverOptions.getDocsDir(), vertx);
         this.functionManager = new FunctionManagerImpl(docManager, logManager);
     }
 
@@ -62,7 +63,9 @@ public class ServerImpl implements Server {
         int procs = Runtime.getRuntime().availableProcessors(); // TODO make this configurable
         log.trace("Starting " + procs + " instances");
         String[] channels = serverOptions.getChannels();
-        CompletableFuture[] all = new CompletableFuture[procs + (channels != null ? channels.length : 0)];
+        String[] binders = serverOptions.getBinders();
+        CompletableFuture[] all = new CompletableFuture[procs + (channels != null ? channels.length : 0) + 1 +
+                                                        (binders != null ? binders.length : 0)];
 
         for (int i = 0; i < procs; i++) {
             NetServer netServer = vertx.createNetServer(serverOptions.getNetServerOptions());
@@ -83,6 +86,13 @@ public class ServerImpl implements Server {
         if (serverOptions.getChannels() != null) {
             for (String channel : serverOptions.getChannels()) {
                 all[procs++] = logManager.createLog(channel);
+            }
+        }
+        all[procs++] = docManager.start();
+        // Start the binders
+        if (serverOptions.getBinders() != null) {
+            for (String binder : serverOptions.getBinders()) {
+                all[procs++] = docManager.createBinder(binder);
             }
         }
         return CompletableFuture.allOf(all);

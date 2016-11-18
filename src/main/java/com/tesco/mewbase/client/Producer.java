@@ -14,6 +14,8 @@ public interface Producer extends Transactional {
 
     CompletableFuture<Void> publish(BsonObject event);
 
+    void close();
+
     // TODO should also support flow control on publish. WriteStream? Reactive Streams?
 
 }

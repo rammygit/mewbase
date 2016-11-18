@@ -55,11 +55,11 @@ public class ServerTestBase extends MewbaseTestBase {
         super.tearDown(context);
     }
 
-    protected ServerOptions createServerOptions(File logDir) {
+    protected ServerOptions createServerOptions(File logDir) throws Exception {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
-
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions);
+                .setFileLogManagerOptions(fileLogManagerOptions).setBinders(new String[] {TEST_BINDER1})
+                .setDocsDir(testFolder.newFolder().getPath());
     }
 
     protected ClientOptions createClientOptions() {
