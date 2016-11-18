@@ -2,13 +2,13 @@ package com.tesco.mewbase.function.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
-import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.common.impl.DeliveryImpl;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.function.FunctionManager;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
+import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.server.impl.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +111,7 @@ public class FunctionManagerImpl implements FunctionManager {
                                 // TODO how to handle exceptions?
                                 log.error("Failed to save document", t3);
                             }
-                           return null;
+                            return null;
                         });
                     } catch (Throwable t2) {
                         // TODO how to handle exceptions?

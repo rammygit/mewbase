@@ -1,24 +1,17 @@
 package com.tesco.mewbase;
 
-import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.bson.BsonPath;
 import com.tesco.mewbase.client.ClientOptions;
-import com.tesco.mewbase.client.Producer;
-import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServerOptions;
-import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertSame;
+import static org.junit.Assert.*;
 
 /**
  * Created by tim on 30/09/16.
@@ -62,7 +55,7 @@ public class OptionsTest extends MewbaseTestBase {
         options.setFileLogManagerOptions(fileLogManagerOptions2);
         assertSame(fileLogManagerOptions2, options.getFileLogManagerOptions());
 
-        String[] channels = new String[] {"foo", "bar"};
+        String[] channels = new String[]{"foo", "bar"};
         assertNull(options.getChannels());
         options.setChannels(channels);
         assertSame(channels, channels);

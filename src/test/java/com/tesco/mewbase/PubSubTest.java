@@ -4,7 +4,6 @@ import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.ClientDelivery;
 import com.tesco.mewbase.client.Producer;
 import com.tesco.mewbase.client.Subscription;
-import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -78,7 +77,7 @@ public class PubSubTest extends ServerTestBase {
             lastPos.set(re.channelPos());
             BsonObject event = re.event();
             long count = receivedCount.getAndIncrement();
-            context.assertEquals(count, (long) event.getInteger("num"));
+            context.assertEquals(count, (long)event.getInteger("num"));
             if (count == numEvents - 1) {
                 async.complete();
             }

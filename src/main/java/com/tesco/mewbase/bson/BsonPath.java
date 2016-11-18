@@ -19,13 +19,13 @@ public class BsonPath {
         Object newVal;
         if (prevVal != null) {
             if (prevVal instanceof Integer) {
-                newVal = ((Integer) prevVal) + value;
+                newVal = ((Integer)prevVal) + value;
             } else if (prevVal instanceof Long) {
-                newVal = ((Long) prevVal) + value;
+                newVal = ((Long)prevVal) + value;
             } else if (prevVal instanceof Short) {
-                newVal = ((Short) prevVal) + value;
+                newVal = ((Short)prevVal) + value;
             } else if (prevVal instanceof Byte) {
-                newVal = ((Byte) prevVal) + value;
+                newVal = ((Byte)prevVal) + value;
             } else {
                 throw new IllegalArgumentException("Cannot increment " + prevVal);
             }

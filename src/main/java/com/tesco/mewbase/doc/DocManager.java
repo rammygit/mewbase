@@ -1,7 +1,6 @@
 package com.tesco.mewbase.doc;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.log.LogReadStream;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;

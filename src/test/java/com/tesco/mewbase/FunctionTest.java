@@ -3,10 +3,7 @@ package com.tesco.mewbase;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.bson.BsonPath;
 import com.tesco.mewbase.client.Producer;
-import com.tesco.mewbase.common.Delivery;
-import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
@@ -14,11 +11,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * Created by tim on 30/09/16.

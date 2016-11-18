@@ -70,7 +70,7 @@ public class ServerOptions {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ServerOptions that = (ServerOptions) o;
+        ServerOptions that = (ServerOptions)o;
 
         // Probably incorrect - comparing Object[] arrays with Arrays.equals
         if (!Arrays.equals(channels, that.channels)) return false;

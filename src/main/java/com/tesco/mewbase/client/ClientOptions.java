@@ -46,7 +46,7 @@ public class ClientOptions {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ClientOptions that = (ClientOptions) o;
+        ClientOptions that = (ClientOptions)o;
 
         if (port != that.port) return false;
         if (netClientOptions != null && !netClientOptions.equals(that.getNetClientOptions())) return false;

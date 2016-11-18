@@ -374,7 +374,7 @@ public class BsonArrayTest {
         assertEquals(arr, bsonArray.getValue(8));
         byte[] bytes = TestUtils.randomByteArray(100);
         bsonArray.add(bytes);
-        assertTrue(TestUtils.byteArraysEqual(bytes, Base64.getDecoder().decode((String) bsonArray.getValue(9))));
+        assertTrue(TestUtils.byteArraysEqual(bytes, Base64.getDecoder().decode((String)bsonArray.getValue(9))));
         Instant now = Instant.now();
         bsonArray.add(now);
         assertEquals(now, bsonArray.getInstant(10));
@@ -398,7 +398,7 @@ public class BsonArrayTest {
         innerMap.put("blah", "wibble");
         list.add(innerMap);
         bsonArray = new BsonArray(list);
-        obj = (BsonObject) bsonArray.getValue(0);
+        obj = (BsonObject)bsonArray.getValue(0);
         assertEquals("wibble", obj.getString("blah"));
         // BsonObject with inner List
         list = new ArrayList<>();
@@ -406,7 +406,7 @@ public class BsonArrayTest {
         innerList.add("blah");
         list.add(innerList);
         bsonArray = new BsonArray(list);
-        arr = (BsonArray) bsonArray.getValue(0);
+        arr = (BsonArray)bsonArray.getValue(0);
         assertEquals("blah", arr.getString(0));
     }
 
@@ -419,7 +419,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(BsonObjectTest.SomeEnum.FOO));
         assertEquals(BsonObjectTest.SomeEnum.FOO.toString(), bsonArray.getString(0));
         try {
-            bsonArray.add((BsonObjectTest.SomeEnum) null);
+            bsonArray.add((BsonObjectTest.SomeEnum)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -431,7 +431,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add("foo"));
         assertEquals("foo", bsonArray.getString(0));
         try {
-            bsonArray.add((String) null);
+            bsonArray.add((String)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -443,7 +443,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(new StringBuilder("bar")));
         assertEquals("bar", bsonArray.getString(0));
         try {
-            bsonArray.add((CharSequence) null);
+            bsonArray.add((CharSequence)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -455,7 +455,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(123));
         assertEquals(Integer.valueOf(123), bsonArray.getInteger(0));
         try {
-            bsonArray.add((Integer) null);
+            bsonArray.add((Integer)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -467,7 +467,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(123l));
         assertEquals(Long.valueOf(123l), bsonArray.getLong(0));
         try {
-            bsonArray.add((Long) null);
+            bsonArray.add((Long)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -479,7 +479,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(123f));
         assertEquals(Float.valueOf(123f), bsonArray.getFloat(0));
         try {
-            bsonArray.add((Float) null);
+            bsonArray.add((Float)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -491,7 +491,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(123d));
         assertEquals(Double.valueOf(123d), bsonArray.getDouble(0));
         try {
-            bsonArray.add((Double) null);
+            bsonArray.add((Double)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -505,7 +505,7 @@ public class BsonArrayTest {
         bsonArray.add(false);
         assertEquals(false, bsonArray.getBoolean(1));
         try {
-            bsonArray.add((Boolean) null);
+            bsonArray.add((Boolean)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -518,7 +518,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(obj));
         assertEquals(obj, bsonArray.getBsonObject(0));
         try {
-            bsonArray.add((BsonObject) null);
+            bsonArray.add((BsonObject)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -531,7 +531,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(arr));
         assertEquals(arr, bsonArray.getBsonArray(0));
         try {
-            bsonArray.add((BsonArray) null);
+            bsonArray.add((BsonArray)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -544,7 +544,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(bytes));
         assertTrue(TestUtils.byteArraysEqual(bytes, bsonArray.getBinary(0)));
         try {
-            bsonArray.add((byte[]) null);
+            bsonArray.add((byte[])null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -557,7 +557,7 @@ public class BsonArrayTest {
         assertSame(bsonArray, bsonArray.add(now));
         assertEquals(now, bsonArray.getInstant(0));
         try {
-            bsonArray.add((Instant) null);
+            bsonArray.add((Instant)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -566,20 +566,20 @@ public class BsonArrayTest {
 
     @Test
     public void testAddObject() {
-        bsonArray.add((Object) "bar");
-        bsonArray.add((Object) (Integer.valueOf(123)));
-        bsonArray.add((Object) (Long.valueOf(123l)));
-        bsonArray.add((Object) (Float.valueOf(1.23f)));
-        bsonArray.add((Object) (Double.valueOf(1.23d)));
-        bsonArray.add((Object) true);
+        bsonArray.add((Object)"bar");
+        bsonArray.add((Object)(Integer.valueOf(123)));
+        bsonArray.add((Object)(Long.valueOf(123l)));
+        bsonArray.add((Object)(Float.valueOf(1.23f)));
+        bsonArray.add((Object)(Double.valueOf(1.23d)));
+        bsonArray.add((Object)true);
         byte[] bytes = TestUtils.randomByteArray(10);
-        bsonArray.add((Object) (bytes));
+        bsonArray.add((Object)(bytes));
         Instant now = Instant.now();
         bsonArray.add(now);
         BsonObject obj = new BsonObject().put("foo", "blah");
         BsonArray arr = new BsonArray().add("quux");
-        bsonArray.add((Object) obj);
-        bsonArray.add((Object) arr);
+        bsonArray.add((Object)obj);
+        bsonArray.add((Object)arr);
         assertEquals("bar", bsonArray.getString(0));
         assertEquals(Integer.valueOf(123), bsonArray.getInteger(1));
         assertEquals(Long.valueOf(123l), bsonArray.getLong(2));
@@ -619,7 +619,7 @@ public class BsonArrayTest {
         assertEquals(arr.getString(0), bsonArray.getString(1));
         assertEquals(arr.getInteger(1), bsonArray.getInteger(2));
         try {
-            bsonArray.add((BsonArray) null);
+            bsonArray.add((BsonArray)null);
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -999,11 +999,11 @@ public class BsonArrayTest {
 
         removed = obj.remove(0);
         assertTrue(removed instanceof BsonObject);
-        assertEquals(((BsonObject) removed).getString("name"), "vert.x");
+        assertEquals(((BsonObject)removed).getString("name"), "vert.x");
 
         removed = obj.remove(0);
         assertTrue(removed instanceof BsonArray);
-        assertEquals(((BsonArray) removed).getDouble(0), 1.0, 0.0);
+        assertEquals(((BsonArray)removed).getDouble(0), 1.0, 0.0);
     }
 
     private void testStreamCorrectTypes(BsonObject object) {

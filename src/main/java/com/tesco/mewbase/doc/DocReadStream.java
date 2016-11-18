@@ -2,7 +2,6 @@ package com.tesco.mewbase.doc;
 
 import com.tesco.mewbase.bson.BsonObject;
 
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**

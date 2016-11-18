@@ -709,7 +709,7 @@ public class BsonObjectTest {
         assertEquals(arr, bsonObject.getValue("foo"));
         byte[] bytes = TestUtils.randomByteArray(100);
         bsonObject.put("foo", bytes);
-        assertTrue(TestUtils.byteArraysEqual(bytes, Base64.getDecoder().decode((String) bsonObject.getValue("foo"))));
+        assertTrue(TestUtils.byteArraysEqual(bytes, Base64.getDecoder().decode((String)bsonObject.getValue("foo"))));
         bsonObject.putNull("foo");
         assertNull(bsonObject.getValue("foo"));
         assertNull(bsonObject.getValue("absent"));
@@ -719,7 +719,7 @@ public class BsonObjectTest {
         innerMap.put("blah", "wibble");
         map.put("foo", innerMap);
         bsonObject = new BsonObject(map);
-        obj = (BsonObject) bsonObject.getValue("foo");
+        obj = (BsonObject)bsonObject.getValue("foo");
         assertEquals("wibble", obj.getString("blah"));
         // BsonObject with inner List
         map = new HashMap<>();
@@ -727,7 +727,7 @@ public class BsonObjectTest {
         innerList.add("blah");
         map.put("foo", innerList);
         bsonObject = new BsonObject(map);
-        arr = (BsonArray) bsonObject.getValue("foo");
+        arr = (BsonArray)bsonObject.getValue("foo");
         assertEquals("blah", arr.getString(0));
     }
 
@@ -764,8 +764,8 @@ public class BsonObjectTest {
         assertEquals(arr, bsonObject.getValue("foo", null));
         byte[] bytes = TestUtils.randomByteArray(100);
         bsonObject.put("foo", bytes);
-        assertTrue(TestUtils.byteArraysEqual(bytes, Base64.getDecoder().decode((String) bsonObject.getValue("foo", "blah"))));
-        assertTrue(TestUtils.byteArraysEqual(bytes, Base64.getDecoder().decode((String) bsonObject.getValue("foo", null))));
+        assertTrue(TestUtils.byteArraysEqual(bytes, Base64.getDecoder().decode((String)bsonObject.getValue("foo", "blah"))));
+        assertTrue(TestUtils.byteArraysEqual(bytes, Base64.getDecoder().decode((String)bsonObject.getValue("foo", null))));
         bsonObject.putNull("foo");
         assertNull(bsonObject.getValue("foo", "blah"));
         assertNull(bsonObject.getValue("foo", null));
@@ -838,7 +838,7 @@ public class BsonObjectTest {
         assertEquals("bar", bsonObject.getString("foo"));
         bsonObject.put("foo", "blah");
         assertEquals("blah", bsonObject.getString("foo"));
-        bsonObject.put("foo", (String) null);
+        bsonObject.put("foo", (String)null);
         assertTrue(bsonObject.containsKey("foo"));
         try {
             bsonObject.put(null, "blah");
@@ -858,10 +858,10 @@ public class BsonObjectTest {
         assertEquals("bar", bsonObject.getString("foo"));
         bsonObject.put("foo", new StringBuilder("blah"));
         assertEquals("blah", bsonObject.getString("foo"));
-        bsonObject.put("foo", (CharSequence) null);
+        bsonObject.put("foo", (CharSequence)null);
         assertTrue(bsonObject.containsKey("foo"));
         try {
-            bsonObject.put(null, (CharSequence) "blah");
+            bsonObject.put(null, (CharSequence)"blah");
             fail();
         } catch (NullPointerException e) {
             // OK
@@ -877,7 +877,7 @@ public class BsonObjectTest {
         assertEquals(Integer.valueOf(123), bsonObject.getInteger("foo"));
         bsonObject.put("foo", 456);
         assertEquals(Integer.valueOf(456), bsonObject.getInteger("foo"));
-        bsonObject.put("foo", (Integer) null);
+        bsonObject.put("foo", (Integer)null);
         assertTrue(bsonObject.containsKey("foo"));
         try {
             bsonObject.put(null, 123);
@@ -896,7 +896,7 @@ public class BsonObjectTest {
         assertEquals(Long.valueOf(123l), bsonObject.getLong("foo"));
         bsonObject.put("foo", 456l);
         assertEquals(Long.valueOf(456l), bsonObject.getLong("foo"));
-        bsonObject.put("foo", (Long) null);
+        bsonObject.put("foo", (Long)null);
         assertTrue(bsonObject.containsKey("foo"));
 
         try {
@@ -916,7 +916,7 @@ public class BsonObjectTest {
         assertEquals(Float.valueOf(123f), bsonObject.getFloat("foo"));
         bsonObject.put("foo", 456f);
         assertEquals(Float.valueOf(456f), bsonObject.getFloat("foo"));
-        bsonObject.put("foo", (Float) null);
+        bsonObject.put("foo", (Float)null);
         assertTrue(bsonObject.containsKey("foo"));
 
         try {
@@ -936,7 +936,7 @@ public class BsonObjectTest {
         assertEquals(Double.valueOf(123d), bsonObject.getDouble("foo"));
         bsonObject.put("foo", 456d);
         assertEquals(Double.valueOf(456d), bsonObject.getDouble("foo"));
-        bsonObject.put("foo", (Double) null);
+        bsonObject.put("foo", (Double)null);
         assertTrue(bsonObject.containsKey("foo"));
         try {
             bsonObject.put(null, 1.23d);
@@ -955,7 +955,7 @@ public class BsonObjectTest {
         assertEquals(true, bsonObject.getBoolean("foo"));
         bsonObject.put("foo", true);
         assertEquals(true, bsonObject.getBoolean("foo"));
-        bsonObject.put("foo", (Boolean) null);
+        bsonObject.put("foo", (Boolean)null);
         assertTrue(bsonObject.containsKey("foo"));
         try {
             bsonObject.put(null, false);
@@ -977,7 +977,7 @@ public class BsonObjectTest {
         assertEquals(obj1, bsonObject.getBsonObject("foo"));
         bsonObject.put("foo", obj3);
         assertEquals(obj3, bsonObject.getBsonObject("foo"));
-        bsonObject.put("foo", (BsonObject) null);
+        bsonObject.put("foo", (BsonObject)null);
         assertTrue(bsonObject.containsKey("foo"));
         try {
             bsonObject.put(null, new BsonObject());
@@ -1001,7 +1001,7 @@ public class BsonObjectTest {
         bsonObject.put("foo", obj3);
         assertEquals(obj3, bsonObject.getBsonArray("foo"));
 
-        bsonObject.put("foo", (BsonArray) null);
+        bsonObject.put("foo", (BsonArray)null);
         assertTrue(bsonObject.containsKey("foo"));
 
 
@@ -1027,7 +1027,7 @@ public class BsonObjectTest {
         bsonObject.put("foo", bin3);
         assertTrue(TestUtils.byteArraysEqual(bin3, bsonObject.getBinary("foo")));
 
-        bsonObject.put("foo", (byte[]) null);
+        bsonObject.put("foo", (byte[])null);
         assertTrue(bsonObject.containsKey("foo"));
 
         try {
@@ -1052,7 +1052,7 @@ public class BsonObjectTest {
         bsonObject.put("foo", bin3);
         assertEquals(bin3, bsonObject.getInstant("foo"));
 
-        bsonObject.put("foo", (Instant) null);
+        bsonObject.put("foo", (Instant)null);
         assertTrue(bsonObject.containsKey("foo"));
 
         try {
@@ -1079,20 +1079,20 @@ public class BsonObjectTest {
 
     @Test
     public void testPutValue() {
-        bsonObject.put("str", (Object) "bar");
-        bsonObject.put("int", (Object) (Integer.valueOf(123)));
-        bsonObject.put("long", (Object) (Long.valueOf(123l)));
-        bsonObject.put("float", (Object) (Float.valueOf(1.23f)));
-        bsonObject.put("double", (Object) (Double.valueOf(1.23d)));
-        bsonObject.put("boolean", (Object) true);
+        bsonObject.put("str", (Object)"bar");
+        bsonObject.put("int", (Object)(Integer.valueOf(123)));
+        bsonObject.put("long", (Object)(Long.valueOf(123l)));
+        bsonObject.put("float", (Object)(Float.valueOf(1.23f)));
+        bsonObject.put("double", (Object)(Double.valueOf(1.23d)));
+        bsonObject.put("boolean", (Object)true);
         byte[] bytes = TestUtils.randomByteArray(10);
-        bsonObject.put("binary", (Object) (bytes));
+        bsonObject.put("binary", (Object)(bytes));
         Instant now = Instant.now();
         bsonObject.put("instant", now);
         BsonObject obj = new BsonObject().put("foo", "blah");
         BsonArray arr = new BsonArray().add("quux");
-        bsonObject.put("obj", (Object) obj);
-        bsonObject.put("arr", (Object) arr);
+        bsonObject.put("obj", (Object)obj);
+        bsonObject.put("arr", (Object)arr);
         assertEquals("bar", bsonObject.getString("str"));
         assertEquals(Integer.valueOf(123), bsonObject.getInteger("int"));
         assertEquals(Long.valueOf(123l), bsonObject.getLong("long"));
@@ -1458,12 +1458,12 @@ public class BsonObjectTest {
     @Test
     public void testNumberEquality() {
         assertNumberEquals(4, 4);
-        assertNumberEquals(4, (long) 4);
+        assertNumberEquals(4, (long)4);
         assertNumberEquals(4, 4f);
         assertNumberEquals(4, 4D);
-        assertNumberEquals((long) 4, (long) 4);
-        assertNumberEquals((long) 4, 4f);
-        assertNumberEquals((long) 4, 4D);
+        assertNumberEquals((long)4, (long)4);
+        assertNumberEquals((long)4, 4f);
+        assertNumberEquals((long)4, 4D);
         assertNumberEquals(4f, 4f);
         assertNumberEquals(4f, 4D);
         assertNumberEquals(4D, 4D);
@@ -1474,12 +1474,12 @@ public class BsonObjectTest {
         assertNumberEquals(4.5f, 4.5f);
         assertNumberEquals(4.5f, 4.5D);
         assertNumberNotEquals(4, 5);
-        assertNumberNotEquals(4, (long) 5);
+        assertNumberNotEquals(4, (long)5);
         assertNumberNotEquals(4, 5D);
         assertNumberNotEquals(4, 5f);
-        assertNumberNotEquals((long) 4, (long) 5);
-        assertNumberNotEquals((long) 4, 5D);
-        assertNumberNotEquals((long) 4, 5f);
+        assertNumberNotEquals((long)4, (long)5);
+        assertNumberNotEquals((long)4, 5D);
+        assertNumberNotEquals((long)4, 5f);
         assertNumberNotEquals(4f, 5f);
         assertNumberNotEquals(4f, 5D);
         assertNumberNotEquals(4D, 5D);
@@ -1577,11 +1577,11 @@ public class BsonObjectTest {
 
         removed = obj.remove("object");
         assertTrue(removed instanceof BsonObject);
-        assertEquals(((BsonObject) removed).getString("name"), "vert.x");
+        assertEquals(((BsonObject)removed).getString("name"), "vert.x");
 
         removed = obj.remove("array");
         assertTrue(removed instanceof BsonArray);
-        assertEquals(((BsonArray) removed).getDouble(0), 1.0, 0.0);
+        assertEquals(((BsonArray)removed).getDouble(0), 1.0, 0.0);
     }
 
     private void testStreamCorrectTypes(BsonObject object) {

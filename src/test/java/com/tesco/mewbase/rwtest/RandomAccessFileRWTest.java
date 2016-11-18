@@ -20,7 +20,7 @@ public class RandomAccessFileRWTest implements RWTest {
     public int testRead(File testFile) throws Exception {
         RandomAccessFile raf = new RandomAccessFile(testFile, "rw");
         long len = testFile.length();
-        int its = (int) (len / PAGE_SIZE);
+        int its = (int)(len / PAGE_SIZE);
         log.trace("File length is {} iterations are {}", len, its);
         byte[] bytes = new byte[PAGE_SIZE];
         int bytesRead;
@@ -38,7 +38,7 @@ public class RandomAccessFileRWTest implements RWTest {
     public int testWrite(File testFile) throws Exception {
         RandomAccessFile raf = new RandomAccessFile(testFile, "rw");
         long len = testFile.length();
-        int its = (int) (len / PAGE_SIZE);
+        int its = (int)(len / PAGE_SIZE);
         log.trace("File length is {} iterations are {}", len, its);
         byte[] bytes = TestUtils.randomByteArray(PAGE_SIZE);
         int cnt = 0;

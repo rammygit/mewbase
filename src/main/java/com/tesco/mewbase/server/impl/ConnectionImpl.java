@@ -1,11 +1,11 @@
 package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.doc.DocReadStream;
-import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
+import com.tesco.mewbase.doc.DocReadStream;
 import com.tesco.mewbase.log.Log;
+import com.tesco.mewbase.log.LogReadStream;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -338,7 +338,7 @@ public class ConnectionImpl implements ServerFrameHandler {
         authorised = false;
         socket.close();
         server.removeConnection(this);
-        for (QueryState queryState: queryStates.values()) {
+        for (QueryState queryState : queryStates.values()) {
             queryState.close();
         }
     }

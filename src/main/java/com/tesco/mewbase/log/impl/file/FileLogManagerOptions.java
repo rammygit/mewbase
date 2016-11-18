@@ -67,7 +67,7 @@ public class FileLogManagerOptions {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        FileLogManagerOptions that = (FileLogManagerOptions) o;
+        FileLogManagerOptions that = (FileLogManagerOptions)o;
 
         if (maxLogChunkSize != that.maxLogChunkSize) return false;
         if (preallocateSize != that.preallocateSize) return false;

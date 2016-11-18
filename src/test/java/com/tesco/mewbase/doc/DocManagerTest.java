@@ -2,9 +2,6 @@ package com.tesco.mewbase.doc;
 
 import com.tesco.mewbase.MewbaseTestBase;
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.doc.impl.lmdb.LmdbDocManager;
-import com.tesco.mewbase.log.impl.file.InitialiseTest;
-import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
@@ -14,14 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by tim on 14/10/16.

@@ -32,7 +32,7 @@ public class TestUtils {
      * @return the byte array
      */
     public static byte[] randomByteArray(int length) {
-        return randomByteArray(length, false, (byte) 0);
+        return randomByteArray(length, false, (byte)0);
     }
 
     /**
@@ -60,7 +60,7 @@ public class TestUtils {
      * @return a random byte
      */
     public static byte randomByte() {
-        return (byte) ((int) (Math.random() * 255) - 128);
+        return (byte)((int)(Math.random() * 255) - 128);
     }
 
     /**

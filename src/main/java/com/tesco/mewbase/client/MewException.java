@@ -12,7 +12,7 @@ public class MewException extends RuntimeException {
     }
 
     public MewException(String message) {
-        this(message, (String) null);
+        this(message, (String)null);
     }
 
     public MewException(String message, Throwable cause, String errorCode) {

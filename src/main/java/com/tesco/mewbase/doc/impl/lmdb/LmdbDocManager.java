@@ -2,9 +2,8 @@ package com.tesco.mewbase.doc.impl.lmdb;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.MewException;
-import com.tesco.mewbase.doc.DocReadStream;
 import com.tesco.mewbase.doc.DocManager;
-import com.tesco.mewbase.server.impl.ConnectionImpl;
+import com.tesco.mewbase.doc.DocReadStream;
 import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
 import io.vertx.core.WorkerExecutor;
@@ -22,13 +21,12 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- *
  * DocManager using lmdb.
- *
+ * <p>
  * lmdb is fast but unfortunately has a blocking API so we have to execute everything on worker threads
- *
+ * <p>
  * We use one lmdb database per binder
- *
+ * <p>
  * Created by tim on 09/11/16.
  */
 public class LmdbDocManager implements DocManager {
@@ -103,7 +101,7 @@ public class LmdbDocManager implements DocManager {
     public CompletableFuture<Void> close() {
         AsyncResCF<Void> res = new AsyncResCF<>();
         exec.executeBlocking(fut -> {
-            for (DBHolder holder: databases.values()) {
+            for (DBHolder holder : databases.values()) {
                 holder.close();
             }
             exec.close();

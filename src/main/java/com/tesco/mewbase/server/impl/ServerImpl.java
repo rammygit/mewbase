@@ -2,9 +2,7 @@ package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
-import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
-import com.tesco.mewbase.doc.impl.inmem.InMemoryDocManager;
 import com.tesco.mewbase.doc.impl.lmdb.LmdbDocManager;
 import com.tesco.mewbase.function.FunctionManager;
 import com.tesco.mewbase.function.impl.FunctionManagerImpl;
@@ -18,13 +16,13 @@ import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.core.net.*;
+import io.vertx.core.net.NetServer;
+import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -65,7 +63,7 @@ public class ServerImpl implements Server {
         String[] channels = serverOptions.getChannels();
         String[] binders = serverOptions.getBinders();
         CompletableFuture[] all = new CompletableFuture[procs + (channels != null ? channels.length : 0) + 1 +
-                                                        (binders != null ? binders.length : 0)];
+                (binders != null ? binders.length : 0)];
 
         for (int i = 0; i < procs; i++) {
             NetServer netServer = vertx.createNetServer(serverOptions.getNetServerOptions());
@@ -73,12 +71,12 @@ public class ServerImpl implements Server {
             CompletableFuture<Void> cf = new CompletableFuture<>();
             netServer.listen(serverOptions.getNetServerOptions().getPort(),
                     serverOptions.getNetServerOptions().getHost(), ar -> {
-                if (ar.succeeded()) {
-                    cf.complete(null);
-                } else {
-                    cf.completeExceptionally(ar.cause());
-                }
-            });
+                        if (ar.succeeded()) {
+                            cf.complete(null);
+                        } else {
+                            cf.completeExceptionally(ar.cause());
+                        }
+                    });
             netServers.add(netServer);
             all[i] = cf;
         }
@@ -122,8 +120,8 @@ public class ServerImpl implements Server {
 
     @Override
     public boolean installFunction(String name, String channel, Function<BsonObject, Boolean> eventFilter,
-                           String binderName, Function<BsonObject, String> docIDSelector,
-                           BiFunction<BsonObject, Delivery, BsonObject> function) {
+                                   String binderName, Function<BsonObject, String> docIDSelector,
+                                   BiFunction<BsonObject, Delivery, BsonObject> function) {
 
         return functionManager.installFunction(name, channel, eventFilter, binderName, docIDSelector, function);
     }
