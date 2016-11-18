@@ -213,6 +213,7 @@ public class LmdbDocManager implements DocManager {
             printThread();
             if (!closed) {
                 iter.close();
+                // See https://github.com/deephacks/lmdbjni/issues/78
                 //tx.close(); // For some reason tx.close() can cause a core dump
                 closed = true;
             }
