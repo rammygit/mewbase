@@ -11,9 +11,9 @@ import java.util.function.Function;
  */
 public interface DocManager {
 
-    //TODO: should probable be public static final
+    //TODO: should probably be public static final
     String ID_FIELD = "id";
-    
+
     /**
      * Get a document in a named binder matching the filter
      *
@@ -32,14 +32,22 @@ public interface DocManager {
     CompletableFuture<BsonObject> get(String binder, String id);
 
     /**
-     * Save a named document to a binder with the given name
-     * @param binder name of binder to save the document to
-     * @param id the name of the document within the binder
-     * @param doc the document to save
+     * Put a document in a named binder at the given id
+     *
+     * @param binder name of binder to put the document to
+     * @param id     the name of the document within the binder
+     * @param doc    the document to save
      * @return
      */
     CompletableFuture<Void> put(String binder, String id, BsonObject doc);
 
+    /**
+     * Delete a document from a binder identified with the given id
+     *
+     * @param binder name of binder to put the document to
+     * @param id     the name of the document within the binder
+     * @return a CompleteableFuture with a Boolean set to true if successful
+     */
     CompletableFuture<Boolean> delete(String binder, String id);
 
     CompletableFuture<Void> close();
