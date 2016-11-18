@@ -1,5 +1,6 @@
 package com.tesco.mewbase.client;
 
+import com.tesco.mewbase.bson.BsonObject;
 import io.vertx.core.net.NetClientOptions;
 
 /**
@@ -13,6 +14,7 @@ public class ClientOptions {
     private String host = DEFAULT_HOST;
     private int port = DEFAULT_PORT;
     private NetClientOptions netClientOptions = new NetClientOptions();
+    private BsonObject authInfo;
 
     public String getHost() {
         return host;
@@ -68,5 +70,14 @@ public class ClientOptions {
                 "host='" + host + '\'' +
                 ", port=" + port +
                 '}';
+    }
+
+    public BsonObject getAuthInfo() {
+        return authInfo;
+    }
+
+    public ClientOptions setAuthInfo(BsonObject authInfo) {
+        this.authInfo = authInfo;
+        return this;
     }
 }

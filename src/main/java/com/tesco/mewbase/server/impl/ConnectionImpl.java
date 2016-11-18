@@ -1,5 +1,6 @@
 package com.tesco.mewbase.server.impl;
 
+import com.tesco.mewbase.auth.MewbaseAuthProvider;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
@@ -30,6 +31,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     private final DocManager docManager;
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
+    private MewbaseAuthProvider authProvider;
+
     private boolean authorised;
     private int subSeq;
     private long writeSeq;
@@ -43,15 +46,29 @@ public class ConnectionImpl implements ServerFrameHandler {
         this.docManager = docManager;
     }
 
+    public ConnectionImpl(ServerImpl server, NetSocket netSocket, Context context, DocManager docManager, MewbaseAuthProvider authProvider) {
+        netSocket.handler(new Codec(this).recordParser());
+        this.server = server;
+        this.socket = netSocket;
+        this.context = context;
+        this.docManager = docManager;
+        this.authProvider = authProvider;
+    }
+
     @Override
     public void handleConnect(BsonObject frame) {
         checkContext();
-        // TODO auth
+
+        BsonObject value = (BsonObject) frame.getValue(Codec.AUTH_INFO);
+
+        authProvider.authenticate(value, res -> {
+            if (res.getBoolean(Codec.RESPONSE_OK)) {
+                authorised = true;
+            }
+            writeResponse(Codec.RESPONSE_FRAME, res, getWriteSeq());
+        });
+
         // TODO version checking
-        authorised = true;
-        BsonObject resp = new BsonObject();
-        resp.put(Codec.RESPONSE_OK, true);
-        writeResponse(Codec.RESPONSE_FRAME, resp, getWriteSeq());
     }
 
     @Override

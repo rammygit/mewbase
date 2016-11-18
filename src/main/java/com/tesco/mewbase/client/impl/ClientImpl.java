@@ -288,9 +288,13 @@ public class ClientImpl implements Client, ClientFrameHandler {
         netSocket = ns;
         netSocket.handler(new Codec(this).recordParser());
 
+        BsonObject authInfo = clientOptions.getAuthInfo();
+
         // Send the CONNECT frame
         BsonObject frame = new BsonObject();
         frame.put(Codec.CONNECT_VERSION, "0.1");
+        frame.put(Codec.AUTH_INFO, authInfo);
+
         Buffer buffer = Codec.encodeFrame(Codec.CONNECT_FRAME, frame);
         connectResponse = resp -> connected(cfConnect, resp);
         netSocket.write(buffer);

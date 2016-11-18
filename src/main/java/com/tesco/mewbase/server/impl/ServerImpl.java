@@ -2,7 +2,6 @@ package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
-import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.impl.inmem.InMemoryDocManager;
 import com.tesco.mewbase.function.FunctionManager;
@@ -124,7 +123,7 @@ public class ServerImpl implements Server {
     }
 
     private void connectHandler(NetSocket socket) {
-        ConnectionImpl conn = new ConnectionImpl(this, socket, Vertx.currentContext(), docManager);
+        ConnectionImpl conn = new ConnectionImpl(this, socket, Vertx.currentContext(), docManager, serverOptions.getAuthProvider());
         connections.add(conn);
     }
 
