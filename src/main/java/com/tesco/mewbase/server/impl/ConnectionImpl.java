@@ -338,6 +338,9 @@ public class ConnectionImpl implements ServerFrameHandler {
         authorised = false;
         socket.close();
         server.removeConnection(this);
+        for (QueryState queryState: queryStates.values()) {
+            queryState.close();
+        }
     }
 
     private static final class WriteHolder implements Comparable<WriteHolder> {

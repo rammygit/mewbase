@@ -43,11 +43,5 @@ public class LmdbDocManagerTest extends DocManagerTest {
     protected DocManager createDocManager() {
         return new LmdbDocManager(docsDir.getPath(), vertx);
     }
-
-    //@Repeat(value = 1000)
-    @Override
-    @Test
-    public void testStream(TestContext testContext) throws Exception {
-        super.testStream(testContext);
-    }
+    
 }

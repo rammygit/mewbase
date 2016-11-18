@@ -3,6 +3,8 @@ package com.tesco.mewbase.server.impl;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.doc.DocReadStream;
 import io.vertx.core.buffer.Buffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
@@ -10,6 +12,8 @@ import java.util.function.Consumer;
  * Created by tim on 17/11/16.
  */
 public class QueryState implements Consumer<BsonObject> {
+
+    private final static Logger logger = LoggerFactory.getLogger(QueryState.class);
 
     private static final int MAX_UNACKED_BYTES = 4 * 1024 * 1024; // TODO make configurable
 
@@ -45,5 +49,9 @@ public class QueryState implements Consumer<BsonObject> {
         if (last) {
             connection.removeQueryState(queryID);
         }
+    }
+
+    public void close() {
+        readStream.close();
     }
 }

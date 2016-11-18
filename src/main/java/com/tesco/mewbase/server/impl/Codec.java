@@ -127,7 +127,6 @@ public class Codec {
     private void handleBson(int size, BsonObject bson) {
         String type = bson.getString("type");
         BsonObject frame = bson.getBsonObject("frame");
-        //log.trace("Reading {}", type);
         switch (type) {
             case RESPONSE_FRAME:
                 frameHandler.handleResponse(frame);

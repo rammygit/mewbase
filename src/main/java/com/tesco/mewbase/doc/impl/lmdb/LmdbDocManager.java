@@ -82,7 +82,6 @@ public class LmdbDocManager implements DocManager {
         exec.executeBlocking(fut -> {
             byte[] key = getKey(id);
             byte[] val = doc.encode().getBytes();
-            //logger.trace("Persisted doc {}", doc);
             holder.db.put(key, val);
             fut.complete(null);
         }, res);
@@ -105,8 +104,7 @@ public class LmdbDocManager implements DocManager {
         AsyncResCF<Void> res = new AsyncResCF<>();
         exec.executeBlocking(fut -> {
             for (DBHolder holder: databases.values()) {
-                holder.db.close();
-                holder.env.close();
+                holder.close();
             }
             exec.close();
             fut.complete(null);
@@ -166,6 +164,7 @@ public class LmdbDocManager implements DocManager {
 
         private static final int MAX_DELIVER_BATCH = 100;
 
+        private final DBHolder holder;
         private final Transaction tx;
         private final EntryIterator iter;
         private final Function<BsonObject, Boolean> matcher;
@@ -176,6 +175,7 @@ public class LmdbDocManager implements DocManager {
         private boolean closed;
 
         LmdbReadStream(DBHolder holder, Function<BsonObject, Boolean> matcher) {
+            this.holder = holder;
             this.tx = holder.env.createReadTransaction();
             this.iter = holder.db.iterate(tx);
             this.matcher = matcher;
@@ -214,8 +214,9 @@ public class LmdbDocManager implements DocManager {
             printThread();
             if (!closed) {
                 iter.close();
-                // See https://github.com/deephacks/lmdbjni/issues/78
-                //tx.close(); // For some reason tx.close() can cause a core dump
+                // Beware calling tx.close() if the database/env object is closed can cause a core dump:
+                // https://github.com/deephacks/lmdbjni/issues/78
+                tx.close();
                 closed = true;
             }
         }
@@ -239,7 +240,6 @@ public class LmdbDocManager implements DocManager {
 
                     byte[] val = entry.getValue();
                     BsonObject doc = new BsonObject(Buffer.buffer(val));
-                    //logger.trace("Got doc {}", doc);
                     if (handler != null && matcher.apply(doc)) {
                         hasMore = iter.hasNext();
                         handler.accept(doc);
@@ -264,10 +264,17 @@ public class LmdbDocManager implements DocManager {
     private static class DBHolder {
         final Env env;
         final Database db;
+        boolean closed;
 
         DBHolder(Env env, Database db) {
             this.env = env;
             this.db = db;
+        }
+
+        void close() {
+            db.close();
+            env.close();
+            closed = true;
         }
     }
 
