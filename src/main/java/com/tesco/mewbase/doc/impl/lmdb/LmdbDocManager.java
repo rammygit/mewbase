@@ -132,7 +132,8 @@ public class LmdbDocManager implements DocManager {
         exec.executeBlocking(fut -> {
             File dbDir = new File(docsDir, "binder-" + binderName);
             createIfDoesntExists(dbDir);
-            Env env = new Env(dbDir.getPath());
+            Env env = new Env();
+            env.open(dbDir.getPath(), Constants.NOTLS);
             Database db = env.openDatabase();
             databases.put(binderName, new DBHolder(env, db));
             fut.complete(null);
