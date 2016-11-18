@@ -132,7 +132,7 @@ public class ServerImpl implements Server {
     }
 
     private void connectHandler(NetSocket socket) {
-        ConnectionImpl conn = new ConnectionImpl(this, socket, Vertx.currentContext(), docManager);
+        ConnectionImpl conn = new ConnectionImpl(this, socket, Vertx.currentContext(), docManager, serverOptions.getAuthProvider());
         connections.add(conn);
     }
 

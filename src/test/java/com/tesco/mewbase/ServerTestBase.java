@@ -1,5 +1,7 @@
 package com.tesco.mewbase;
 
+import com.tesco.mewbase.auth.DummyAuthProvider;
+import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Client;
 import com.tesco.mewbase.client.ClientOptions;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
@@ -22,6 +24,9 @@ public class ServerTestBase extends MewbaseTestBase {
 
     private final static String CERT_PATH = "src/test/resources/server-cert.pem";
     private final static String KEY_PATH = "src/test/resources/server-key.pem";
+    private final static String USERNAME = "mewbase";
+    private final static String PASSWORD = "password";
+
     protected Server server;
     protected Client client;
 
@@ -56,10 +61,12 @@ public class ServerTestBase extends MewbaseTestBase {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
                 .setFileLogManagerOptions(fileLogManagerOptions).setBinders(new String[]{TEST_BINDER1})
-                .setDocsDir(testFolder.newFolder().getPath());
+                .setDocsDir(testFolder.newFolder().getPath())
+                .setAuthProvider(new DummyAuthProvider(USERNAME, PASSWORD));
     }
 
     protected ClientOptions createClientOptions() {
-        return new ClientOptions().setNetClientOptions(new NetClientOptions());
+        BsonObject authInfo = new BsonObject().put("username", USERNAME).put("password", PASSWORD);
+        return new ClientOptions().setNetClientOptions(new NetClientOptions()).setAuthInfo(authInfo);
     }
 }

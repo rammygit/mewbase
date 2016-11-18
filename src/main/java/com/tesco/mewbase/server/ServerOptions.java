@@ -1,5 +1,6 @@
 package com.tesco.mewbase.server;
 
+import com.tesco.mewbase.auth.MewbaseAuthProvider;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import io.vertx.core.net.NetServerOptions;
 
@@ -19,6 +20,7 @@ public class ServerOptions {
     private NetServerOptions netServerOptions = new NetServerOptions().setPort(DEFAULT_PORT).setHost(DEFAULT_HOST);
     private String docsDir = DEFAULT_DOCS_DIR;
     private String[] binders;
+    private MewbaseAuthProvider authProvider;
 
     public String[] getChannels() {
         return channels;
@@ -62,6 +64,15 @@ public class ServerOptions {
 
     public ServerOptions setBinders(String[] binders) {
         this.binders = binders;
+        return this;
+    }
+
+    public MewbaseAuthProvider getAuthProvider() {
+        return authProvider;
+    }
+
+    public ServerOptions setAuthProvider(MewbaseAuthProvider authProvider) {
+        this.authProvider = authProvider;
         return this;
     }
 
