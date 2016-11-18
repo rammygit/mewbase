@@ -16,6 +16,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Repeat;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -41,5 +42,12 @@ public class LmdbDocManagerTest extends DocManagerTest {
 
     protected DocManager createDocManager() {
         return new LmdbDocManager(docsDir.getPath(), vertx);
+    }
+
+    //@Repeat(value = 1000)
+    @Override
+    @Test
+    public void testStream(TestContext testContext) throws Exception {
+        super.testStream(testContext);
     }
 }

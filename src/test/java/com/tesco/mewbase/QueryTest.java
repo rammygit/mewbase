@@ -78,7 +78,6 @@ public class QueryTest extends ServerTestBase {
 
     @Test
     public void testFindMatchingNoConnect(TestContext context) throws Exception {
-
         Client client2 = Client.newClient(vertx, new ClientOptions().setHost("uiqhwiuqwdui"));
         Async async = context.async();
         client2.findMatching(TEST_BINDER1, new BsonObject(), qr -> {

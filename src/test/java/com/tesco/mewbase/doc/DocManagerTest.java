@@ -47,6 +47,7 @@ public abstract class DocManagerTest extends MewbaseTestBase {
     @Override
     protected void tearDown(TestContext context) throws Exception {
         docManager.close().get();
+        logger.trace("Closed doc manager");
     }
 
     protected abstract DocManager createDocManager();

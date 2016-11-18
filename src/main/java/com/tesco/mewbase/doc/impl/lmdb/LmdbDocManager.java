@@ -45,6 +45,7 @@ public class LmdbDocManager implements DocManager {
     private final WorkerExecutor exec;
 
     public LmdbDocManager(String docsDir, Vertx vertx) {
+        logger.trace("Starting lmdb docmanager with docs dir: " + docsDir);
         this.docsDir = new File(docsDir);
         this.vertx = vertx;
         exec = vertx.createSharedWorkerExecutor(LMDB_DOCMANAGER_POOL_NAME, LMDB_DOCMANAGER_POOL_SIZE);
@@ -171,6 +172,7 @@ public class LmdbDocManager implements DocManager {
         private boolean paused;
         private boolean hasMore;
         private boolean handledOne;
+        private boolean closed;
 
         LmdbReadStream(DBHolder holder, Function<BsonObject, Boolean> matcher) {
             this.tx = holder.env.createReadTransaction();
@@ -189,32 +191,44 @@ public class LmdbDocManager implements DocManager {
 
         @Override
         public synchronized void start() {
+            printThread();
             iterNext();
         }
 
         @Override
         public synchronized void pause() {
+            printThread();
             paused = true;
         }
 
         @Override
         public synchronized void resume() {
+            printThread();
             paused = false;
             iterNext();
         }
 
         @Override
         public synchronized void close() {
-            iter.close();
-            tx.close();
+            printThread();
+            if (!closed) {
+                iter.close();
+                //tx.close(); // For some reason tx.close() can cause a core dump
+                closed = true;
+            }
         }
 
         public synchronized boolean hasMore() {
             return hasMore;
         }
 
-        private void iterNext() {
-            if (paused) {
+        private void printThread() {
+            //logger.trace("Thread is {}", Thread.currentThread());
+        }
+
+        private synchronized void iterNext() {
+            printThread();
+            if (paused || closed) {
                 return;
             }
             for (int i = 0; i < MAX_DELIVER_BATCH; i++) {
