@@ -6,7 +6,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 /**
- *
  * Created by tim on 30/09/16.
  */
 public interface DocManager {
@@ -17,7 +16,7 @@ public interface DocManager {
     /**
      * Get a document in a named binder matching the filter
      *
-     * @param binder name of binder to put the document to
+     * @param binder  name of binder to put the document to
      * @param matcher matching function for documents
      */
     DocReadStream getMatching(String binder, Function<BsonObject, Boolean> matcher);
@@ -55,5 +54,5 @@ public interface DocManager {
     CompletableFuture<Void> start();
 
     CompletableFuture<Void> createBinder(String binderName);
-    
+
 }
