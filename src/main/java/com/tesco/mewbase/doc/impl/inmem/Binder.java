@@ -24,7 +24,6 @@ public class Binder {
      * @param id  the identify for the document
      * @param doc the document
      */
-
     public void save(String id, BsonObject doc) {
         docs.put(id, doc);
     }

@@ -9,8 +9,7 @@ import java.util.function.Function;
  * Created by tim on 30/09/16.
  */
 public interface DocManager {
-
-    //TODO: should probably be public static final
+    
     String ID_FIELD = "id";
 
     /**
