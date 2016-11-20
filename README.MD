@@ -1,8 +1,8 @@
-# mewbase
+﻿# mewbase
 
 ## The problem
 
-Smart organisations now realise that its vital to keep track of all the streams of events they produce.
+Smart organisations now realise that it's vital to keep track of all the streams of events they produce.
 
 Examples of streams of events might be:
 
@@ -128,3 +128,7 @@ If you'd like to get involved and be a part of it, please say hi in our
 We also have an IRC channel for general chat on freenode: Come and say hi!
 
 irc.freenode.net#mewbase 
+
+## Roadmap
+
+Roadmap and other pages are on the [wiki](https://github.com/Tesco/mewbase/wiki)

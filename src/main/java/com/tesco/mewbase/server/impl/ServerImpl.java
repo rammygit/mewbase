@@ -2,9 +2,8 @@ package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
-import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
-import com.tesco.mewbase.doc.impl.inmem.InMemoryDocManager;
+import com.tesco.mewbase.doc.impl.lmdb.LmdbDocManager;
 import com.tesco.mewbase.function.FunctionManager;
 import com.tesco.mewbase.function.impl.FunctionManagerImpl;
 import com.tesco.mewbase.log.Log;
@@ -17,13 +16,13 @@ import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.core.net.*;
+import io.vertx.core.net.NetServer;
+import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -49,7 +48,7 @@ public class ServerImpl implements Server {
         FileLogManagerOptions sOptions = serverOptions.getFileLogManagerOptions();
         FileLogManagerOptions options = sOptions == null ? new FileLogManagerOptions() : sOptions;
         this.logManager = new FileLogManager(vertx, options, faf);
-        this.docManager = new InMemoryDocManager();
+        this.docManager = new LmdbDocManager(serverOptions.getDocsDir(), vertx);
         this.functionManager = new FunctionManagerImpl(docManager, logManager);
     }
 
@@ -62,19 +61,22 @@ public class ServerImpl implements Server {
         int procs = Runtime.getRuntime().availableProcessors(); // TODO make this configurable
         log.trace("Starting " + procs + " instances");
         String[] channels = serverOptions.getChannels();
-        CompletableFuture[] all = new CompletableFuture[procs + (channels != null ? channels.length : 0)];
+        String[] binders = serverOptions.getBinders();
+        CompletableFuture[] all = new CompletableFuture[procs + (channels != null ? channels.length : 0) + 1 +
+                (binders != null ? binders.length : 0)];
 
         for (int i = 0; i < procs; i++) {
             NetServer netServer = vertx.createNetServer(serverOptions.getNetServerOptions());
             netServer.connectHandler(this::connectHandler);
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            netServer.listen(serverOptions.getPort(), serverOptions.getHost(), ar -> {
-                if (ar.succeeded()) {
-                    cf.complete(null);
-                } else {
-                    cf.completeExceptionally(ar.cause());
-                }
-            });
+            netServer.listen(serverOptions.getNetServerOptions().getPort(),
+                    serverOptions.getNetServerOptions().getHost(), ar -> {
+                        if (ar.succeeded()) {
+                            cf.complete(null);
+                        } else {
+                            cf.completeExceptionally(ar.cause());
+                        }
+                    });
             netServers.add(netServer);
             all[i] = cf;
         }
@@ -82,6 +84,13 @@ public class ServerImpl implements Server {
         if (serverOptions.getChannels() != null) {
             for (String channel : serverOptions.getChannels()) {
                 all[procs++] = logManager.createLog(channel);
+            }
+        }
+        all[procs++] = docManager.start();
+        // Start the binders
+        if (serverOptions.getBinders() != null) {
+            for (String binder : serverOptions.getBinders()) {
+                all[procs++] = docManager.createBinder(binder);
             }
         }
         return CompletableFuture.allOf(all);
@@ -111,8 +120,8 @@ public class ServerImpl implements Server {
 
     @Override
     public boolean installFunction(String name, String channel, Function<BsonObject, Boolean> eventFilter,
-                           String binderName, Function<BsonObject, String> docIDSelector,
-                           BiFunction<BsonObject, Delivery, BsonObject> function) {
+                                   String binderName, Function<BsonObject, String> docIDSelector,
+                                   BiFunction<BsonObject, Delivery, BsonObject> function) {
 
         return functionManager.installFunction(name, channel, eventFilter, binderName, docIDSelector, function);
     }

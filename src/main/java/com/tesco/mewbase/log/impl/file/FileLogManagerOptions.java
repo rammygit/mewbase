@@ -61,4 +61,29 @@ public class FileLogManagerOptions {
         this.readBufferSize = readBufferSize;
         return this;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        FileLogManagerOptions that = (FileLogManagerOptions)o;
+
+        if (maxLogChunkSize != that.maxLogChunkSize) return false;
+        if (preallocateSize != that.preallocateSize) return false;
+        if (maxRecordSize != that.maxRecordSize) return false;
+        if (readBufferSize != that.readBufferSize) return false;
+        return logDir.equals(that.logDir);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = logDir.hashCode();
+        result = 31 * result + maxLogChunkSize;
+        result = 31 * result + preallocateSize;
+        result = 31 * result + maxRecordSize;
+        result = 31 * result + readBufferSize;
+        return result;
+    }
 }

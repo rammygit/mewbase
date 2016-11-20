@@ -3,10 +3,7 @@ package com.tesco.mewbase;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.bson.BsonPath;
 import com.tesco.mewbase.client.Producer;
-import com.tesco.mewbase.common.Delivery;
-import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
-import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
@@ -14,11 +11,7 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * Created by tim on 30/09/16.
@@ -31,9 +24,7 @@ public class FunctionTest extends ServerTestBase {
     @Test
     public void testSimpleFunction(TestContext context) throws Exception {
 
-        String binderName = "baskets";
-
-        server.installFunction("testfunc", TEST_CHANNEL_1, ev -> true, binderName, ev -> ev.getString("basketID"), (basket, del) ->
+        server.installFunction("testfunc", TEST_CHANNEL_1, ev -> true, TEST_BINDER1, ev -> ev.getString("basketID"), (basket, del) ->
                 BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
         );
 
@@ -46,7 +37,7 @@ public class FunctionTest extends ServerTestBase {
         BsonObject basket =
                 waitForNonNull(() -> {
                     try {
-                        return client.findByID(binderName, basketID).get();
+                        return client.findByID(TEST_BINDER1, basketID).get();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

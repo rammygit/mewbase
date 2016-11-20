@@ -75,7 +75,7 @@ public class SubDescriptor {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        SubDescriptor that = (SubDescriptor) o;
+        SubDescriptor that = (SubDescriptor)o;
 
         if (startTimestamp != that.startTimestamp) return false;
         if (startPos != that.startPos) return false;
@@ -90,8 +90,8 @@ public class SubDescriptor {
     public int hashCode() {
         int result = durableID != null ? durableID.hashCode() : 0;
         result = 31 * result + (channel != null ? channel.hashCode() : 0);
-        result = 31 * result + (int) (startPos ^ (startPos >>> 32));
-        result = 31 * result + (int) (startTimestamp ^ (startTimestamp >>> 32));
+        result = 31 * result + (int)(startPos ^ (startPos >>> 32));
+        result = 31 * result + (int)(startTimestamp ^ (startTimestamp >>> 32));
         result = 31 * result + (matcher != null ? matcher.hashCode() : 0);
         result = 31 * result + (group != null ? group.hashCode() : 0);
         return result;

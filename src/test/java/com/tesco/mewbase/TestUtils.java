@@ -19,6 +19,8 @@
 
 package com.tesco.mewbase;
 
+import java.util.Arrays;
+
 /**
  * @author <a href="http://tfox.org">Tim Fox</a>
  */
@@ -30,7 +32,7 @@ public class TestUtils {
      * @return the byte array
      */
     public static byte[] randomByteArray(int length) {
-        return randomByteArray(length, false, (byte) 0);
+        return randomByteArray(length, false, (byte)0);
     }
 
     /**
@@ -58,7 +60,7 @@ public class TestUtils {
      * @return a random byte
      */
     public static byte randomByte() {
-        return (byte) ((int) (Math.random() * 255) - 128);
+        return (byte)((int)(Math.random() * 255) - 128);
     }
 
     /**
@@ -69,10 +71,6 @@ public class TestUtils {
      * @return true if the byte arrays are equal
      */
     public static boolean byteArraysEqual(byte[] b1, byte[] b2) {
-        if (b1.length != b2.length) return false;
-        for (int i = 0; i < b1.length; i++) {
-            if (b1[i] != b2[i]) return false;
-        }
-        return true;
+        return Arrays.equals(b1, b2);
     }
 }

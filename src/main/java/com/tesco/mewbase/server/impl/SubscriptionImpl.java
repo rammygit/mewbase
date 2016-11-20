@@ -1,7 +1,7 @@
 package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.log.LogReadStream;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -20,11 +20,11 @@ public class SubscriptionImpl {
     private final ConnectionImpl connection;
     private final int id;
     private final Context ctx;
-    private final ReadStream readStream;
+    private final LogReadStream readStream;
     private int unackedBytes;
 
     public SubscriptionImpl(ConnectionImpl connection, int id,
-                            ReadStream readStream) {
+                            LogReadStream readStream) {
         this.connection = connection;
         this.id = id;
         this.ctx = Vertx.currentContext();
@@ -43,7 +43,6 @@ public class SubscriptionImpl {
         frame = frame.copy();
         frame.put(Codec.RECEV_SUBID, id);
         frame.put(Codec.RECEV_POS, pos);
-        logger.trace("Writing recev");
         Buffer buff = connection.writeNonResponse(Codec.RECEV_FRAME, frame);
         unackedBytes += buff.length();
         if (unackedBytes > MAX_UNACKED_BYTES) {

@@ -8,7 +8,6 @@ import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 
 /**
- *
  * Created by tim on 08/11/16.
  */
 public class PubSubExample {

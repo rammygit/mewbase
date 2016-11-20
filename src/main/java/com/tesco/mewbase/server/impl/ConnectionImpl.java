@@ -1,10 +1,11 @@
 package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
+import com.tesco.mewbase.doc.DocReadStream;
 import com.tesco.mewbase.log.Log;
+import com.tesco.mewbase.log.LogReadStream;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -30,6 +31,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     private final DocManager docManager;
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
+    private final Map<Integer, QueryState> queryStates = new ConcurrentHashMap<>();
     private boolean authorised;
     private int subSeq;
     private long writeSeq;
@@ -74,8 +76,6 @@ public class ConnectionImpl implements ServerFrameHandler {
         record.put(Codec.RECEV_TIMESTAMP, System.currentTimeMillis());
         record.put(Codec.RECEV_EVENT, event);
         CompletableFuture<Long> cf = log.append(record);
-
-        logger.trace("Handling publish " + event.getInteger("num"));
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();
@@ -131,7 +131,7 @@ public class ConnectionImpl implements ServerFrameHandler {
             // TODO send error back to client
             throw new IllegalStateException("No such channel " + channel);
         }
-        ReadStream readStream = log.subscribe(subDescriptor);
+        LogReadStream readStream = log.subscribe(subDescriptor);
         SubscriptionImpl subscription = new SubscriptionImpl(this, subID, readStream);
         subscriptionMap.put(subID, subscription);
         BsonObject resp = new BsonObject();
@@ -188,43 +188,39 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkContext();
         checkAuthorised();
         int queryID = frame.getInteger(Codec.QUERY_QUERYID);
+        String docID = frame.getString(Codec.QUERY_DOCID);
         String binder = frame.getString(Codec.QUERY_BINDER);
         BsonObject matcher = frame.getBsonObject(Codec.QUERY_MATCHER);
-
-        // TODO currently hardcoded to assume get by ID, implement properly for other query types
-        String documentId = matcher.getBsonObject("$match").getString("id");
-        CompletableFuture<BsonObject> cf = docManager.findByID(binder, documentId);
-        long writeSeq = getWriteSeq();
-
-        cf.thenAccept(result -> {
-            if (result == null) {
-                BsonObject resp = new BsonObject();
-                resp.put(Codec.QUERYRESPONSE_QUERYID, queryID);
-                resp.put(Codec.QUERYRESPONSE_NUMRESULTS, 0);
-                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, writeSeq);
-            } else {
-                BsonObject resp = new BsonObject();
-                resp.put(Codec.QUERYRESPONSE_QUERYID, queryID);
-                resp.put(Codec.QUERYRESPONSE_NUMRESULTS, 1);
-                writeResponse(Codec.QUERYRESPONSE_FRAME, resp, writeSeq);
-
-                BsonObject res = new BsonObject();
-                res.put(Codec.QUERYRESULT_QUERYID, queryID);
-                res.put(Codec.QUERYRESULT_RESULT, result);
-                writeNonResponse(Codec.QUERYRESULT_FRAME, res);
-            }
-        });
+        if (docID != null) {
+            CompletableFuture<BsonObject> cf = docManager.get(binder, docID);
+            cf.thenAccept(doc -> writeQueryResult(doc, queryID, true));
+        } else if (matcher != null) {
+            // TODO currently just use select all
+            DocReadStream rs = docManager.getMatching(binder, doc -> true);
+            QueryState holder = new QueryState(this, queryID, rs);
+            rs.handler(holder);
+            queryStates.put(queryID, holder);
+            rs.start();
+        }
     }
 
     @Override
     public void handleQueryAck(BsonObject frame) {
         checkContext();
         checkAuthorised();
-
         Integer queryID = frame.getInteger(Codec.QUERYACK_QUERYID);
-
         if (queryID == null) {
             logAndClose("No queryID in QueryAck");
+        } else {
+            Integer bytes = frame.getInteger(Codec.QUERYACK_BYTES);
+            if (bytes == null) {
+                logAndClose("No bytes in QueryAck");
+                return;
+            }
+            QueryState queryState = queryStates.get(queryID);
+            if (queryState != null) {
+                queryState.handleAck(bytes);
+            }
         }
     }
 
@@ -232,6 +228,14 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handlePing(BsonObject frame) {
         checkContext();
         checkAuthorised();
+    }
+
+    protected Buffer writeQueryResult(BsonObject doc, int queryID, boolean last) {
+        BsonObject res = new BsonObject();
+        res.put(Codec.QUERYRESULT_QUERYID, queryID);
+        res.put(Codec.QUERYRESULT_RESULT, doc);
+        res.put(Codec.QUERYRESULT_LAST, last);
+        return writeNonResponse(Codec.QUERYRESULT_FRAME, res);
     }
 
     protected Buffer writeNonResponse(String frameName, BsonObject frame) {
@@ -319,17 +323,31 @@ public class ConnectionImpl implements ServerFrameHandler {
         close();
     }
 
+    // Sanity check - this should always be executed using the correct context
+    protected void checkContext() {
+        if (Vertx.currentContext() != context) {
+            throw new IllegalStateException("Wrong context!");
+        }
+    }
+
+    protected void removeQueryState(int queryID) {
+        queryStates.remove(queryID);
+    }
+
     protected void close() {
         authorised = false;
         socket.close();
         server.removeConnection(this);
+        for (QueryState queryState : queryStates.values()) {
+            queryState.close();
+        }
     }
 
     private static final class WriteHolder implements Comparable<WriteHolder> {
         final long order;
         final Buffer buff;
 
-        public WriteHolder(long order, Buffer buff) {
+        WriteHolder(long order, Buffer buff) {
             this.order = order;
             this.buff = buff;
         }
@@ -340,11 +358,5 @@ public class ConnectionImpl implements ServerFrameHandler {
         }
     }
 
-    // Sanity check - this should always be executed using the correct context
-    private void checkContext() {
-        if (Vertx.currentContext() != context) {
-            throw new IllegalStateException("Wrong context!");
-        }
-    }
 
 }

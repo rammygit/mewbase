@@ -168,15 +168,6 @@ If there are results to return they will be returned as a succession of QUERYRES
 
 The server will allow a maximum of X unacknowledged QUERYRESULT frames to be in transit at any one time. 
  
-### QUERYRESPONSE
-
-Sent by server in response to a query
-
-Fields
-
-* `queryID` - mandatory, int32. Unique id of query per connection.
-* `numResults` - mandatory, int64. Number of results to return
-
 ### QUERYRESULT
 
 Sent by a server holding a single query result
@@ -185,6 +176,7 @@ Fields
 
 * `queryID` - mandatory, int32. Unique id of query per connection.
 * `result` - mandatory, BSONObject. The query result
+* `last` - mandatory, boolean. `true` if final result in query
 
 ### QUERYACK
 

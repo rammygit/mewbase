@@ -80,7 +80,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public String getString(String key) {
         Objects.requireNonNull(key);
-        CharSequence cs = (CharSequence) map.get(key);
+        CharSequence cs = (CharSequence)map.get(key);
         return cs == null ? null : cs.toString();
     }
 
@@ -93,11 +93,11 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Integer getInteger(String key) {
         Objects.requireNonNull(key);
-        Number number = (Number) map.get(key);
+        Number number = (Number)map.get(key);
         if (number == null) {
             return null;
         } else if (number instanceof Integer) {
-            return (Integer) number;  // Avoids unnecessary unbox/box
+            return (Integer)number;  // Avoids unnecessary unbox/box
         } else {
             return number.intValue();
         }
@@ -112,11 +112,11 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Long getLong(String key) {
         Objects.requireNonNull(key);
-        Number number = (Number) map.get(key);
+        Number number = (Number)map.get(key);
         if (number == null) {
             return null;
         } else if (number instanceof Long) {
-            return (Long) number;  // Avoids unnecessary unbox/box
+            return (Long)number;  // Avoids unnecessary unbox/box
         } else {
             return number.longValue();
         }
@@ -131,11 +131,11 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Double getDouble(String key) {
         Objects.requireNonNull(key);
-        Number number = (Number) map.get(key);
+        Number number = (Number)map.get(key);
         if (number == null) {
             return null;
         } else if (number instanceof Double) {
-            return (Double) number;  // Avoids unnecessary unbox/box
+            return (Double)number;  // Avoids unnecessary unbox/box
         } else {
             return number.doubleValue();
         }
@@ -150,11 +150,11 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Float getFloat(String key) {
         Objects.requireNonNull(key);
-        Number number = (Number) map.get(key);
+        Number number = (Number)map.get(key);
         if (number == null) {
             return null;
         } else if (number instanceof Float) {
-            return (Float) number;  // Avoids unnecessary unbox/box
+            return (Float)number;  // Avoids unnecessary unbox/box
         } else {
             return number.floatValue();
         }
@@ -169,7 +169,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Boolean getBoolean(String key) {
         Objects.requireNonNull(key);
-        return (Boolean) map.get(key);
+        return (Boolean)map.get(key);
     }
 
     /**
@@ -183,9 +183,9 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
         Objects.requireNonNull(key);
         Object val = map.get(key);
         if (val instanceof Map) {
-            val = new BsonObject((Map) val);
+            val = new BsonObject((Map)val);
         }
-        return (BsonObject) val;
+        return (BsonObject)val;
     }
 
     /**
@@ -199,9 +199,9 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
         Objects.requireNonNull(key);
         Object val = map.get(key);
         if (val instanceof List) {
-            val = new BsonArray((List) val);
+            val = new BsonArray((List)val);
         }
-        return (BsonArray) val;
+        return (BsonArray)val;
     }
 
     /**
@@ -219,7 +219,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public byte[] getBinary(String key) {
         Objects.requireNonNull(key);
-        String encoded = (String) map.get(key);
+        String encoded = (String)map.get(key);
         return encoded == null ? null : Base64.getDecoder().decode(encoded);
     }
 
@@ -238,7 +238,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Instant getInstant(String key) {
         Objects.requireNonNull(key);
-        String encoded = (String) map.get(key);
+        String encoded = (String)map.get(key);
         return encoded == null ? null : Instant.from(ISO_INSTANT.parse(encoded));
     }
 
@@ -252,9 +252,9 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
         Objects.requireNonNull(key);
         Object val = map.get(key);
         if (val instanceof Map) {
-            val = new BsonObject((Map) val);
+            val = new BsonObject((Map)val);
         } else if (val instanceof List) {
-            val = new BsonArray((List) val);
+            val = new BsonArray((List)val);
         }
         return val;
     }
@@ -268,7 +268,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public String getString(String key, String def) {
         Objects.requireNonNull(key);
-        CharSequence cs = (CharSequence) map.get(key);
+        CharSequence cs = (CharSequence)map.get(key);
         return cs != null || map.containsKey(key) ? cs == null ? null : cs.toString() : def;
     }
 
@@ -281,7 +281,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Integer getInteger(String key, Integer def) {
         Objects.requireNonNull(key);
-        Number val = (Number) map.get(key);
+        Number val = (Number)map.get(key);
         if (val == null) {
             if (map.containsKey(key)) {
                 return null;
@@ -289,7 +289,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
                 return def;
             }
         } else if (val instanceof Integer) {
-            return (Integer) val;  // Avoids unnecessary unbox/box
+            return (Integer)val;  // Avoids unnecessary unbox/box
         } else {
             return val.intValue();
         }
@@ -304,7 +304,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Long getLong(String key, Long def) {
         Objects.requireNonNull(key);
-        Number val = (Number) map.get(key);
+        Number val = (Number)map.get(key);
         if (val == null) {
             if (map.containsKey(key)) {
                 return null;
@@ -312,7 +312,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
                 return def;
             }
         } else if (val instanceof Long) {
-            return (Long) val;  // Avoids unnecessary unbox/box
+            return (Long)val;  // Avoids unnecessary unbox/box
         } else {
             return val.longValue();
         }
@@ -327,7 +327,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Double getDouble(String key, Double def) {
         Objects.requireNonNull(key);
-        Number val = (Number) map.get(key);
+        Number val = (Number)map.get(key);
         if (val == null) {
             if (map.containsKey(key)) {
                 return null;
@@ -335,7 +335,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
                 return def;
             }
         } else if (val instanceof Double) {
-            return (Double) val;  // Avoids unnecessary unbox/box
+            return (Double)val;  // Avoids unnecessary unbox/box
         } else {
             return val.doubleValue();
         }
@@ -350,7 +350,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
      */
     public Float getFloat(String key, Float def) {
         Objects.requireNonNull(key);
-        Number val = (Number) map.get(key);
+        Number val = (Number)map.get(key);
         if (val == null) {
             if (map.containsKey(key)) {
                 return null;
@@ -358,7 +358,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
                 return def;
             }
         } else if (val instanceof Float) {
-            return (Float) val;  // Avoids unnecessary unbox/box
+            return (Float)val;  // Avoids unnecessary unbox/box
         } else {
             return val.floatValue();
         }
@@ -374,7 +374,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
     public Boolean getBoolean(String key, Boolean def) {
         Objects.requireNonNull(key);
         Object val = map.get(key);
-        return val != null || map.containsKey(key) ? (Boolean) val : def;
+        return val != null || map.containsKey(key) ? (Boolean)val : def;
     }
 
     /**
@@ -411,7 +411,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
     public byte[] getBinary(String key, byte[] def) {
         Objects.requireNonNull(key);
         Object val = map.get(key);
-        return val != null || map.containsKey(key) ? (val == null ? null : Base64.getDecoder().decode((String) val)) : def;
+        return val != null || map.containsKey(key) ? (val == null ? null : Base64.getDecoder().decode((String)val)) : def;
     }
 
     /**
@@ -425,7 +425,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
         Objects.requireNonNull(key);
         Object val = map.get(key);
         return val != null || map.containsKey(key) ?
-                (val == null ? null : Instant.from(ISO_INSTANT.parse((String) val))) : def;
+                (val == null ? null : Instant.from(ISO_INSTANT.parse((String)val))) : def;
     }
 
     /**
@@ -770,7 +770,7 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
                 ((BsonObject)entry.getValue()).encodeToString(sb);
             } else if (entry.getValue() instanceof BsonArray) {
                 ((BsonArray)entry.getValue()).encodeToString(sb);
-            } else if (entry.getValue() instanceof String){
+            } else if (entry.getValue() instanceof String) {
                 sb.append("\"");
                 sb.append(entry.getValue().toString());
                 sb.append("\"");
@@ -810,9 +810,9 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
     static boolean objectEquals(Map<?, ?> m1, Object o2) {
         Map<?, ?> m2;
         if (o2 instanceof BsonObject) {
-            m2 = ((BsonObject) o2).map;
+            m2 = ((BsonObject)o2).map;
         } else if (o2 instanceof Map<?, ?>) {
-            m2 = (Map<?, ?>) o2;
+            m2 = (Map<?, ?>)o2;
         } else {
             return false;
         }
@@ -837,20 +837,20 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
         if (o1 == o2)
             return true;
         if (o1 instanceof BsonObject) {
-            return objectEquals(((BsonObject) o1).map, o2);
+            return objectEquals(((BsonObject)o1).map, o2);
         }
         if (o1 instanceof Map<?, ?>) {
-            return objectEquals((Map<?, ?>) o1, o2);
+            return objectEquals((Map<?, ?>)o1, o2);
         }
         if (o1 instanceof BsonArray) {
-            return BsonArray.arrayEquals(((BsonArray) o1).getList(), o2);
+            return BsonArray.arrayEquals(((BsonArray)o1).getList(), o2);
         }
         if (o1 instanceof List<?>) {
-            return BsonArray.arrayEquals((List<?>) o1, o2);
+            return BsonArray.arrayEquals((List<?>)o1, o2);
         }
         if (o1 instanceof Number && o2 instanceof Number && o1.getClass() != o2.getClass()) {
-            Number n1 = (Number) o1;
-            Number n2 = (Number) o2;
+            Number n1 = (Number)o1;
+            Number n2 = (Number)o2;
             if (o1 instanceof Float || o1 instanceof Double || o2 instanceof Float || o2 instanceof Double) {
                 return n1.doubleValue() == n2.doubleValue();
             } else {
@@ -886,9 +886,9 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
         public Map.Entry<String, Object> next() {
             Map.Entry<String, Object> entry = mapIter.next();
             if (entry.getValue() instanceof Map) {
-                return new Entry(entry.getKey(), new BsonObject((Map) entry.getValue()));
+                return new Entry(entry.getKey(), new BsonObject((Map)entry.getValue()));
             } else if (entry.getValue() instanceof List) {
-                return new Entry(entry.getKey(), new BsonArray((List) entry.getValue()));
+                return new Entry(entry.getKey(), new BsonArray((List)entry.getValue()));
             }
             return entry;
         }

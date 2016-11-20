@@ -80,13 +80,13 @@ public class InitialiseTest extends LogTestBase {
         BsonObject info = readInfoFromFile(infoFile);
         Integer fileNumber = info.getInteger("fileNumber");
         assertNotNull(fileNumber);
-        assertEquals(0, (long) fileNumber);
+        assertEquals(0, (long)fileNumber);
         Integer fileHeadPos = info.getInteger("fileHeadPos");
         assertNotNull(fileHeadPos);
-        assertEquals(0, (long) fileHeadPos);
+        assertEquals(0, (long)fileHeadPos);
         Integer headPos = info.getInteger("headPos");
         assertNotNull(headPos);
-        assertEquals(0, (long) headPos);
+        assertEquals(0, (long)headPos);
         Boolean shutdown = info.getBoolean("shutdown");
         assertNotNull(shutdown);
         assertTrue(shutdown);

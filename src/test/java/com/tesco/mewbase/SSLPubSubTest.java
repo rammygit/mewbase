@@ -8,7 +8,6 @@ import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.net.NetClientOptions;
-import io.vertx.core.net.NetServerOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.ext.unit.Async;
@@ -30,15 +29,16 @@ public class SSLPubSubTest extends ServerTestBase {
     protected ServerOptions createServerOptions(File logDir) {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
 
-        NetServerOptions netServerOptions = new NetServerOptions().setSsl(true).setPemKeyCertOptions(
+        ServerOptions serverOptions = new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
+                .setFileLogManagerOptions(fileLogManagerOptions);
+
+        serverOptions.getNetServerOptions().setSsl(true).setPemKeyCertOptions(
                 new PemKeyCertOptions()
                         .setKeyPath(KEY_PATH)
                         .setCertPath(CERT_PATH)
         );
 
-        return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions)
-                .setNetServerOptions(netServerOptions);
+        return serverOptions;
     }
 
     @Override

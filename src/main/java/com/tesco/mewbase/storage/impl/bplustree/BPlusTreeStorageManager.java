@@ -1,7 +1,7 @@
 package com.tesco.mewbase.storage.impl.bplustree;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.common.ReadStream;
+import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.storage.StorageManager;
 
 import java.util.concurrent.CompletableFuture;
@@ -26,7 +26,7 @@ public class BPlusTreeStorageManager implements StorageManager {
     }
 
     @Override
-    public ReadStream rangeQuery(String start, String end) {
+    public LogReadStream rangeQuery(String start, String end) {
         return null;
     }
 }

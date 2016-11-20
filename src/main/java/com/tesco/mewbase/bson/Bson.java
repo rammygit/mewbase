@@ -89,28 +89,28 @@ public class Bson {
             val = val.toString();
         } else if (val instanceof BsonObject) {
             if (copy) {
-                val = ((BsonObject) val).copy();
+                val = ((BsonObject)val).copy();
             }
         } else if (val instanceof BsonArray) {
             if (copy) {
-                val = ((BsonArray) val).copy();
+                val = ((BsonArray)val).copy();
             }
         } else if (val instanceof Map) {
             if (copy) {
-                val = (new BsonObject((Map) val)).copy();
+                val = (new BsonObject((Map)val)).copy();
             } else {
-                val = new BsonObject((Map) val);
+                val = new BsonObject((Map)val);
             }
         } else if (val instanceof List) {
             if (copy) {
-                val = (new BsonArray((List) val)).copy();
+                val = (new BsonArray((List)val)).copy();
             } else {
-                val = new BsonArray((List) val);
+                val = new BsonArray((List)val);
             }
         } else if (val instanceof byte[]) {
-            val = Base64.getEncoder().encodeToString((byte[]) val);
+            val = Base64.getEncoder().encodeToString((byte[])val);
         } else if (val instanceof Instant) {
-            val = ISO_INSTANT.format((Instant) val);
+            val = ISO_INSTANT.format((Instant)val);
         } else {
             throw new IllegalStateException("Illegal type in BsonObject: " + val.getClass());
         }

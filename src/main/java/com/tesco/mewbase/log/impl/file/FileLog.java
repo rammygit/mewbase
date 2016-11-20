@@ -2,9 +2,9 @@ package com.tesco.mewbase.log.impl.file;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.MewException;
-import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.log.Log;
+import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -106,12 +106,12 @@ public class FileLog implements Log {
         }
         return cf.thenApply(bf -> {
             currWriteFile = bf;
-            return (Void) null;
+            return (Void)null;
         });
     }
 
     @Override
-    public synchronized ReadStream subscribe(SubDescriptor subDescriptor) {
+    public synchronized LogReadStream subscribe(SubDescriptor subDescriptor) {
         if (subDescriptor.getStartPos() < -1) {
             throw new IllegalArgumentException("startPos must be >= -1");
         }
@@ -496,8 +496,8 @@ public class FileLog implements Log {
         public FileCoord(long pos, int fileMaxSize) {
             this.pos = pos;
             this.fileMaxSize = fileMaxSize;
-            this.fileNumber = (int) (pos / fileMaxSize);
-            this.filePos = (int) (pos % fileMaxSize);
+            this.fileNumber = (int)(pos / fileMaxSize);
+            this.filePos = (int)(pos % fileMaxSize);
         }
     }
 

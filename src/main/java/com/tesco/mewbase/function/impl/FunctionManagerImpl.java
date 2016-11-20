@@ -2,13 +2,13 @@ package com.tesco.mewbase.function.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
-import com.tesco.mewbase.common.ReadStream;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.common.impl.DeliveryImpl;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.function.FunctionManager;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
+import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.server.impl.Codec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,7 +65,7 @@ public class FunctionManagerImpl implements FunctionManager {
 
         final String channel;
         final String binderName;
-        final ReadStream readStream;
+        final LogReadStream readStream;
         final Function<BsonObject, Boolean> eventFilter;
         final Function<BsonObject, String> docIDSelector;
         final BiFunction<BsonObject, Delivery, BsonObject> function;
@@ -94,7 +94,7 @@ public class FunctionManagerImpl implements FunctionManager {
             if (docID == null) {
                 throw new IllegalArgumentException("No doc ID found in event " + event);
             }
-            docManager.findByID(binderName, docID).handle((doc, t) -> {
+            docManager.get(binderName, docID).handle((doc, t) -> {
                 if (t == null) {
                     try {
                         if (doc == null) {
@@ -103,7 +103,7 @@ public class FunctionManagerImpl implements FunctionManager {
                         Delivery delivery = new DeliveryImpl(channel, frame.getLong(Codec.RECEV_TIMESTAMP),
                                 frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT));
                         BsonObject updated = function.apply(doc, delivery);
-                        CompletableFuture<Void> cfSaved = docManager.save(binderName, docID, updated);
+                        CompletableFuture<Void> cfSaved = docManager.put(binderName, docID, updated);
                         cfSaved.handle((v, t3) -> {
                             if (t3 == null) {
                                 // Saved OK update last update sequence TODO
@@ -111,7 +111,7 @@ public class FunctionManagerImpl implements FunctionManager {
                                 // TODO how to handle exceptions?
                                 log.error("Failed to save document", t3);
                             }
-                           return null;
+                            return null;
                         });
                     } catch (Throwable t2) {
                         // TODO how to handle exceptions?

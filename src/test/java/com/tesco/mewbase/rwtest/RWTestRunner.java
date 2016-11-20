@@ -65,7 +65,7 @@ public class RWTestRunner {
             }
             long end = System.currentTimeMillis();
             long fsMB = FILE_SIZE / (1024 * 1024);
-            double rate = 1000 * (fsMB / (double) (end - start));
+            double rate = 1000 * (fsMB / (double)(end - start));
             log.info("{} Write time taken {} ms, rate = {} Mb/s cs {}", test.getClass().getName(), end - start, rate, checkSum);
         }
         {
@@ -78,7 +78,7 @@ public class RWTestRunner {
             }
             long end = System.currentTimeMillis();
             long fsMB = FILE_SIZE / (1024 * 1024);
-            double rate = 1000 * (fsMB / (double) (end - start));
+            double rate = 1000 * (fsMB / (double)(end - start));
             log.info("{} read time taken {} ms, rate = {} Mb/s cs {}", test.getClass().getName(), end - start, rate, checkSum);
         }
     }
@@ -92,7 +92,7 @@ public class RWTestRunner {
             long pos = 0;
             // We fill the file in chunks in case it is v. big - we don't want to allocate a huge byte buffer
             while (pos < size) {
-                int writeSize = (int) Math.min(MAX_FILL_BUFFER_SIZE, size - pos);
+                int writeSize = (int)Math.min(MAX_FILL_BUFFER_SIZE, size - pos);
                 buff.limit(writeSize);
                 buff.position(0);
                 ch.position(pos);

@@ -6,9 +6,6 @@ import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.net.NetClientOptions;
-import io.vertx.core.net.NetServerOptions;
-import io.vertx.core.net.PemKeyCertOptions;
-import io.vertx.core.net.PemTrustOptions;
 import io.vertx.ext.unit.TestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,13 +52,11 @@ public class ServerTestBase extends MewbaseTestBase {
         super.tearDown(context);
     }
 
-    protected ServerOptions createServerOptions(File logDir) {
+    protected ServerOptions createServerOptions(File logDir) throws Exception {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
-
-
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions)
-                .setNetServerOptions(new NetServerOptions());
+                .setFileLogManagerOptions(fileLogManagerOptions).setBinders(new String[]{TEST_BINDER1})
+                .setDocsDir(testFolder.newFolder().getPath());
     }
 
     protected ClientOptions createClientOptions() {

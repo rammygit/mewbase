@@ -3,34 +3,22 @@ package com.tesco.mewbase.server;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import io.vertx.core.net.NetServerOptions;
 
+import java.util.Arrays;
+
 /**
  * Created by tim on 22/09/16.
  */
 public class ServerOptions {
 
-    private String host = "0.0.0.0";
-    private int port = 7451;
+    public static final String DEFAULT_HOST = "0.0.0.0";
+    public static final int DEFAULT_PORT = 7451;
+    public static final String DEFAULT_DOCS_DIR = "docs";
+
     private String[] channels;
-    private FileLogManagerOptions fileLogManagerOptions;
-    private NetServerOptions netServerOptions;
-
-    public String getHost() {
-        return host;
-    }
-
-    public ServerOptions setHost(String host) {
-        this.host = host;
-        return this;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public ServerOptions setPort(int port) {
-        this.port = port;
-        return this;
-    }
+    private FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions();
+    private NetServerOptions netServerOptions = new NetServerOptions().setPort(DEFAULT_PORT).setHost(DEFAULT_HOST);
+    private String docsDir = DEFAULT_DOCS_DIR;
+    private String[] binders;
 
     public String[] getChannels() {
         return channels;
@@ -57,5 +45,52 @@ public class ServerOptions {
     public ServerOptions setNetServerOptions(NetServerOptions netServerOptions) {
         this.netServerOptions = netServerOptions;
         return this;
+    }
+
+    public String getDocsDir() {
+        return docsDir;
+    }
+
+    public ServerOptions setDocsDir(String docsDir) {
+        this.docsDir = docsDir;
+        return this;
+    }
+
+    public String[] getBinders() {
+        return binders;
+    }
+
+    public ServerOptions setBinders(String[] binders) {
+        this.binders = binders;
+        return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ServerOptions that = (ServerOptions)o;
+
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        if (!Arrays.equals(channels, that.channels)) return false;
+        if (fileLogManagerOptions != null ? !fileLogManagerOptions.equals(that.fileLogManagerOptions) : that.fileLogManagerOptions != null)
+            return false;
+        if (netServerOptions != null ? !netServerOptions.equals(that.netServerOptions) : that.netServerOptions != null)
+            return false;
+        if (docsDir != null ? !docsDir.equals(that.docsDir) : that.docsDir != null) return false;
+        // Probably incorrect - comparing Object[] arrays with Arrays.equals
+        return Arrays.equals(binders, that.binders);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Arrays.hashCode(channels);
+        result = 31 * result + (fileLogManagerOptions != null ? fileLogManagerOptions.hashCode() : 0);
+        result = 31 * result + (netServerOptions != null ? netServerOptions.hashCode() : 0);
+        result = 31 * result + (docsDir != null ? docsDir.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(binders);
+        return result;
     }
 }
