@@ -33,6 +33,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
     private final Map<Integer, QueryState> queryStates = new ConcurrentHashMap<>();
+
     private MewbaseAuthProvider authProvider;
 
     private boolean authorised;

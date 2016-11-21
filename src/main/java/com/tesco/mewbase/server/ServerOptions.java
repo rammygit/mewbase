@@ -20,6 +20,7 @@ public class ServerOptions {
     private NetServerOptions netServerOptions = new NetServerOptions().setPort(DEFAULT_PORT).setHost(DEFAULT_HOST);
     private String docsDir = DEFAULT_DOCS_DIR;
     private String[] binders;
+
     private MewbaseAuthProvider authProvider;
 
     public String[] getChannels() {
