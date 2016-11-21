@@ -3,7 +3,7 @@ package com.tesco.mewbase.client.impl;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.ClientDelivery;
 import com.tesco.mewbase.client.Subscription;
-import com.tesco.mewbase.server.impl.Codec;
+import com.tesco.mewbase.server.impl.Protocol;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
@@ -72,8 +72,8 @@ public class SubscriptionImpl implements Subscription {
             return;
         }
         checkContext();
-        ClientDelivery delivery = new ClientDeliveryImpl(channel, frame.getLong(Codec.RECEV_TIMESTAMP),
-                frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT), this, size);
+        ClientDelivery delivery = new ClientDeliveryImpl(channel, frame.getLong(Protocol.RECEV_TIMESTAMP),
+                frame.getLong(Protocol.RECEV_POS), frame.getBsonObject(Protocol.RECEV_EVENT), this, size);
         if (!paused) {
             handler.accept(delivery);
         } else {

@@ -9,7 +9,7 @@ import com.tesco.mewbase.log.LogReadStream;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.net.NetSocket;
+import io.vertx.core.parsetools.RecordParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +26,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     private final static Logger logger = LoggerFactory.getLogger(ConnectionImpl.class);
 
     private final ServerImpl server;
-    private final NetSocket socket;
+    private final TransportConnection transportConnection;
     private final Context context;
     private final DocManager docManager;
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
@@ -37,10 +37,12 @@ public class ConnectionImpl implements ServerFrameHandler {
     private long writeSeq;
     private long expectedRespNo;
 
-    public ConnectionImpl(ServerImpl server, NetSocket netSocket, Context context, DocManager docManager) {
-        netSocket.handler(new Codec(this).recordParser());
+    public ConnectionImpl(ServerImpl server, TransportConnection transportConnection, Context context, DocManager docManager) {
+        Protocol protocol = new Protocol(this);
+        RecordParser recordParser = protocol.recordParser();
+        transportConnection.handler(recordParser::handle);
         this.server = server;
-        this.socket = netSocket;
+        this.transportConnection = transportConnection;
         this.context = context;
         this.docManager = docManager;
     }
@@ -52,16 +54,16 @@ public class ConnectionImpl implements ServerFrameHandler {
         // TODO version checking
         authorised = true;
         BsonObject resp = new BsonObject();
-        resp.put(Codec.RESPONSE_OK, true);
-        writeResponse(Codec.RESPONSE_FRAME, resp, getWriteSeq());
+        resp.put(Protocol.RESPONSE_OK, true);
+        writeResponse(Protocol.RESPONSE_FRAME, resp, getWriteSeq());
     }
 
     @Override
     public void handlePublish(BsonObject frame) {
         checkContext();
         checkAuthorised();
-        String channel = frame.getString(Codec.PUBLISH_CHANNEL);
-        BsonObject event = frame.getBsonObject(Codec.PUBLISH_EVENT);
+        String channel = frame.getString(Protocol.PUBLISH_CHANNEL);
+        BsonObject event = frame.getBsonObject(Protocol.PUBLISH_EVENT);
         if (channel == null) {
             logAndClose("No channel in PUB");
             return;
@@ -73,19 +75,19 @@ public class ConnectionImpl implements ServerFrameHandler {
         long order = getWriteSeq();
         Log log = server.getLog(channel);
         BsonObject record = new BsonObject();
-        record.put(Codec.RECEV_TIMESTAMP, System.currentTimeMillis());
-        record.put(Codec.RECEV_EVENT, event);
+        record.put(Protocol.RECEV_TIMESTAMP, System.currentTimeMillis());
+        record.put(Protocol.RECEV_EVENT, event);
         CompletableFuture<Long> cf = log.append(record);
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();
             if (ex == null) {
-                resp.put(Codec.RESPONSE_OK, true);
+                resp.put(Protocol.RESPONSE_OK, true);
             } else {
                 // TODO error code
-                resp.put(Codec.RESPONSE_OK, false).put(Codec.RESPONSE_ERRMSG, "Failed to persist");
+                resp.put(Protocol.RESPONSE_OK, false).put(Protocol.RESPONSE_ERRMSG, "Failed to persist");
             }
-            writeResponse(Codec.RESPONSE_FRAME, resp, order);
+            writeResponse(Protocol.RESPONSE_FRAME, resp, order);
             return null;
         });
 
@@ -113,15 +115,15 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handleSubscribe(BsonObject frame) {
         checkContext();
         checkAuthorised();
-        String channel = frame.getString(Codec.SUBSCRIBE_CHANNEL);
+        String channel = frame.getString(Protocol.SUBSCRIBE_CHANNEL);
         if (channel == null) {
             logAndClose("No channel in SUBSCRIBE");
             return;
         }
-        Long startSeq = frame.getLong(Codec.SUBSCRIBE_STARTPOS);
-        Long startTimestamp = frame.getLong(Codec.SUBSCRIBE_STARTTIMESTAMP);
-        String durableID = frame.getString(Codec.SUBSCRIBE_DURABLEID);
-        BsonObject matcher = frame.getBsonObject(Codec.SUBSCRIBE_MATCHER);
+        Long startSeq = frame.getLong(Protocol.SUBSCRIBE_STARTPOS);
+        Long startTimestamp = frame.getLong(Protocol.SUBSCRIBE_STARTTIMESTAMP);
+        String durableID = frame.getString(Protocol.SUBSCRIBE_DURABLEID);
+        BsonObject matcher = frame.getBsonObject(Protocol.SUBSCRIBE_MATCHER);
         SubDescriptor subDescriptor = new SubDescriptor().setStartPos(startSeq == null ? -1 : startSeq).setStartTimestamp(startTimestamp)
                 .setMatcher(matcher).setDurableID(durableID).setChannel(channel);
         int subID = subSeq++;
@@ -135,9 +137,9 @@ public class ConnectionImpl implements ServerFrameHandler {
         SubscriptionImpl subscription = new SubscriptionImpl(this, subID, readStream);
         subscriptionMap.put(subID, subscription);
         BsonObject resp = new BsonObject();
-        resp.put(Codec.RESPONSE_OK, true);
-        resp.put(Codec.SUBRESPONSE_SUBID, subID);
-        writeResponse(Codec.SUBRESPONSE_FRAME, resp, getWriteSeq());
+        resp.put(Protocol.RESPONSE_OK, true);
+        resp.put(Protocol.SUBRESPONSE_SUBID, subID);
+        writeResponse(Protocol.SUBRESPONSE_FRAME, resp, getWriteSeq());
         logger.trace("Subscribed channel: {} startSeq {}", channel, startSeq);
     }
 
@@ -145,7 +147,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handleUnsubscribe(BsonObject frame) {
         checkContext();
         checkAuthorised();
-        String subID = frame.getString(Codec.UNSUBSCRIBE_SUBID);
+        String subID = frame.getString(Protocol.UNSUBSCRIBE_SUBID);
         if (subID == null) {
             logAndClose("No subID in UNSUBSCRIBE");
             return;
@@ -157,20 +159,20 @@ public class ConnectionImpl implements ServerFrameHandler {
         }
         subscription.close();
         BsonObject resp = new BsonObject();
-        resp.put(Codec.RESPONSE_OK, true);
-        writeResponse(Codec.RESPONSE_FRAME, resp, getWriteSeq());
+        resp.put(Protocol.RESPONSE_OK, true);
+        writeResponse(Protocol.RESPONSE_FRAME, resp, getWriteSeq());
     }
 
     @Override
     public void handleAckEv(BsonObject frame) {
         checkContext();
         checkAuthorised();
-        String subID = frame.getString(Codec.ACKEV_SUBID);
+        String subID = frame.getString(Protocol.ACKEV_SUBID);
         if (subID == null) {
             logAndClose("No subID in ACKEV");
             return;
         }
-        Integer bytes = frame.getInteger(Codec.ACKEV_BYTES);
+        Integer bytes = frame.getInteger(Protocol.ACKEV_BYTES);
         if (bytes == null) {
             logAndClose("No bytes in ACKEV");
             return;
@@ -187,10 +189,10 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handleQuery(BsonObject frame) {
         checkContext();
         checkAuthorised();
-        int queryID = frame.getInteger(Codec.QUERY_QUERYID);
-        String docID = frame.getString(Codec.QUERY_DOCID);
-        String binder = frame.getString(Codec.QUERY_BINDER);
-        BsonObject matcher = frame.getBsonObject(Codec.QUERY_MATCHER);
+        int queryID = frame.getInteger(Protocol.QUERY_QUERYID);
+        String docID = frame.getString(Protocol.QUERY_DOCID);
+        String binder = frame.getString(Protocol.QUERY_BINDER);
+        BsonObject matcher = frame.getBsonObject(Protocol.QUERY_MATCHER);
         if (docID != null) {
             CompletableFuture<BsonObject> cf = docManager.get(binder, docID);
             cf.thenAccept(doc -> writeQueryResult(doc, queryID, true));
@@ -208,11 +210,11 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handleQueryAck(BsonObject frame) {
         checkContext();
         checkAuthorised();
-        Integer queryID = frame.getInteger(Codec.QUERYACK_QUERYID);
+        Integer queryID = frame.getInteger(Protocol.QUERYACK_QUERYID);
         if (queryID == null) {
             logAndClose("No queryID in QueryAck");
         } else {
-            Integer bytes = frame.getInteger(Codec.QUERYACK_BYTES);
+            Integer bytes = frame.getInteger(Protocol.QUERYACK_BYTES);
             if (bytes == null) {
                 logAndClose("No bytes in QueryAck");
                 return;
@@ -232,26 +234,26 @@ public class ConnectionImpl implements ServerFrameHandler {
 
     protected Buffer writeQueryResult(BsonObject doc, int queryID, boolean last) {
         BsonObject res = new BsonObject();
-        res.put(Codec.QUERYRESULT_QUERYID, queryID);
-        res.put(Codec.QUERYRESULT_RESULT, doc);
-        res.put(Codec.QUERYRESULT_LAST, last);
-        return writeNonResponse(Codec.QUERYRESULT_FRAME, res);
+        res.put(Protocol.QUERYRESULT_QUERYID, queryID);
+        res.put(Protocol.QUERYRESULT_RESULT, doc);
+        res.put(Protocol.QUERYRESULT_LAST, last);
+        return writeNonResponse(Protocol.QUERYRESULT_FRAME, res);
     }
 
     protected Buffer writeNonResponse(String frameName, BsonObject frame) {
-        Buffer buff = Codec.encodeFrame(frameName, frame);
+        Buffer buff = Protocol.encodeFrame(frameName, frame);
         // TODO compare performance of writing directly in all cases and via context
         Context curr = Vertx.currentContext();
         if (curr != context) {
-            context.runOnContext(v -> socket.write(buff));
+            context.runOnContext(v -> transportConnection.write(buff));
         } else {
-            socket.write(buff);
+            transportConnection.write(buff);
         }
         return buff;
     }
 
     protected void writeResponse(String frameName, BsonObject frame, long order) {
-        Buffer buff = Codec.encodeFrame(frameName, frame);
+        Buffer buff = Protocol.encodeFrame(frameName, frame);
         // TODO compare performance of writing directly in all cases and via context
         Context curr = Vertx.currentContext();
         if (curr != context) {
@@ -307,7 +309,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     }
 
     protected void writeResponseOrdered0(Buffer buff) {
-        socket.write(buff);
+        transportConnection.write(buff);
         expectedRespNo++;
         checkWrap(expectedRespNo);
     }
@@ -336,7 +338,7 @@ public class ConnectionImpl implements ServerFrameHandler {
 
     protected void close() {
         authorised = false;
-        socket.close();
+        transportConnection.close();
         server.removeConnection(this);
         for (QueryState queryState : queryStates.values()) {
             queryState.close();

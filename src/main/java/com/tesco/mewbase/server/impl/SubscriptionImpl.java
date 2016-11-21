@@ -41,9 +41,9 @@ public class SubscriptionImpl {
     // This can be called on different threads depending on whether the frame is coming from file or direct
     private synchronized void handleEvent0(long pos, BsonObject frame) {
         frame = frame.copy();
-        frame.put(Codec.RECEV_SUBID, id);
-        frame.put(Codec.RECEV_POS, pos);
-        Buffer buff = connection.writeNonResponse(Codec.RECEV_FRAME, frame);
+        frame.put(Protocol.RECEV_SUBID, id);
+        frame.put(Protocol.RECEV_POS, pos);
+        Buffer buff = connection.writeNonResponse(Protocol.RECEV_FRAME, frame);
         unackedBytes += buff.length();
         if (unackedBytes > MAX_UNACKED_BYTES) {
             readStream.pause();
