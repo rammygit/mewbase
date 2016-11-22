@@ -1,5 +1,6 @@
 package com.tesco.mewbase;
 
+import com.tesco.mewbase.auth.DummyAuthProvider;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.ClientDelivery;
 import com.tesco.mewbase.client.ClientOptions;
@@ -30,7 +31,8 @@ public class SSLPubSubTest extends ServerTestBase {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
 
         ServerOptions serverOptions = new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions);
+                .setFileLogManagerOptions(fileLogManagerOptions)
+                .setAuthProvider(new DummyAuthProvider(USERNAME, PASSWORD));
 
         serverOptions.getNetServerOptions().setSsl(true).setPemKeyCertOptions(
                 new PemKeyCertOptions()
@@ -48,7 +50,8 @@ public class SSLPubSubTest extends ServerTestBase {
                 .setPemTrustOptions(
                         new PemTrustOptions().addCertPath(CERT_PATH)
                 );
-        return new ClientOptions().setNetClientOptions(netClientOptions);
+        BsonObject authInfo = new BsonObject().put("username", USERNAME).put("password", PASSWORD);
+        return new ClientOptions().setNetClientOptions(netClientOptions).setAuthInfo(authInfo);
     }
 
     @Test

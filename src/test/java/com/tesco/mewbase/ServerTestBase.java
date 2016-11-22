@@ -24,8 +24,8 @@ public class ServerTestBase extends MewbaseTestBase {
 
     private final static String CERT_PATH = "src/test/resources/server-cert.pem";
     private final static String KEY_PATH = "src/test/resources/server-key.pem";
-    private final static String USERNAME = "mewbase";
-    private final static String PASSWORD = "password";
+    protected final static String USERNAME = "mewbase";
+    protected final static String PASSWORD = "password";
 
     protected Server server;
     protected Client client;

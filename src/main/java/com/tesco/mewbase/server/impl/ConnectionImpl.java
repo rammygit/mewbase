@@ -2,7 +2,6 @@ package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.auth.MewbaseAuthProvider;
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.DocReadStream;
@@ -78,7 +77,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handlePublish(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.RESPONSE_FRAME);
         String channel = frame.getString(Codec.PUBLISH_CHANNEL);
         BsonObject event = frame.getBsonObject(Codec.PUBLISH_EVENT);
         if (channel == null) {
@@ -113,25 +112,42 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleStartTx(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.RESPONSE_FRAME);
+
+        if (!authenticated) {
+            return;
+        }
     }
 
     @Override
     public void handleCommitTx(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.RESPONSE_FRAME);
+
+        if (!authenticated) {
+            return;
+        }
     }
 
     @Override
     public void handleAbortTx(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.RESPONSE_FRAME);
+
+        if (!authenticated) {
+            return;
+        }
     }
 
     @Override
     public void handleSubscribe(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.SUBRESPONSE_FRAME);
+
+        if (!authenticated) {
+            return;
+        }
+
         String channel = frame.getString(Codec.SUBSCRIBE_CHANNEL);
         if (channel == null) {
             logAndClose("No channel in SUBSCRIBE");
@@ -158,12 +174,19 @@ public class ConnectionImpl implements ServerFrameHandler {
         resp.put(Codec.SUBRESPONSE_SUBID, subID);
         writeResponse(Codec.SUBRESPONSE_FRAME, resp, getWriteSeq());
         logger.trace("Subscribed channel: {} startSeq {}", channel, startSeq);
+
+
     }
 
     @Override
     public void handleUnsubscribe(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.RESPONSE_FRAME);
+
+        if (!authenticated) {
+            return;
+        }
+
         String subID = frame.getString(Codec.UNSUBSCRIBE_SUBID);
         if (subID == null) {
             logAndClose("No subID in UNSUBSCRIBE");
@@ -183,7 +206,12 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleAckEv(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.RESPONSE_FRAME);
+
+        if (!authenticated) {
+            return;
+        }
+
         String subID = frame.getString(Codec.ACKEV_SUBID);
         if (subID == null) {
             logAndClose("No subID in ACKEV");
@@ -205,7 +233,12 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleQuery(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.RESPONSE_FRAME);
+
+        if (!authenticated) {
+            return;
+        }
+
         int queryID = frame.getInteger(Codec.QUERY_QUERYID);
         String docID = frame.getString(Codec.QUERY_DOCID);
         String binder = frame.getString(Codec.QUERY_BINDER);
@@ -226,7 +259,12 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleQueryAck(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.RESPONSE_FRAME);
+
+        if (!authenticated) {
+            return;
+        }
+
         Integer queryID = frame.getInteger(Codec.QUERYACK_QUERYID);
         if (queryID == null) {
             logAndClose("No queryID in QueryAck");
@@ -246,7 +284,11 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handlePing(BsonObject frame) {
         checkContext();
-        checkAuthenticated();
+        checkAuthenticated(Codec.RESPONSE_FRAME);
+
+        if (!authenticated) {
+            return;
+        }
     }
 
     protected Buffer writeQueryResult(BsonObject doc, int queryID, boolean last) {
@@ -331,9 +373,13 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkWrap(expectedRespNo);
     }
 
-    protected void checkAuthenticated() {
+    protected void checkAuthenticated(String frameName) {
         if (!authenticated) {
-            throw new MewException("Attempt to use unauthenticated connection");
+            BsonObject resp = new BsonObject();
+            resp.put(Codec.RESPONSE_OK, false);
+            resp.put(Codec.RESPONSE_ERRMSG, "Not authenticated!");
+            writeResponse(frameName, resp, getWriteSeq());
+            logAndClose("Not authenticated");
         }
     }
 
