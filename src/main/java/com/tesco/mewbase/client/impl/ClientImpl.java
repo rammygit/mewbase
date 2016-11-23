@@ -244,18 +244,32 @@ public class ClientImpl implements Client, ClientFrameHandler {
         });
     }
 
-
     protected void doUnsubscribe(int subID) {
         subscriptionMap.remove(subID);
         BsonObject frame = new BsonObject();
-        frame.put("SubID", subID);
+        frame.put(Codec.UNSUBSCRIBE_SUBID, subID);
         Buffer buffer = Codec.encodeFrame(Codec.UNSUBSCRIBE_FRAME, frame);
-        write(buffer);
+        CompletableFuture cf = new CompletableFuture();
+        write(cf, buffer, resp -> {
+            // Currently do nothing
+        });
     }
 
-    protected void doAckEv(int subID, int sizeBytes) {
+    protected void doSubClose(int subID) {
+        subscriptionMap.remove(subID);
+        BsonObject frame = new BsonObject();
+        frame.put(Codec.UNSUBSCRIBE_SUBID, subID);
+        Buffer buffer = Codec.encodeFrame(Codec.UNSUBSCRIBE_FRAME, frame);
+        CompletableFuture cf = new CompletableFuture();
+        write(cf, buffer, resp -> {
+            // Currently do nothing
+        });
+    }
+
+    protected void doAckEv(int subID, long pos, int sizeBytes) {
         BsonObject frame = new BsonObject();
         frame.put(Codec.ACKEV_SUBID, subID);
+        frame.put(Codec.ACKEV_POS, pos);
         frame.put(Codec.ACKEV_BYTES, sizeBytes);
         Buffer buffer = Codec.encodeFrame(Codec.ACKEV_FRAME, frame);
         write(buffer);

@@ -21,6 +21,8 @@ public interface FrameHandler {
 
     void handleSubscribe(BsonObject frame);
 
+    void handleSubClose(BsonObject frame);
+
     void handleUnsubscribe(BsonObject frame);
 
     void handleSubResponse(BsonObject frame);

@@ -15,7 +15,15 @@ public interface Subscription {
 
     // TODO return CompletableFuture<Void> ?
 
+    /**
+     * Unsubscribe a durable subscription
+     */
     void unsubscribe();
+
+    /**
+     * Close the subscription
+     */
+    void close();
 
     // Blocking yuck!
 

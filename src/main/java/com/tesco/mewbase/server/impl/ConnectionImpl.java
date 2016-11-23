@@ -5,7 +5,6 @@ import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.DocReadStream;
 import com.tesco.mewbase.log.Log;
-import com.tesco.mewbase.log.LogReadStream;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -28,7 +27,6 @@ public class ConnectionImpl implements ServerFrameHandler {
     private final ServerImpl server;
     private final NetSocket socket;
     private final Context context;
-    private final DocManager docManager;
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
     private final Map<Integer, QueryState> queryStates = new ConcurrentHashMap<>();
@@ -37,12 +35,11 @@ public class ConnectionImpl implements ServerFrameHandler {
     private long writeSeq;
     private long expectedRespNo;
 
-    public ConnectionImpl(ServerImpl server, NetSocket netSocket, Context context, DocManager docManager) {
+    public ConnectionImpl(ServerImpl server, NetSocket netSocket, Context context) {
         netSocket.handler(new Codec(this).recordParser());
         this.server = server;
         this.socket = netSocket;
         this.context = context;
-        this.docManager = docManager;
     }
 
     @Override
@@ -88,7 +85,6 @@ public class ConnectionImpl implements ServerFrameHandler {
             writeResponse(Codec.RESPONSE_FRAME, resp, order);
             return null;
         });
-
     }
 
     @Override
@@ -118,12 +114,14 @@ public class ConnectionImpl implements ServerFrameHandler {
             logAndClose("No channel in SUBSCRIBE");
             return;
         }
-        Long startSeq = frame.getLong(Codec.SUBSCRIBE_STARTPOS);
+        Long startPos = frame.getLong(Codec.SUBSCRIBE_STARTPOS);
         Long startTimestamp = frame.getLong(Codec.SUBSCRIBE_STARTTIMESTAMP);
         String durableID = frame.getString(Codec.SUBSCRIBE_DURABLEID);
         BsonObject matcher = frame.getBsonObject(Codec.SUBSCRIBE_MATCHER);
-        SubDescriptor subDescriptor = new SubDescriptor().setStartPos(startSeq == null ? -1 : startSeq).setStartTimestamp(startTimestamp)
-                .setMatcher(matcher).setDurableID(durableID).setChannel(channel);
+
+        SubDescriptor subDescriptor =
+                new SubDescriptor().setStartPos(startPos).setStartTimestamp(startTimestamp).setDurableID(durableID)
+                .setMatcher(matcher).setChannel(channel);
         int subID = subSeq++;
         checkWrap(subSeq);
         Log log = server.getLog(channel);
@@ -131,41 +129,31 @@ public class ConnectionImpl implements ServerFrameHandler {
             // TODO send error back to client
             throw new IllegalStateException("No such channel " + channel);
         }
-        LogReadStream readStream = log.subscribe(subDescriptor);
-        SubscriptionImpl subscription = new SubscriptionImpl(this, subID, readStream);
+        SubscriptionImpl subscription = new SubscriptionImpl(this, subID, subDescriptor);
         subscriptionMap.put(subID, subscription);
         BsonObject resp = new BsonObject();
         resp.put(Codec.RESPONSE_OK, true);
         resp.put(Codec.SUBRESPONSE_SUBID, subID);
         writeResponse(Codec.SUBRESPONSE_FRAME, resp, getWriteSeq());
-        logger.trace("Subscribed channel: {} startSeq {}", channel, startSeq);
+        logger.trace("Subscribed channel: {} startSeq {}", channel, startPos);
+    }
+
+    @Override
+    public void handleSubClose(BsonObject frame) {
+        handleCloseUnsubscribeSub(frame, false);
     }
 
     @Override
     public void handleUnsubscribe(BsonObject frame) {
-        checkContext();
-        checkAuthorised();
-        String subID = frame.getString(Codec.UNSUBSCRIBE_SUBID);
-        if (subID == null) {
-            logAndClose("No subID in UNSUBSCRIBE");
-            return;
-        }
-        SubscriptionImpl subscription = subscriptionMap.remove(subID);
-        if (subscription == null) {
-            logAndClose("Invalid subID in UNSUBSCRIBE");
-            return;
-        }
-        subscription.close();
-        BsonObject resp = new BsonObject();
-        resp.put(Codec.RESPONSE_OK, true);
-        writeResponse(Codec.RESPONSE_FRAME, resp, getWriteSeq());
+        handleCloseUnsubscribeSub(frame, true);
     }
+
 
     @Override
     public void handleAckEv(BsonObject frame) {
         checkContext();
         checkAuthorised();
-        String subID = frame.getString(Codec.ACKEV_SUBID);
+        Integer subID = frame.getInteger(Codec.ACKEV_SUBID);
         if (subID == null) {
             logAndClose("No subID in ACKEV");
             return;
@@ -175,12 +163,17 @@ public class ConnectionImpl implements ServerFrameHandler {
             logAndClose("No bytes in ACKEV");
             return;
         }
+        Long pos = frame.getLong(Codec.ACKEV_POS);
+        if (pos == null) {
+            logAndClose("No pos in ACKEV");
+            return;
+        }
         SubscriptionImpl subscription = subscriptionMap.get(subID);
         if (subscription == null) {
             logAndClose("Invalid subID in ACKEV");
             return;
         }
-        subscription.handleAckEv(bytes);
+        subscription.handleAckEv(pos, bytes);
     }
 
     @Override
@@ -191,6 +184,7 @@ public class ConnectionImpl implements ServerFrameHandler {
         String docID = frame.getString(Codec.QUERY_DOCID);
         String binder = frame.getString(Codec.QUERY_BINDER);
         BsonObject matcher = frame.getBsonObject(Codec.QUERY_MATCHER);
+        DocManager docManager = server().docManager();
         if (docID != null) {
             CompletableFuture<BsonObject> cf = docManager.get(binder, docID);
             cf.thenAccept(doc -> writeQueryResult(doc, queryID, true));
@@ -341,6 +335,32 @@ public class ConnectionImpl implements ServerFrameHandler {
         for (QueryState queryState : queryStates.values()) {
             queryState.close();
         }
+    }
+
+    protected ServerImpl server() {
+        return server;
+    }
+
+    private void handleCloseUnsubscribeSub(BsonObject frame, boolean unsubscribe) {
+        checkContext();
+        checkAuthorised();
+        Integer subID = frame.getInteger(Codec.UNSUBSCRIBE_SUBID);
+        if (subID == null) {
+            logAndClose("No subID in UNSUBSCRIBE");
+            return;
+        }
+        SubscriptionImpl subscription = subscriptionMap.remove(subID);
+        if (subscription == null) {
+            logAndClose("Invalid subID in UNSUBSCRIBE");
+            return;
+        }
+        subscription.close();
+        if (unsubscribe) {
+            subscription.unsubscribe();
+        }
+        BsonObject resp = new BsonObject();
+        resp.put(Codec.RESPONSE_OK, true);
+        writeResponse(Codec.RESPONSE_FRAME, resp, getWriteSeq());
     }
 
     private static final class WriteHolder implements Comparable<WriteHolder> {

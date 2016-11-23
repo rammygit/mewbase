@@ -41,6 +41,10 @@ public class ServerImpl implements Server {
     private final DocManager docManager;
     private final FunctionManager functionManager;
 
+    private static final String SYSTEM_BINDER_PREFIX = "_mb.";
+    public static final String DURABLE_SUBS_BINDER_NAME = SYSTEM_BINDER_PREFIX + "durableSubs";
+    private static final String[] SYSTEM_BINDERS = new String[] {DURABLE_SUBS_BINDER_NAME};
+
     protected ServerImpl(Vertx vertx, ServerOptions serverOptions) {
         this.vertx = vertx;
         this.serverOptions = serverOptions;
@@ -63,7 +67,7 @@ public class ServerImpl implements Server {
         String[] channels = serverOptions.getChannels();
         String[] binders = serverOptions.getBinders();
         CompletableFuture[] all = new CompletableFuture[procs + (channels != null ? channels.length : 0) + 1 +
-                (binders != null ? binders.length : 0)];
+                (binders != null ? binders.length : 0) + SYSTEM_BINDERS.length];
 
         for (int i = 0; i < procs; i++) {
             NetServer netServer = vertx.createNetServer(serverOptions.getNetServerOptions());
@@ -87,6 +91,10 @@ public class ServerImpl implements Server {
             }
         }
         all[procs++] = docManager.start();
+        // Start the system binders
+        for (String systemBinder: SYSTEM_BINDERS) {
+            all[procs++] = docManager.createBinder(systemBinder);
+        }
         // Start the binders
         if (serverOptions.getBinders() != null) {
             for (String binder : serverOptions.getBinders()) {
@@ -132,7 +140,7 @@ public class ServerImpl implements Server {
     }
 
     private void connectHandler(NetSocket socket) {
-        ConnectionImpl conn = new ConnectionImpl(this, socket, Vertx.currentContext(), docManager);
+        ConnectionImpl conn = new ConnectionImpl(this, socket, Vertx.currentContext());
         connections.add(conn);
     }
 
@@ -142,6 +150,10 @@ public class ServerImpl implements Server {
 
     protected Log getLog(String channel) {
         return logManager.getLog(channel);
+    }
+
+    protected DocManager docManager() {
+        return docManager;
     }
 
 }

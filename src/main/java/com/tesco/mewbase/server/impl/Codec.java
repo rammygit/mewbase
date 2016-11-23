@@ -28,6 +28,7 @@ public class Codec {
     public static final String ABORTTX_FRAME = "ABORTTX";
     public static final String SUBSCRIBE_FRAME = "SUBSCRIBE";
     public static final String UNSUBSCRIBE_FRAME = "UNSUBSCRIBE";
+    public static final String SUBCLOSE_FRAME = "SUBCLOSE";
     public static final String SUBRESPONSE_FRAME = "SUBRESPONSE";
     public static final String RECEV_FRAME = "RECEV";
     public static final String ACKEV_FRAME = "ACKEV";
@@ -66,6 +67,8 @@ public class Codec {
 
     public static final String UNSUBSCRIBE_SUBID = "subID";
 
+    public static final String CLOSESUB_SUBID = "subID";
+
     public static final String RECEV_SUBID = "subID";
     public static final String RECEV_TIMESTAMP = "timestamp";
     public static final String RECEV_POS = "pos";
@@ -73,6 +76,7 @@ public class Codec {
 
     public static final String ACKEV_SUBID = "subID";
     public static final String ACKEV_BYTES = "bytes";
+    public static final String ACKEV_POS = "pos";
 
     // Query stuff
     public static final String QUERY_QUERYID = "queryID";
@@ -148,6 +152,9 @@ public class Codec {
                 break;
             case SUBSCRIBE_FRAME:
                 frameHandler.handleSubscribe(frame);
+                break;
+            case SUBCLOSE_FRAME:
+                frameHandler.handleSubClose(frame);
                 break;
             case UNSUBSCRIBE_FRAME:
                 frameHandler.handleUnsubscribe(frame);

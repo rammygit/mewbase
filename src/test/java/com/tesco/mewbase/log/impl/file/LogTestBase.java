@@ -68,11 +68,12 @@ public class LogTestBase extends MewbaseTestBase {
         log = flm.getLog(channel);
     }
 
-    protected void saveInfo(int fileNumber, int headPos, int fileHeadPos, boolean shutdown) {
+    protected void saveInfo(int fileNumber, int headPos, int fileHeadPos, int lastWrittenPos, boolean shutdown) {
         BsonObject info = new BsonObject();
         info.put("fileNumber", fileNumber);
         info.put("headPos", headPos);
         info.put("fileHeadPos", fileHeadPos);
+        info.put("lastWrittenPos", lastWrittenPos);
         info.put("shutdown", shutdown);
         saveFileInfo(info);
     }

@@ -57,7 +57,6 @@ public class FileLog implements Log {
     private long expectedSeq;
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
 
-
     public FileLog(Vertx vertx, FileAccess faf, FileLogManagerOptions options, String channel) {
         this.vertx = vertx;
         this.channel = channel;
@@ -288,6 +287,7 @@ public class FileLog implements Log {
         info.put("fileNumber", fileNumber);
         info.put("headPos", headPos);
         info.put("fileHeadPos", filePos);
+        info.put("lastWrittenPos", lastWrittenPos.get());
         info.put("shutdown", shutdown);
         saveFileInfo(info);
     }
@@ -312,6 +312,14 @@ public class FileLog implements Log {
                     throw new MewException("Invalid log info file, negative headPos");
                 }
                 this.headPos = hPos;
+                Integer lwPos = info.getInteger("lastWrittenPos");
+                if (lwPos == null) {
+                    throw new MewException("Invalid log info file, no lastWrittenPos");
+                }
+                if (lwPos < 0) {
+                    throw new MewException("Invalid log info file, negative lastWrittenPos");
+                }
+                this.lastWrittenPos.set(lwPos);
                 Integer fhPos = info.getInteger("fileHeadPos");
                 if (fhPos == null) {
                     throw new MewException("Invalid log info file, no fileHeadPos");

@@ -4,6 +4,8 @@ import com.tesco.mewbase.log.impl.file.BasicFile;
 import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.AsyncFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -11,6 +13,8 @@ import java.util.concurrent.CompletableFuture;
  * Created by tim on 11/10/16.
  */
 public class AFBasicFile implements BasicFile {
+
+    private final static Logger log = LoggerFactory.getLogger(AFBasicFile.class);
 
     private final AsyncFile af;
 
@@ -45,8 +49,14 @@ public class AFBasicFile implements BasicFile {
     }
 
     public CompletableFuture<Void> close() {
-        AsyncResCF<Void> cf = new AsyncResCF<>();
-        af.close(cf);
-        return cf;
+        AsyncResCF<Void> ar = new AsyncResCF<>();
+        af.flush(res -> {
+            if (res.succeeded()) {
+                af.close(ar);
+            } else {
+                ar.completeExceptionally(res.cause());
+            }
+        });
+        return ar;
     }
 }
