@@ -9,7 +9,7 @@ import com.tesco.mewbase.function.FunctionManager;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
 import com.tesco.mewbase.log.LogReadStream;
-import com.tesco.mewbase.server.impl.Codec;
+import com.tesco.mewbase.server.impl.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,8 +85,8 @@ public class FunctionManagerImpl implements FunctionManager {
         }
 
         void handler(long seq, BsonObject frame) {
-            frame.put(Codec.RECEV_POS, seq);
-            BsonObject event = frame.getBsonObject(Codec.RECEV_EVENT);
+            frame.put(Protocol.RECEV_POS, seq);
+            BsonObject event = frame.getBsonObject(Protocol.RECEV_EVENT);
             if (!eventFilter.apply(event)) {
                 return;
             }
@@ -100,8 +100,8 @@ public class FunctionManagerImpl implements FunctionManager {
                         if (doc == null) {
                             doc = new BsonObject().put(ID_FIELD, docID);
                         }
-                        Delivery delivery = new DeliveryImpl(channel, frame.getLong(Codec.RECEV_TIMESTAMP),
-                                frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT));
+                        Delivery delivery = new DeliveryImpl(channel, frame.getLong(Protocol.RECEV_TIMESTAMP),
+                                frame.getLong(Protocol.RECEV_POS), frame.getBsonObject(Protocol.RECEV_EVENT));
                         BsonObject updated = function.apply(doc, delivery);
                         CompletableFuture<Void> cfSaved = docManager.put(binderName, docID, updated);
                         cfSaved.handle((v, t3) -> {
