@@ -4,8 +4,8 @@ import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.impl.lmdb.LmdbDocManager;
-import com.tesco.mewbase.function.FunctionManager;
-import com.tesco.mewbase.function.impl.FunctionManagerImpl;
+import com.tesco.mewbase.function.ProjectionManager;
+import com.tesco.mewbase.function.impl.ProjectionManagerImpl;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
 import com.tesco.mewbase.log.impl.file.FileAccess;
@@ -17,12 +17,9 @@ import com.tesco.mewbase.server.ServerOptions;
 import com.tesco.mewbase.server.impl.transport.net.NetTransport;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ConcurrentHashSet;
-import io.vertx.core.net.NetServer;
-import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -40,7 +37,7 @@ public class ServerImpl implements Server {
     private final Set<ConnectionImpl> connections = new ConcurrentHashSet<>();
     private final LogManager logManager;
     private final DocManager docManager;
-    private final FunctionManager functionManager;
+    private final ProjectionManager projectionManager;
     private final Set<Transport> transports = new ConcurrentHashSet<>();
 
     private static final String SYSTEM_BINDER_PREFIX = "_mb.";
@@ -55,7 +52,7 @@ public class ServerImpl implements Server {
         FileLogManagerOptions options = sOptions == null ? new FileLogManagerOptions() : sOptions;
         this.logManager = new FileLogManager(vertx, options, faf);
         this.docManager = new LmdbDocManager(serverOptions.getDocsDir(), vertx);
-        this.functionManager = new FunctionManagerImpl(docManager, logManager);
+        this.projectionManager = new ProjectionManagerImpl(docManager, logManager);
     }
 
     protected ServerImpl(ServerOptions serverOptions) {
@@ -102,16 +99,16 @@ public class ServerImpl implements Server {
     }
 
     @Override
-    public boolean installFunction(String name, String channel, Function<BsonObject, Boolean> eventFilter,
-                                   String binderName, Function<BsonObject, String> docIDSelector,
-                                   BiFunction<BsonObject, Delivery, BsonObject> function) {
+    public boolean registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
+                                      String binderName, Function<BsonObject, String> docIDSelector,
+                                      BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
 
-        return functionManager.installFunction(name, channel, eventFilter, binderName, docIDSelector, function);
+        return projectionManager.registerProjection(name, channel, eventFilter, binderName, docIDSelector, projectionFunction);
     }
 
     @Override
-    public boolean deleteFunction(String functionName) {
-        return functionManager.deleteFunction(functionName);
+    public boolean unregisterProjection(String name) {
+        return projectionManager.unregisterProjection(name);
     }
 
     protected void removeConnection(ConnectionImpl connection) {

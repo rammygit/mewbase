@@ -32,9 +32,9 @@ public class ShoppingBasketExample {
         Server server = Server.newServer(options);
         server.start().get();
 
-        // Install a function that will respond to add_item events and increase/decrease the quantity of the item in the basket
-        server.installFunction(
-                "basket_add",                                           // function name
+        // Install a projection that will respond to add_item events and increase/decrease the quantity of the item in the basket
+        server.registerProjection(
+                "basket_add",                                           // projection name
                 "orders",                                               // channel name
                 ev -> ev.getString("eventType").equals("add_item"),     // event filter
                 "baskets",                                              // binder name

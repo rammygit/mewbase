@@ -28,7 +28,7 @@ public class QueryTest extends ServerTestBase {
     @Override
     protected void setup(TestContext context) throws Exception {
         super.setup(context);
-        installInsertFunction();
+        installInsertProjection();
         prod = client.createProducer(TEST_CHANNEL_1);
     }
 
@@ -108,8 +108,8 @@ public class QueryTest extends ServerTestBase {
     }
 
 
-    protected void installInsertFunction() {
-        server.installFunction("testfunc", TEST_CHANNEL_1, ev -> true, TEST_BINDER1, ev -> ev.getString("id"),
+    protected void installInsertProjection() {
+        server.registerProjection("testproj", TEST_CHANNEL_1, ev -> true, TEST_BINDER1, ev -> ev.getString("id"),
                 (basket, del) -> del.event());
     }
 

@@ -17,14 +17,14 @@ import static org.junit.Assert.assertEquals;
  * Created by tim on 30/09/16.
  */
 @RunWith(VertxUnitRunner.class)
-public class FunctionTest extends ServerTestBase {
+public class ProjectionTest extends ServerTestBase {
 
-    private final static Logger log = LoggerFactory.getLogger(FunctionTest.class);
+    private final static Logger log = LoggerFactory.getLogger(ProjectionTest.class);
 
     @Test
-    public void testSimpleFunction(TestContext context) throws Exception {
+    public void testSimpleProjection(TestContext context) throws Exception {
 
-        server.installFunction("testfunc", TEST_CHANNEL_1, ev -> true, TEST_BINDER1, ev -> ev.getString("basketID"), (basket, del) ->
+        server.registerProjection("testfunc", TEST_CHANNEL_1, ev -> true, TEST_BINDER1, ev -> ev.getString("basketID"), (basket, del) ->
                 BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
         );
 

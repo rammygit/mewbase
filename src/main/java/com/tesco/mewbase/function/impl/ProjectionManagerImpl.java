@@ -5,7 +5,7 @@ import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.common.impl.DeliveryImpl;
 import com.tesco.mewbase.doc.DocManager;
-import com.tesco.mewbase.function.FunctionManager;
+import com.tesco.mewbase.function.ProjectionManager;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
 import com.tesco.mewbase.log.LogReadStream;
@@ -24,35 +24,35 @@ import static com.tesco.mewbase.doc.DocManager.ID_FIELD;
 /**
  * Created by tim on 30/09/16.
  */
-public class FunctionManagerImpl implements FunctionManager {
+public class ProjectionManagerImpl implements ProjectionManager {
 
-    private final static Logger log = LoggerFactory.getLogger(FunctionManagerImpl.class);
+    private final static Logger log = LoggerFactory.getLogger(ProjectionManagerImpl.class);
 
-    private final Map<String, FuncHolder> functions = new HashMap<>();
+    private final Map<String, ProjectionHolder> projections = new HashMap<>();
 
     private final DocManager docManager;
     private final LogManager logManager;
 
-    public FunctionManagerImpl(DocManager docManager, LogManager logManager) {
+    public ProjectionManagerImpl(DocManager docManager, LogManager logManager) {
         this.docManager = docManager;
         this.logManager = logManager;
     }
 
     @Override
-    public boolean installFunction(String name, String channel, Function<BsonObject, Boolean> eventFilter,
-                                   String binderName, Function<BsonObject, String> docIDSelector,
-                                   BiFunction<BsonObject, Delivery, BsonObject> function) {
-        if (functions.containsKey(name)) {
+    public boolean registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
+                                      String binderName, Function<BsonObject, String> docIDSelector,
+                                      BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
+        if (projections.containsKey(name)) {
             return false;
         }
-        FuncHolder holder = new FuncHolder(channel, binderName, eventFilter, docIDSelector, function);
-        functions.put(name, holder);
+        ProjectionHolder holder = new ProjectionHolder(channel, binderName, eventFilter, docIDSelector, projectionFunction);
+        projections.put(name, holder);
         return true;
     }
 
     @Override
-    public synchronized boolean deleteFunction(String functionName) {
-        FuncHolder holder = functions.remove(functionName);
+    public synchronized boolean unregisterProjection(String functionName) {
+        ProjectionHolder holder = projections.remove(functionName);
         if (holder != null) {
             holder.close();
             return true;
@@ -61,23 +61,23 @@ public class FunctionManagerImpl implements FunctionManager {
         }
     }
 
-    private class FuncHolder {
+    private class ProjectionHolder {
 
         final String channel;
         final String binderName;
         final LogReadStream readStream;
         final Function<BsonObject, Boolean> eventFilter;
         final Function<BsonObject, String> docIDSelector;
-        final BiFunction<BsonObject, Delivery, BsonObject> function;
+        final BiFunction<BsonObject, Delivery, BsonObject> projectionFunction;
 
-        public FuncHolder(String channel, String binderName, Function<BsonObject, Boolean> eventFilter,
-                          Function<BsonObject, String> docIDSelector,
-                          BiFunction<BsonObject, Delivery, BsonObject> function) {
+        public ProjectionHolder(String channel, String binderName, Function<BsonObject, Boolean> eventFilter,
+                                Function<BsonObject, String> docIDSelector,
+                                BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
             this.channel = channel;
             this.binderName = binderName;
             this.eventFilter = eventFilter;
             this.docIDSelector = docIDSelector;
-            this.function = function;
+            this.projectionFunction = projectionFunction;
             Log log = logManager.getLog(channel);
             this.readStream = log.subscribe(new SubDescriptor().setChannel(channel));
             readStream.handler(this::handler);
@@ -102,7 +102,7 @@ public class FunctionManagerImpl implements FunctionManager {
                         }
                         Delivery delivery = new DeliveryImpl(channel, frame.getLong(Protocol.RECEV_TIMESTAMP),
                                 frame.getLong(Protocol.RECEV_POS), frame.getBsonObject(Protocol.RECEV_EVENT));
-                        BsonObject updated = function.apply(doc, delivery);
+                        BsonObject updated = projectionFunction.apply(doc, delivery);
                         CompletableFuture<Void> cfSaved = docManager.put(binderName, docID, updated);
                         cfSaved.handle((v, t3) -> {
                             if (t3 == null) {
