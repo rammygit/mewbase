@@ -3,7 +3,7 @@ package com.tesco.mewbase.client.impl;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.*;
 import com.tesco.mewbase.common.SubDescriptor;
-import com.tesco.mewbase.server.impl.Codec;
+import com.tesco.mewbase.server.impl.Protocol;
 import com.tesco.mewbase.util.AsyncResCF;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -74,21 +74,21 @@ public class ClientImpl implements Client, ClientFrameHandler {
         if (descriptor.getChannel() == null) {
             throw new IllegalArgumentException("No channel in SubDescriptor");
         }
-        frame.put(Codec.SUBSCRIBE_CHANNEL, descriptor.getChannel());
-        frame.put(Codec.SUBSCRIBE_STARTPOS, descriptor.getStartPos());
-        frame.put(Codec.SUBSCRIBE_STARTTIMESTAMP, descriptor.getStartTimestamp());
-        frame.put(Codec.SUBSCRIBE_DURABLEID, descriptor.getDurableID());
-        frame.put(Codec.SUBSCRIBE_MATCHER, descriptor.getMatcher());
-        Buffer buffer = Codec.encodeFrame(Codec.SUBSCRIBE_FRAME, frame);
+        frame.put(Protocol.SUBSCRIBE_CHANNEL, descriptor.getChannel());
+        frame.put(Protocol.SUBSCRIBE_STARTPOS, descriptor.getStartPos());
+        frame.put(Protocol.SUBSCRIBE_STARTTIMESTAMP, descriptor.getStartTimestamp());
+        frame.put(Protocol.SUBSCRIBE_DURABLEID, descriptor.getDurableID());
+        frame.put(Protocol.SUBSCRIBE_MATCHER, descriptor.getMatcher());
+        Buffer buffer = Protocol.encodeFrame(Protocol.SUBSCRIBE_FRAME, frame);
         write(cf, buffer, resp -> {
-            boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
+            boolean ok = resp.getBoolean(Protocol.RESPONSE_OK);
             if (ok) {
-                int subID = resp.getInteger(Codec.SUBRESPONSE_SUBID);
+                int subID = resp.getInteger(Protocol.SUBRESPONSE_SUBID);
                 SubscriptionImpl sub = new SubscriptionImpl(subID, descriptor.getChannel(), this, handler);
                 subscriptionMap.put(subID, sub);
                 cf.complete(sub);
             } else {
-                cf.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(new MewException(resp.getString(Protocol.RESPONSE_ERRMSG), resp.getString(Protocol.RESPONSE_ERRCODE)));
             }
         });
         return cf;
@@ -109,8 +109,8 @@ public class ClientImpl implements Client, ClientFrameHandler {
     public CompletableFuture<BsonObject> findByID(String binderName, String id) {
         CompletableFuture<BsonObject> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
-        frame.put(Codec.QUERY_BINDER, binderName);
-        frame.put(Codec.QUERY_DOCID, id);
+        frame.put(Protocol.QUERY_BINDER, binderName);
+        frame.put(Protocol.QUERY_DOCID, id);
         Consumer<QueryResult> resultHandler = qr -> {
             BsonObject doc = qr.document();
             cf.complete(doc);
@@ -122,8 +122,8 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     private void writeQuery(BsonObject frame, Consumer<QueryResult> resultHandler, CompletableFuture cf) {
         int queryID = nextQueryId.getAndIncrement();
-        frame.put(Codec.QUERY_QUERYID, queryID);
-        Buffer buffer = Codec.encodeFrame(Codec.QUERY_FRAME, frame);
+        frame.put(Protocol.QUERY_QUERYID, queryID);
+        Buffer buffer = Protocol.encodeFrame(Protocol.QUERY_FRAME, frame);
         queryResultHandlers.put(queryID, resultHandler);
         write(cf, buffer, null);
     }
@@ -140,8 +140,8 @@ public class ClientImpl implements Client, ClientFrameHandler {
             });
         }
         BsonObject frame = new BsonObject();
-        frame.put(Codec.QUERY_BINDER, binderName);
-        frame.put(Codec.QUERY_MATCHER, matcher);
+        frame.put(Protocol.QUERY_BINDER, binderName);
+        frame.put(Protocol.QUERY_MATCHER, matcher);
 
         writeQuery(frame, resultHandler, cf);
     }
@@ -162,13 +162,13 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     @Override
     public void handleQueryResult(int size, BsonObject resp) {
-        int rQueryID = resp.getInteger(Codec.QUERYRESULT_QUERYID);
+        int rQueryID = resp.getInteger(Protocol.QUERYRESULT_QUERYID);
         Consumer<QueryResult> qrh = queryResultHandlers.get(rQueryID);
         if (qrh == null) {
             throw new IllegalStateException("Can't find query result handler");
         }
-        boolean last = resp.getBoolean(Codec.QUERYRESULT_LAST);
-        QueryResult qr = new QueryResultImpl(resp.getBsonObject(Codec.QUERYRESULT_RESULT), size, last, rQueryID);
+        boolean last = resp.getBoolean(Protocol.QUERYRESULT_LAST);
+        QueryResult qr = new QueryResultImpl(resp.getBsonObject(Protocol.QUERYRESULT_RESULT), size, last, rQueryID);
         try {
             qrh.accept(qr);
         } finally {
@@ -180,7 +180,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     @Override
     public void handleRecev(int size, BsonObject frame) {
-        int subID = frame.getInteger(Codec.RECEV_SUBID);
+        int subID = frame.getInteger(Protocol.RECEV_SUBID);
         SubscriptionImpl sub = subscriptionMap.get(subID);
         if (sub == null) {
             // No subscription for this - maybe closed - ignore
@@ -247,8 +247,8 @@ public class ClientImpl implements Client, ClientFrameHandler {
     protected void doUnsubscribe(int subID) {
         subscriptionMap.remove(subID);
         BsonObject frame = new BsonObject();
-        frame.put(Codec.UNSUBSCRIBE_SUBID, subID);
-        Buffer buffer = Codec.encodeFrame(Codec.UNSUBSCRIBE_FRAME, frame);
+        frame.put(Protocol.UNSUBSCRIBE_SUBID, subID);
+        Buffer buffer = Protocol.encodeFrame(Protocol.UNSUBSCRIBE_FRAME, frame);
         CompletableFuture cf = new CompletableFuture();
         write(cf, buffer, resp -> {
             // Currently do nothing
@@ -258,8 +258,8 @@ public class ClientImpl implements Client, ClientFrameHandler {
     protected void doSubClose(int subID) {
         subscriptionMap.remove(subID);
         BsonObject frame = new BsonObject();
-        frame.put(Codec.UNSUBSCRIBE_SUBID, subID);
-        Buffer buffer = Codec.encodeFrame(Codec.UNSUBSCRIBE_FRAME, frame);
+        frame.put(Protocol.UNSUBSCRIBE_SUBID, subID);
+        Buffer buffer = Protocol.encodeFrame(Protocol.UNSUBSCRIBE_FRAME, frame);
         CompletableFuture cf = new CompletableFuture();
         write(cf, buffer, resp -> {
             // Currently do nothing
@@ -268,34 +268,34 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     protected void doAckEv(int subID, long pos, int sizeBytes) {
         BsonObject frame = new BsonObject();
-        frame.put(Codec.ACKEV_SUBID, subID);
-        frame.put(Codec.ACKEV_POS, pos);
-        frame.put(Codec.ACKEV_BYTES, sizeBytes);
-        Buffer buffer = Codec.encodeFrame(Codec.ACKEV_FRAME, frame);
+        frame.put(Protocol.ACKEV_SUBID, subID);
+        frame.put(Protocol.ACKEV_POS, pos);
+        frame.put(Protocol.ACKEV_BYTES, sizeBytes);
+        Buffer buffer = Protocol.encodeFrame(Protocol.ACKEV_FRAME, frame);
         write(buffer);
     }
 
     protected void doQueryAck(int queryID, int bytes) {
         BsonObject frame = new BsonObject();
-        frame.put(Codec.QUERYACK_QUERYID, queryID);
-        frame.put(Codec.QUERYACK_BYTES, bytes);
-        Buffer buffer = Codec.encodeFrame(Codec.QUERYACK_FRAME, frame);
+        frame.put(Protocol.QUERYACK_QUERYID, queryID);
+        frame.put(Protocol.QUERYACK_BYTES, bytes);
+        Buffer buffer = Protocol.encodeFrame(Protocol.QUERYACK_FRAME, frame);
         write(buffer);
     }
 
     protected CompletableFuture<Void> doPublish(String channel, int producerID, BsonObject event) {
         CompletableFuture<Void> cf = new CompletableFuture<>();
         BsonObject frame = new BsonObject();
-        frame.put(Codec.PUBLISH_CHANNEL, channel);
-        frame.put(Codec.PUBLISH_SESSID, producerID);
-        frame.put(Codec.PUBLISH_EVENT, event);
-        Buffer buffer = Codec.encodeFrame(Codec.PUBLISH_FRAME, frame);
+        frame.put(Protocol.PUBLISH_CHANNEL, channel);
+        frame.put(Protocol.PUBLISH_SESSID, producerID);
+        frame.put(Protocol.PUBLISH_EVENT, event);
+        Buffer buffer = Protocol.encodeFrame(Protocol.PUBLISH_FRAME, frame);
         write(cf, buffer, resp -> {
-            boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
+            boolean ok = resp.getBoolean(Protocol.RESPONSE_OK);
             if (ok) {
                 cf.complete(null);
             } else {
-                cf.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG), resp.getString(Codec.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(new MewException(resp.getString(Protocol.RESPONSE_ERRMSG), resp.getString(Protocol.RESPONSE_ERRCODE)));
             }
         });
         return cf;
@@ -307,19 +307,19 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     private synchronized void sendConnect(CompletableFuture cfConnect, NetSocket ns) {
         netSocket = ns;
-        netSocket.handler(new Codec(this).recordParser());
+        netSocket.handler(new Protocol(this).recordParser());
 
         // Send the CONNECT frame
         BsonObject frame = new BsonObject();
-        frame.put(Codec.CONNECT_VERSION, "0.1");
-        Buffer buffer = Codec.encodeFrame(Codec.CONNECT_FRAME, frame);
+        frame.put(Protocol.CONNECT_VERSION, "0.1");
+        Buffer buffer = Protocol.encodeFrame(Protocol.CONNECT_FRAME, frame);
         connectResponse = resp -> connected(cfConnect, resp);
         netSocket.write(buffer);
     }
 
     private synchronized void connected(CompletableFuture cfConnect, BsonObject resp) {
         connecting = false;
-        boolean ok = resp.getBoolean(Codec.RESPONSE_OK);
+        boolean ok = resp.getBoolean(Protocol.RESPONSE_OK);
         if (ok) {
             while (true) {
                 Buffer buff = bufferedWrites.poll();
@@ -329,8 +329,8 @@ public class ClientImpl implements Client, ClientFrameHandler {
                 netSocket.write(buff);
             }
         } else {
-            cfConnect.completeExceptionally(new MewException(resp.getString(Codec.RESPONSE_ERRMSG),
-                    resp.getString(Codec.RESPONSE_ERRCODE)));
+            cfConnect.completeExceptionally(new MewException(resp.getString(Protocol.RESPONSE_ERRMSG),
+                    resp.getString(Protocol.RESPONSE_ERRCODE)));
         }
     }
 

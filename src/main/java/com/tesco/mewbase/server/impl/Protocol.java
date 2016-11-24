@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Created by tim on 23/09/16.
  */
-public class Codec {
+public class Protocol {
 
     // Frame types
 
@@ -91,12 +91,12 @@ public class Codec {
     public static final String QUERYACK_QUERYID = "queryID";
     public static final String QUERYACK_BYTES = "bytes";
 
-    private final static Logger log = LoggerFactory.getLogger(Codec.class);
+    private final static Logger log = LoggerFactory.getLogger(Protocol.class);
 
     private final FrameHandler frameHandler;
     private final RecordParser parser;
 
-    public Codec(FrameHandler frameHandler) {
+    public Protocol(FrameHandler frameHandler) {
         this.frameHandler = frameHandler;
         parser = RecordParser.newFixed(4, null);
         Handler<Buffer> handler = new Handler<Buffer>() {

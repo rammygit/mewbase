@@ -97,9 +97,9 @@ public class SubscriptionImpl {
             return;
         }
         frame = frame.copy();
-        frame.put(Codec.RECEV_SUBID, id);
-        frame.put(Codec.RECEV_POS, pos);
-        Buffer buff = connection.writeNonResponse(Codec.RECEV_FRAME, frame);
+        frame.put(Protocol.RECEV_SUBID, id);
+        frame.put(Protocol.RECEV_POS, pos);
+        Buffer buff = connection.writeNonResponse(Protocol.RECEV_FRAME, frame);
         unackedBytes += buff.length();
         if (unackedBytes > MAX_UNACKED_BYTES) {
             readStream.pause();

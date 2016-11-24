@@ -14,6 +14,7 @@ import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.log.impl.file.faf.AFFileAccess;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
+import com.tesco.mewbase.server.impl.transport.net.NetTransport;
 import io.vertx.core.Vertx;
 import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.core.net.NetServer;
@@ -21,6 +22,7 @@ import io.vertx.core.net.NetSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -36,10 +38,10 @@ public class ServerImpl implements Server {
     private final ServerOptions serverOptions;
     private final Vertx vertx;
     private final Set<ConnectionImpl> connections = new ConcurrentHashSet<>();
-    private final Set<NetServer> netServers = new ConcurrentHashSet<>();
     private final LogManager logManager;
     private final DocManager docManager;
     private final FunctionManager functionManager;
+    private final Set<Transport> transports = new ConcurrentHashSet<>();
 
     private static final String SYSTEM_BINDER_PREFIX = "_mb.";
     public static final String DURABLE_SUBS_BINDER_NAME = SYSTEM_BINDER_PREFIX + "durableSubs";
@@ -62,69 +64,42 @@ public class ServerImpl implements Server {
 
     @Override
     public synchronized CompletableFuture<Void> start() {
-        int procs = Runtime.getRuntime().availableProcessors(); // TODO make this configurable
-        log.trace("Starting " + procs + " instances");
         String[] channels = serverOptions.getChannels();
         String[] binders = serverOptions.getBinders();
-        CompletableFuture[] all = new CompletableFuture[procs + (channels != null ? channels.length : 0) + 1 +
+        CompletableFuture[] all = new CompletableFuture[1 + (channels != null ? channels.length : 0) + 1 +
                 (binders != null ? binders.length : 0) + SYSTEM_BINDERS.length];
-
-        for (int i = 0; i < procs; i++) {
-            NetServer netServer = vertx.createNetServer(serverOptions.getNetServerOptions());
-            netServer.connectHandler(this::connectHandler);
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            netServer.listen(serverOptions.getNetServerOptions().getPort(),
-                    serverOptions.getNetServerOptions().getHost(), ar -> {
-                        if (ar.succeeded()) {
-                            cf.complete(null);
-                        } else {
-                            cf.completeExceptionally(ar.cause());
-                        }
-                    });
-            netServers.add(netServer);
-            all[i] = cf;
-        }
+        int i = 0;
         // Start the channels
         if (serverOptions.getChannels() != null) {
             for (String channel : serverOptions.getChannels()) {
-                all[procs++] = logManager.createLog(channel);
+                all[i++] = logManager.createLog(channel);
             }
         }
-        all[procs++] = docManager.start();
+        all[i++] = docManager.start();
         // Start the system binders
-        for (String systemBinder: SYSTEM_BINDERS) {
-            all[procs++] = docManager.createBinder(systemBinder);
+        for (String binder: SYSTEM_BINDERS) {
+            all[i++] = docManager.createBinder(binder);
         }
         // Start the binders
         if (serverOptions.getBinders() != null) {
             for (String binder : serverOptions.getBinders()) {
-                all[procs++] = docManager.createBinder(binder);
+                all[i++] = docManager.createBinder(binder);
             }
         }
+        all[i] = startTransports();
         return CompletableFuture.allOf(all);
     }
 
     @Override
     public synchronized CompletableFuture<Void> stop() {
-        CompletableFuture[] all = new CompletableFuture[netServers.size() + 1];
+        CompletableFuture[] all = new CompletableFuture[1 + 1 + 1];
         int i = 0;
-        for (NetServer server : netServers) {
-            CompletableFuture<Void> cf = new CompletableFuture<>();
-            server.close(ar -> {
-                if (ar.succeeded()) {
-                    cf.complete(null);
-                } else {
-                    cf.completeExceptionally(ar.cause());
-                }
-            });
-            all[i++] = cf;
-        }
-        all[all.length - 1] = logManager.close();
+        all[i++] = stopTransports();
+        all[i++] = docManager.close();
+        all[i] = logManager.close();
         connections.clear();
-        netServers.clear();
         return CompletableFuture.allOf(all);
     }
-
 
     @Override
     public boolean installFunction(String name, String channel, Function<BsonObject, Boolean> eventFilter,
@@ -139,11 +114,6 @@ public class ServerImpl implements Server {
         return functionManager.deleteFunction(functionName);
     }
 
-    private void connectHandler(NetSocket socket) {
-        ConnectionImpl conn = new ConnectionImpl(this, socket, Vertx.currentContext());
-        connections.add(conn);
-    }
-
     protected void removeConnection(ConnectionImpl connection) {
         connections.remove(connection);
     }
@@ -154,6 +124,28 @@ public class ServerImpl implements Server {
 
     protected DocManager docManager() {
         return docManager;
+    }
+
+    private CompletableFuture<Void> startTransports() {
+        // For now just net transport
+        Transport transport = new NetTransport(vertx, serverOptions);
+        transports.add(transport);
+        transport.connectHandler(this::connectHandler);
+        return transport.start();
+    }
+
+    private void connectHandler(TransportConnection transportConnection) {
+        connections.add(new ConnectionImpl(this, transportConnection, Vertx.currentContext(), docManager));
+    }
+
+    private CompletableFuture<Void> stopTransports() {
+        CompletableFuture[] all = new CompletableFuture[transports.size()];
+        int i = 0;
+        for (Transport transport: transports) {
+            all[i++] = transport.stop();
+        }
+        transports.clear();
+        return CompletableFuture.allOf(all);
     }
 
 }
