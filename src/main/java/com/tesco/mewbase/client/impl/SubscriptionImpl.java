@@ -26,7 +26,7 @@ public class SubscriptionImpl implements Subscription {
     private final Consumer<ClientDelivery> handler;
     private final Context ctx;
     private final Queue<ClientDelivery> buffered = new LinkedList<>();
-    private boolean unsubscribed;
+    private boolean closed;
     private boolean paused;
 
     public SubscriptionImpl(int id, String channel, ClientImpl client, Consumer<ClientDelivery> handler) {
@@ -40,7 +40,13 @@ public class SubscriptionImpl implements Subscription {
     @Override
     public synchronized void unsubscribe() {
         client.doUnsubscribe(id);
-        unsubscribed = true;
+        closed = true;
+    }
+
+    @Override
+    public synchronized void close() {
+        client.doSubClose(id);
+        closed = true;
     }
 
     @Override
@@ -68,7 +74,7 @@ public class SubscriptionImpl implements Subscription {
     }
 
     protected synchronized void handleRecevFrame(int size, BsonObject frame) {
-        if (unsubscribed) {
+        if (closed) {
             return;
         }
         checkContext();
@@ -81,8 +87,8 @@ public class SubscriptionImpl implements Subscription {
         }
     }
 
-    protected void acknowledge(int sizeBytes) {
-        client.doAckEv(id, sizeBytes);
+    protected void acknowledge(long pos, int sizeBytes) {
+        client.doAckEv(id, pos, sizeBytes);
     }
 
     // Sanity check - this should always be executed using the connection's context

@@ -37,6 +37,7 @@ public class FileLogStream implements LogReadStream {
     private Consumer<Throwable> exceptionHandler;
 
     private boolean paused;
+    private boolean closed;
     private long deliveredPos = -1;
     private boolean retro;
     private long fileStreamPos;
@@ -115,7 +116,11 @@ public class FileLogStream implements LogReadStream {
 
     @Override
     public synchronized void close() {
+        if (closed) {
+            throw new IllegalStateException("Already closed");
+        }
         paused = true;
+        closed = true;
         fileLog.removeSubHolder(this);
         if (streamFile != null) {
             streamFile.close();
@@ -150,7 +155,6 @@ public class FileLogStream implements LogReadStream {
         if (handler != null) {
             handler.accept(pos, bsonObject);
             deliveredPos = pos;
-
         } else {
             throw new IllegalStateException("No handler");
         }
@@ -193,6 +197,9 @@ public class FileLogStream implements LogReadStream {
     }
 
     private synchronized void handleFrame(Buffer buffer) {
+        if (closed) {
+            return;
+        }
         // TODO bit clunky - need to add size back in so it can be decoded, improve this!
         int bl = buffer.length() + 4;
         Buffer buff2 = Buffer.buffer(bl);

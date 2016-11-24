@@ -24,20 +24,24 @@ public class ServerTestBase extends MewbaseTestBase {
     private final static String KEY_PATH = "src/test/resources/server-key.pem";
     protected Server server;
     protected Client client;
+    protected File logDir;
+    protected File docsDir;
 
     @Override
     protected void setup(TestContext context) throws Exception {
         super.setup(context);
         log.trace("in before");
-        File logDir = testFolder.newFolder();
+        logDir = testFolder.newFolder();
         log.trace("Log dir is {}", logDir);
+
+        docsDir = testFolder.newFolder();
+        log.trace("Docs dir is {}", docsDir);
 
         ServerOptions serverOptions = createServerOptions(logDir);
         ClientOptions clientOptions = createClientOptions();
 
         server = Server.newServer(serverOptions);
-        CompletableFuture<Void> cfStart = server.start();
-        cfStart.get();
+        server.start().get();
 
         client = Client.newClient(vertx, clientOptions);
     }
@@ -56,7 +60,7 @@ public class ServerTestBase extends MewbaseTestBase {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
                 .setFileLogManagerOptions(fileLogManagerOptions).setBinders(new String[]{TEST_BINDER1})
-                .setDocsDir(testFolder.newFolder().getPath());
+                .setDocsDir(docsDir.getPath());
     }
 
     protected ClientOptions createClientOptions() {

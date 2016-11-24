@@ -43,6 +43,10 @@ public class ServerImpl implements Server {
     private final FunctionManager functionManager;
     private final Set<Transport> transports = new ConcurrentHashSet<>();
 
+    private static final String SYSTEM_BINDER_PREFIX = "_mb.";
+    public static final String DURABLE_SUBS_BINDER_NAME = SYSTEM_BINDER_PREFIX + "durableSubs";
+    private static final String[] SYSTEM_BINDERS = new String[] {DURABLE_SUBS_BINDER_NAME};
+
     protected ServerImpl(Vertx vertx, ServerOptions serverOptions) {
         this.vertx = vertx;
         this.serverOptions = serverOptions;
@@ -63,7 +67,7 @@ public class ServerImpl implements Server {
         String[] channels = serverOptions.getChannels();
         String[] binders = serverOptions.getBinders();
         CompletableFuture[] all = new CompletableFuture[1 + (channels != null ? channels.length : 0) + 1 +
-                (binders != null ? binders.length : 0)];
+                (binders != null ? binders.length : 0) + SYSTEM_BINDERS.length];
         int i = 0;
         // Start the channels
         if (serverOptions.getChannels() != null) {
@@ -72,6 +76,10 @@ public class ServerImpl implements Server {
             }
         }
         all[i++] = docManager.start();
+        // Start the system binders
+        for (String binder: SYSTEM_BINDERS) {
+            all[i++] = docManager.createBinder(binder);
+        }
         // Start the binders
         if (serverOptions.getBinders() != null) {
             for (String binder : serverOptions.getBinders()) {
@@ -112,6 +120,10 @@ public class ServerImpl implements Server {
 
     protected Log getLog(String channel) {
         return logManager.getLog(channel);
+    }
+
+    protected DocManager docManager() {
+        return docManager;
     }
 
     private CompletableFuture<Void> startTransports() {

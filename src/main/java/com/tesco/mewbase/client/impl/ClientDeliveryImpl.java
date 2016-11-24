@@ -10,8 +10,8 @@ import com.tesco.mewbase.common.impl.DeliveryImpl;
  */
 public class ClientDeliveryImpl extends DeliveryImpl implements ClientDelivery {
 
-    private final SubscriptionImpl sub;
-    private final int sizeBytes;
+    protected final SubscriptionImpl sub;
+    protected final int sizeBytes;
 
     public ClientDeliveryImpl(String channel, long timestamp, long sequenceNumber, BsonObject event, SubscriptionImpl sub, int sizeBytes) {
         super(channel, timestamp, sequenceNumber, event);
@@ -21,7 +21,7 @@ public class ClientDeliveryImpl extends DeliveryImpl implements ClientDelivery {
 
     @Override
     public void acknowledge() {
-        sub.acknowledge(sizeBytes);
+        sub.acknowledge(channelPos, sizeBytes);
     }
 
     @Override

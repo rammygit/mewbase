@@ -61,7 +61,6 @@ public class InitialiseTest extends LogTestBase {
     }
 
     private void verifyInitialFiles(File logDir, String channel) throws Exception {
-        logger.trace("Verifying initial files in logdir {}", logDir);
         verifyInfoFile(channel);
 
         File logFile = new File(logDir, channel + "-0.log");
@@ -139,7 +138,7 @@ public class InitialiseTest extends LogTestBase {
         assertFalse(logFile.exists());
 
         // Now change info file to non zero fileHeadPos
-        saveInfo(0, 23, 23, false);
+        saveInfo(0, 23, 23, 0, false);
 
         // Start should now fail
         try {
@@ -164,7 +163,7 @@ public class InitialiseTest extends LogTestBase {
         assertFalse(logFile.exists());
 
         // Now change info file to non zero fileHeadPos
-        saveInfo(1, 0, 0, false);
+        saveInfo(1, 0, 0, 0, false);
 
         // Start should now fail
         try {
@@ -179,21 +178,28 @@ public class InitialiseTest extends LogTestBase {
     @Test
     public void test_start_with_negative_file_number(TestContext testContext) throws Exception {
         test_start_with_invalid_info_file(testContext, () -> {
-            saveInfo(-1, 0, 0, false);
+            saveInfo(-1, 0, 0, 0, false);
         });
     }
 
     @Test
     public void test_start_with_negative_file_head_pos(TestContext testContext) throws Exception {
         test_start_with_invalid_info_file(testContext, () -> {
-            saveInfo(0, -1, 0, false);
+            saveInfo(0, -1, 0, 0, false);
         });
     }
 
     @Test
     public void test_start_with_negative_head_pos(TestContext testContext) throws Exception {
         test_start_with_invalid_info_file(testContext, () -> {
-            saveInfo(0, 0, -1, false);
+            saveInfo(0, 0, -1, 0, false);
+        });
+    }
+
+    @Test
+    public void test_start_with_negative_last_written_pos(TestContext testContext) throws Exception {
+        test_start_with_invalid_info_file(testContext, () -> {
+            saveInfo(0, 0, 0, -1, false);
         });
     }
 
@@ -204,6 +210,7 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("headPos", 0);
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
         });
@@ -215,6 +222,19 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("fileNumber", 0);
             info.put("headPos", 0);
+            info.put("lastWrittenPos", 0);
+            info.put("shutdown", false);
+            saveFileInfo(info);
+        });
+    }
+
+    @Test
+    public void test_start_with_missing_last_written_pos(TestContext testContext) throws Exception {
+        test_start_with_invalid_info_file(testContext, () -> {
+            BsonObject info = new BsonObject();
+            info.put("fileNumber", 0);
+            info.put("headPos", 0);
+            info.put("fileHeadPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
         });
@@ -226,6 +246,7 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("fileNumber", 0);
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
         });
@@ -238,6 +259,7 @@ public class InitialiseTest extends LogTestBase {
             info.put("fileNumber", 0);
             info.put("headPos", 0);
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             saveFileInfo(info);
         });
     }
@@ -248,6 +270,7 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("fileNumber", "XYZ");
             info.put("headPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("fileHeadPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
@@ -260,6 +283,20 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("fileNumber", 0);
             info.put("headPos", 0);
+            info.put("lastWrittenPos", 0);
+            info.put("fileHeadPos", "XYZ");
+            info.put("shutdown", false);
+            saveFileInfo(info);
+        });
+    }
+
+    @Test
+    public void test_start_with_invalid_last_written_pos(TestContext testContext) throws Exception {
+        test_start_with_invalid_info_file(testContext, () -> {
+            BsonObject info = new BsonObject();
+            info.put("fileNumber", 0);
+            info.put("headPos", 0);
+            info.put("lastWrittenPos", "XYZ");
             info.put("fileHeadPos", "XYZ");
             info.put("shutdown", false);
             saveFileInfo(info);
@@ -273,6 +310,7 @@ public class InitialiseTest extends LogTestBase {
             info.put("fileNumber", 0);
             info.put("headPos", "XYZ");
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
         });
@@ -285,6 +323,7 @@ public class InitialiseTest extends LogTestBase {
             info.put("fileNumber", 0);
             info.put("headPos", 0);
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("shutdown", "XYZ");
             saveFileInfo(info);
         });
