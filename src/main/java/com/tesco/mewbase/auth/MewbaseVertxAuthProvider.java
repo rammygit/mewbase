@@ -31,6 +31,7 @@ public class MewbaseVertxAuthProvider implements MewbaseAuthProvider {
         this.authProvider = authProvider;
     }
 
+    @Override
     public CompletableFuture<BsonObject> authenticate(BsonObject authInfo) {
         CompletableFuture cf = new CompletableFuture();
 

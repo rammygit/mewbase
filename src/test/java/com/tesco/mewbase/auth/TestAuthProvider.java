@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 
 public class TestAuthProvider implements MewbaseAuthProvider {
 
+    @Override
     public CompletableFuture<BsonObject> authenticate(BsonObject authInfo) {
         CompletableFuture cf = new CompletableFuture();
 

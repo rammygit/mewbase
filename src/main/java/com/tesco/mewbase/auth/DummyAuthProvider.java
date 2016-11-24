@@ -8,6 +8,7 @@ import java.util.function.Consumer;
 
 public class DummyAuthProvider implements MewbaseAuthProvider {
 
+    @Override
     public CompletableFuture<BsonObject> authenticate(BsonObject authInfo) {
         CompletableFuture cf = new CompletableFuture();
 
