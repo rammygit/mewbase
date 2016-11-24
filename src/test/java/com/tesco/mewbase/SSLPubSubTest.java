@@ -32,7 +32,7 @@ public class SSLPubSubTest extends ServerTestBase {
 
         ServerOptions serverOptions = new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
                 .setFileLogManagerOptions(fileLogManagerOptions)
-                .setAuthProvider(new DummyAuthProvider(USERNAME, PASSWORD));
+                .setAuthProvider(new DummyAuthProvider());
 
         serverOptions.getNetServerOptions().setSsl(true).setPemKeyCertOptions(
                 new PemKeyCertOptions()
@@ -50,8 +50,7 @@ public class SSLPubSubTest extends ServerTestBase {
                 .setPemTrustOptions(
                         new PemTrustOptions().addCertPath(CERT_PATH)
                 );
-        BsonObject authInfo = new BsonObject().put("username", USERNAME).put("password", PASSWORD);
-        return new ClientOptions().setNetClientOptions(netClientOptions).setAuthInfo(authInfo);
+        return new ClientOptions().setNetClientOptions(netClientOptions);
     }
 
     @Test

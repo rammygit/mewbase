@@ -2,7 +2,7 @@ package com.tesco.mewbase.auth;
 
 import com.tesco.mewbase.bson.BsonObject;
 
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
 
 /**
  *
@@ -10,6 +10,7 @@ import java.util.function.Consumer;
  *
  */
 public interface MewbaseAuthProvider {
+
 
     /**
      * Authenticate a user.
@@ -25,7 +26,8 @@ public interface MewbaseAuthProvider {
      * </pre>
      *
      * @param authInfo the auth information
-     * @param handler the result handler
+     * @return a CompletableFuture containing the authentication result. This should at least contain {@link com.tesco.mewbase.server.impl.Codec} RESPONSE_OK
+     *         detailing the outcome of the authentication.
      */
-    void authenticate(BsonObject authInfo, Consumer<BsonObject> handler);
+    CompletableFuture<BsonObject> authenticate(BsonObject authInfo);
 }

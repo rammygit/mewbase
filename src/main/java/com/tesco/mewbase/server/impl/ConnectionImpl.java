@@ -62,22 +62,35 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handleConnect(BsonObject frame) {
         checkContext();
 
-        BsonObject value = (BsonObject) frame.getValue(Codec.AUTH_INFO);
+        BsonObject value = (BsonObject) frame.getValue(Codec.CONNECT_AUTH_INFO);
 
-        authProvider.authenticate(value, res -> {
-            if (res.getBoolean(Codec.RESPONSE_OK)) {
-                authenticated = true;
+        CompletableFuture<BsonObject> cf = authProvider.authenticate(value);
+
+        cf.handle((authResp, ex) -> {
+            BsonObject response = new BsonObject();
+
+            if (ex != null) {
+                buildErrorResponse(ex, response);
+            } else {
+                if (authResp.getBoolean(Codec.RESPONSE_OK)) {
+                    authenticated = true;
+                }
+                response = authResp;
             }
-            writeResponse(Codec.RESPONSE_FRAME, res, getWriteSeq());
+            writeResponse(Codec.RESPONSE_FRAME, response, getWriteSeq());
+            return null;
         });
-
         // TODO version checking
     }
 
     @Override
     public void handlePublish(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.RESPONSE_FRAME);
+
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
+            return;
+        }
+
         String channel = frame.getString(Codec.PUBLISH_CHANNEL);
         BsonObject event = frame.getBsonObject(Codec.PUBLISH_EVENT);
         if (channel == null) {
@@ -112,9 +125,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleStartTx(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.RESPONSE_FRAME);
 
-        if (!authenticated) {
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
             return;
         }
     }
@@ -122,9 +134,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleCommitTx(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.RESPONSE_FRAME);
 
-        if (!authenticated) {
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
             return;
         }
     }
@@ -132,9 +143,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleAbortTx(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.RESPONSE_FRAME);
 
-        if (!authenticated) {
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
             return;
         }
     }
@@ -142,9 +152,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleSubscribe(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.SUBRESPONSE_FRAME);
 
-        if (!authenticated) {
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
             return;
         }
 
@@ -181,9 +190,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleUnsubscribe(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.RESPONSE_FRAME);
 
-        if (!authenticated) {
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
             return;
         }
 
@@ -206,9 +214,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleAckEv(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.RESPONSE_FRAME);
 
-        if (!authenticated) {
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
             return;
         }
 
@@ -233,9 +240,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleQuery(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.RESPONSE_FRAME);
 
-        if (!authenticated) {
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
             return;
         }
 
@@ -259,9 +265,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleQueryAck(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.RESPONSE_FRAME);
 
-        if (!authenticated) {
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
             return;
         }
 
@@ -284,9 +289,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handlePing(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Codec.RESPONSE_FRAME);
-
-        if (!authenticated) {
+        if (!checkAuthenticated(Codec.RESPONSE_FRAME)) {
             return;
         }
     }
@@ -373,7 +376,7 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkWrap(expectedRespNo);
     }
 
-    protected void checkAuthenticated(String frameName) {
+    protected boolean checkAuthenticated(String frameName) {
         if (!authenticated) {
             BsonObject resp = new BsonObject();
             resp.put(Codec.RESPONSE_OK, false);
@@ -381,6 +384,8 @@ public class ConnectionImpl implements ServerFrameHandler {
             writeResponse(frameName, resp, getWriteSeq());
             logAndClose("Not authenticated");
         }
+
+        return authenticated;
     }
 
     protected void logAndClose(String errMsg) {
@@ -406,6 +411,12 @@ public class ConnectionImpl implements ServerFrameHandler {
         for (QueryState queryState : queryStates.values()) {
             queryState.close();
         }
+    }
+
+    protected void buildErrorResponse(Throwable exception, BsonObject response) {
+        response.put(Codec.RESPONSE_OK, false);
+        response.put(Codec.RESPONSE_ERRCODE, "ERR_AUTH_001");
+        response.put(Codec.RESPONSE_ERRMSG, exception.getMessage());
     }
 
     private static final class WriteHolder implements Comparable<WriteHolder> {

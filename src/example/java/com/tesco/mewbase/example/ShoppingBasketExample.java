@@ -13,9 +13,6 @@ import com.tesco.mewbase.server.ServerOptions;
  */
 public class ShoppingBasketExample {
 
-    private static final String USERNAME = "shopping";
-    private static final String PASSWORD = "basket";
-
     public static void main(String[] args) {
         try {
             new ShoppingBasketExample().example();
@@ -31,7 +28,7 @@ public class ShoppingBasketExample {
     private void example() throws Exception {
 
         // Setup and start a server
-        ServerOptions options = new ServerOptions().setChannels(new String[]{"orders"}).setAuthProvider(new DummyAuthProvider(USERNAME, PASSWORD));
+        ServerOptions options = new ServerOptions().setChannels(new String[]{"orders"}).setAuthProvider(new DummyAuthProvider());
         Server server = Server.newServer(options);
         server.start().get();
 
@@ -46,12 +43,8 @@ public class ShoppingBasketExample {
                         BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
         );
 
-        BsonObject authInfo = new BsonObject();
-        authInfo.put("username", USERNAME);
-        authInfo.put("password", PASSWORD);
-
         // Create a client
-        Client client = Client.newClient(new ClientOptions().setAuthInfo(authInfo));
+        Client client = Client.newClient(new ClientOptions());
 
         // Send some add/remove events
 

@@ -13,9 +13,6 @@ import com.tesco.mewbase.server.ServerOptions;
  */
 public class PubSubExample {
 
-    private static final String USERNAME = "pub";
-    private static final String PASSWORD = "sub";
-
     public static void main(String[] args) {
         try {
             new PubSubExample().example();
@@ -31,16 +28,12 @@ public class PubSubExample {
     private void example() throws Exception {
 
         // Setup and start a server
-        ServerOptions options = new ServerOptions().setChannels(new String[]{"orders"}).setAuthProvider(new DummyAuthProvider(USERNAME, PASSWORD));
+        ServerOptions options = new ServerOptions().setChannels(new String[]{"orders"}).setAuthProvider(new DummyAuthProvider());
         Server server = Server.newServer(options);
         server.start().get();
 
-        BsonObject authInfo = new BsonObject();
-        authInfo.put("username", USERNAME);
-        authInfo.put("password", PASSWORD);
-
         // Create a client
-        Client client = Client.newClient(new ClientOptions().setAuthInfo(authInfo));
+        Client client = Client.newClient(new ClientOptions());
 
         // Subscribe to a channel
         SubDescriptor descriptor = new SubDescriptor().setChannel("orders");

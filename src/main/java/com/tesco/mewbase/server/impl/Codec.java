@@ -87,7 +87,7 @@ public class Codec {
     public static final String QUERYACK_QUERYID = "queryID";
     public static final String QUERYACK_BYTES = "bytes";
 
-    public static final String AUTH_INFO = "authInfo";
+    public static final String CONNECT_AUTH_INFO = "authInfo";
 
     private final static Logger log = LoggerFactory.getLogger(Codec.class);
 

@@ -7,8 +7,7 @@ import io.vertx.ext.auth.AuthProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.function.Consumer;
-
+import java.util.concurrent.CompletableFuture;
 
 /**
  *
@@ -32,10 +31,10 @@ public class MewbaseVertxAuthProvider implements MewbaseAuthProvider {
         this.authProvider = authProvider;
     }
 
-    @Override
-    public void authenticate(BsonObject authInfo, Consumer<BsonObject> consumer) {
-        JsonObject jsonAuthInfo = new JsonObject();
+    public CompletableFuture<BsonObject> authenticate(BsonObject authInfo) {
+        CompletableFuture cf = new CompletableFuture();
 
+        JsonObject jsonAuthInfo = new JsonObject();
         authInfo.stream().forEach(entry -> {
             jsonAuthInfo.put(entry.getKey(), entry.getValue());
         });
@@ -48,7 +47,9 @@ public class MewbaseVertxAuthProvider implements MewbaseAuthProvider {
                 result.put(Codec.RESPONSE_OK, false);
                 result.put(Codec.RESPONSE_ERRMSG, vertxRes.cause().getMessage());
             }
-            consumer.accept(result);
+            cf.complete(result);
         });
+
+        return cf;
     }
 }

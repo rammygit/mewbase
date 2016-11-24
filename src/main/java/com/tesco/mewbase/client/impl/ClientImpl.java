@@ -300,7 +300,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
         // Send the CONNECT frame
         BsonObject frame = new BsonObject();
         frame.put(Codec.CONNECT_VERSION, "0.1");
-        frame.put(Codec.AUTH_INFO, authInfo);
+        frame.put(Codec.CONNECT_AUTH_INFO, authInfo);
 
         Buffer buffer = Codec.encodeFrame(Codec.CONNECT_FRAME, frame);
         connectResponse = resp -> connected(cfConnect, resp);
