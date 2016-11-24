@@ -331,7 +331,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_start_max_record_size_too_large(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setMaxRecordSize(DEFAULT_MAX_LOG_CHUNK_SIZE + 1);
+        options = new FileLogManagerOptions().setMaxRecordSize(DEFAULT_MAX_LOG_CHUNK_SIZE + 1).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");
@@ -342,7 +342,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_start_preallocate_size_too_large(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setPreallocateSize(DEFAULT_MAX_LOG_CHUNK_SIZE + 1);
+        options = new FileLogManagerOptions().setPreallocateSize(DEFAULT_MAX_LOG_CHUNK_SIZE + 1).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");
@@ -353,7 +353,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_start_max_record_size_too_small(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setMaxRecordSize(0);
+        options = new FileLogManagerOptions().setMaxRecordSize(0).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");
@@ -364,7 +364,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_max_log_chunk_size_too_small(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setMaxLogChunkSize(0);
+        options = new FileLogManagerOptions().setMaxLogChunkSize(0).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");
@@ -375,7 +375,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_start_negative_preallocate_size(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setPreallocateSize(-1);
+        options = new FileLogManagerOptions().setPreallocateSize(-1).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");
