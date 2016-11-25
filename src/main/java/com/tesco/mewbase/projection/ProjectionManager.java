@@ -1,4 +1,4 @@
-package com.tesco.mewbase.function;
+package com.tesco.mewbase.projection;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
@@ -18,9 +18,9 @@ public interface ProjectionManager {
      * @param channel the name of the channel, a channel is published to and only event published to this channel will be available to this projection
      * @param eventFilter filters out events that match the filter, that is return false
      * @param binderName the binder where the documents are stored and updated to
-     * @param docIDSelector a function that returns the document id form the bson
-     * @param projectionFunction the function to apply to the bson
-     * @return true is the function is installed successfully
+     * @param docIDSelector a projection that returns the document id form the bson
+     * @param projectionFunction the projection to apply to the bson
+     * @return true is the projection is installed successfully
      */
     boolean registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
                                String binderName, Function<BsonObject, String> docIDSelector,

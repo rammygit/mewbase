@@ -1,6 +1,6 @@
 package com.tesco.mewbase.server;
 
-import com.tesco.mewbase.function.ProjectionManager;
+import com.tesco.mewbase.projection.ProjectionManager;
 import com.tesco.mewbase.server.spi.ServerFactory;
 import io.vertx.core.ServiceHelper;
 

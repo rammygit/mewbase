@@ -16,7 +16,7 @@ public interface DocManager {
      * Get a document in a named binder matching the filter
      *
      * @param binder  name of binder to put the document to
-     * @param matcher matching function for documents
+     * @param matcher matching projection for documents
      */
     DocReadStream getMatching(String binder, Function<BsonObject, Boolean> matcher);
 
