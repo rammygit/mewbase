@@ -4,15 +4,15 @@ import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.impl.lmdb.LmdbDocManager;
-import com.tesco.mewbase.projection.Projection;
-import com.tesco.mewbase.projection.ProjectionManager;
-import com.tesco.mewbase.projection.impl.ProjectionManagerImpl;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
 import com.tesco.mewbase.log.impl.file.FileAccess;
 import com.tesco.mewbase.log.impl.file.FileLogManager;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.log.impl.file.faf.AFFileAccess;
+import com.tesco.mewbase.projection.Projection;
+import com.tesco.mewbase.projection.ProjectionManager;
+import com.tesco.mewbase.projection.impl.ProjectionManagerImpl;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 import com.tesco.mewbase.server.impl.transport.net.NetTransport;
@@ -43,7 +43,7 @@ public class ServerImpl implements Server {
 
     public static final String SYSTEM_BINDER_PREFIX = "_mb.";
     public static final String DURABLE_SUBS_BINDER_NAME = SYSTEM_BINDER_PREFIX + "durableSubs";
-    private static final String[] SYSTEM_BINDERS = new String[] {DURABLE_SUBS_BINDER_NAME};
+    private static final String[] SYSTEM_BINDERS = new String[]{DURABLE_SUBS_BINDER_NAME};
 
     protected ServerImpl(Vertx vertx, ServerOptions serverOptions) {
         this.vertx = vertx;
@@ -79,7 +79,7 @@ public class ServerImpl implements Server {
         }
         all[i++] = docManager.start();
         // Start the system binders
-        for (String binder: SYSTEM_BINDERS) {
+        for (String binder : SYSTEM_BINDERS) {
             all[i++] = docManager.createBinder(binder);
         }
         // Start the binders
@@ -142,7 +142,7 @@ public class ServerImpl implements Server {
     private CompletableFuture<Void> stopTransports() {
         CompletableFuture[] all = new CompletableFuture[transports.size()];
         int i = 0;
-        for (Transport transport: transports) {
+        for (Transport transport : transports) {
             all[i++] = transport.stop();
         }
         transports.clear();

@@ -28,7 +28,7 @@ public class ShoppingBasketExample {
 
         // Setup and start a server
         ServerOptions options =
-                new ServerOptions().setChannels(new String[]{"orders"}).setBinders(new String[] {"baskets"});
+                new ServerOptions().setChannels(new String[]{"orders"}).setBinders(new String[]{"baskets"});
         Server server = Server.newServer(options);
         server.start().get();
 

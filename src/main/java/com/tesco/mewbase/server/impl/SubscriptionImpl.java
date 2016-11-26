@@ -2,17 +2,9 @@ package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.SubDescriptor;
-import com.tesco.mewbase.doc.DocManager;
-import com.tesco.mewbase.log.Log;
-import com.tesco.mewbase.log.LogReadStream;
-import com.tesco.mewbase.log.impl.file.FileLog;
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Created by tim on 26/09/16.

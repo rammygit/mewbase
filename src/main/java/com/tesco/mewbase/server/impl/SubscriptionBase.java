@@ -81,10 +81,10 @@ public abstract class SubscriptionBase {
             docManager.delete(ServerImpl.DURABLE_SUBS_BINDER_NAME, subDescriptor.getDurableID());
         }
     }
-    
+
     // This can be called on different threads depending on whether the frame is coming from file or direct
     private synchronized void handleEvent0(long pos, BsonObject frame) {
-        if (ignoreFirst){
+        if (ignoreFirst) {
             ignoreFirst = false;
             return;
         }

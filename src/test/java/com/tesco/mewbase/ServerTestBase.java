@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Created by tim on 28/10/16.

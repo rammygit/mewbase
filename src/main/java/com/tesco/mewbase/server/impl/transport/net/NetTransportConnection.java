@@ -4,7 +4,6 @@ import com.tesco.mewbase.server.impl.TransportConnection;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.NetSocket;
 
-
 import java.util.function.Consumer;
 
 /**

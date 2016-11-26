@@ -3,7 +3,6 @@ package com.tesco.mewbase.log.impl.file;
 import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
-import com.tesco.mewbase.server.impl.ServerImpl;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

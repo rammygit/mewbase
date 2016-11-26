@@ -8,14 +8,11 @@ import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -67,7 +64,7 @@ public class DurableSubTest extends ServerTestBase {
 
             if (cnt < numEvents / 2) {
                 re.acknowledge();
-            } else if (cnt == numEvents  / 2) {
+            } else if (cnt == numEvents / 2) {
                 async1.complete();
             }
         };
@@ -182,7 +179,7 @@ public class DurableSubTest extends ServerTestBase {
             context.assertEquals(expectedCount.getAndIncrement(), cnt);
             if (cnt < numEvents / 2) {
                 re.acknowledge();
-            } else if (cnt == numEvents  / 2) {
+            } else if (cnt == numEvents / 2) {
                 async1.complete();
             }
         };
@@ -216,7 +213,6 @@ public class DurableSubTest extends ServerTestBase {
             prod.publish(event).get();
         }
     }
-
 
 
 }

@@ -9,7 +9,7 @@ import java.util.function.Function;
  * Created by tim on 30/09/16.
  */
 public interface DocManager {
-    
+
     String ID_FIELD = "id";
 
     /**

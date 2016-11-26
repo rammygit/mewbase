@@ -2,13 +2,10 @@ package com.tesco.mewbase.projection.impl;
 
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.SubDescriptor;
-import com.tesco.mewbase.server.impl.ConnectionImpl;
 import com.tesco.mewbase.server.impl.ServerImpl;
 import com.tesco.mewbase.server.impl.SubscriptionBase;
-import com.tesco.mewbase.server.impl.SubscriptionImpl;
 
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  * Created by tim on 24/11/16.

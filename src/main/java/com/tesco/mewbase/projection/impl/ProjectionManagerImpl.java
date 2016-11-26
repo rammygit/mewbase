@@ -98,63 +98,64 @@ public class ProjectionManagerImpl implements ProjectionManager {
             String lockName = binderName + "." + docID;
             server.vertx().sharedData().getLock(lockName, cfLock);
 
-            // 2. Get doc
-            cfLock.thenCompose(l -> server.docManager().get(binderName, docID))
+            cfLock
+                    // 2. Get doc
+                    .thenCompose(l -> server.docManager().get(binderName, docID))
 
-            // 3. duplicate detection and call projection function
-            .thenCompose(doc -> {
+                    // 3. duplicate detection and call projection function
+                    .thenCompose(doc -> {
 
-                // Duplicate detection
-                BsonObject lastSeqs = null;
-                if (doc == null) {
-                    doc = new BsonObject().put(ID_FIELD, docID);
-                } else {
-                    lastSeqs = doc.getBsonObject(PROJECTION_STATE_FIELD);
-                    if (lastSeqs != null) {
-                        Long processedSeq = lastSeqs.getLong(name);
-                        if (processedSeq != null) {
-                            if (processedSeq >= seq) {
-                                // We've processed this one before, so ignore it
-                                log.trace("Ignoring event " + seq + " as already processed");
-                                return CompletableFuture.completedFuture(false);
+                        // Duplicate detection
+                        BsonObject lastSeqs = null;
+                        if (doc == null) {
+                            doc = new BsonObject().put(ID_FIELD, docID);
+                        } else {
+                            lastSeqs = doc.getBsonObject(PROJECTION_STATE_FIELD);
+                            if (lastSeqs != null) {
+                                Long processedSeq = lastSeqs.getLong(name);
+                                if (processedSeq != null) {
+                                    if (processedSeq >= seq) {
+                                        // We've processed this one before, so ignore it
+                                        log.trace("Ignoring event " + seq + " as already processed");
+                                        return CompletableFuture.completedFuture(false);
+                                    }
+                                }
                             }
                         }
-                    }
-                }
 
-                if (lastSeqs == null) {
-                    lastSeqs = new BsonObject();
-                    doc.put(PROJECTION_STATE_FIELD, lastSeqs);
-                }
-                Delivery delivery = new DeliveryImpl(channel, frame.getLong(Protocol.RECEV_TIMESTAMP),
-                        seq, frame.getBsonObject(Protocol.RECEV_EVENT));
-                BsonObject updated = projectionFunction.apply(doc, delivery);
+                        if (lastSeqs == null) {
+                            lastSeqs = new BsonObject();
+                            doc.put(PROJECTION_STATE_FIELD, lastSeqs);
+                        }
+                        Delivery delivery = new DeliveryImpl(channel, frame.getLong(Protocol.RECEV_TIMESTAMP),
+                                seq, frame.getBsonObject(Protocol.RECEV_EVENT));
+                        BsonObject updated = projectionFunction.apply(doc, delivery);
 
-                // Update the last sequence
-                lastSeqs.put(name, seq);
+                        // Update the last sequence
+                        lastSeqs.put(name, seq);
 
-                // Store the doc
-                CompletableFuture<Void> cfSaved = server.docManager().put(binderName, docID, updated);
-                return cfSaved.thenApply(v -> true);
-            })
+                        // Store the doc
+                        CompletableFuture<Void> cfSaved = server.docManager().put(binderName, docID, updated);
+                        return cfSaved.thenApply(v -> true);
+                    })
 
-            // 4. acknowledge and release lock if was processed
-            .thenAccept(processed -> {
-                if (processed) {
-                    subscription.acknowledge(seq);
-                }
-                try {
-                    cfLock.get().release();
-                } catch (Exception e) {
-                    throw new MewException(e);
-                }
-            })
+                    // 4. acknowledge and release lock if was processed
+                    .thenAccept(processed -> {
+                        if (processed) {
+                            subscription.acknowledge(seq);
+                        }
+                        try {
+                            cfLock.get().release();
+                        } catch (Exception e) {
+                            throw new MewException(e);
+                        }
+                    })
 
-            // 5. handle exceptions
-            .exceptionally(t -> {
-                log.error("Failed in processing projection " + name, t);
-                return null;
-            });
+                    // 5. handle exceptions
+                    .exceptionally(t -> {
+                        log.error("Failed in processing projection " + name, t);
+                        return null;
+                    });
         }
 
         @Override

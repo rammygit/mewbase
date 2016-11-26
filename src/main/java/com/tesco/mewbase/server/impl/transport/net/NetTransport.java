@@ -1,8 +1,6 @@
 package com.tesco.mewbase.server.impl.transport.net;
 
 import com.tesco.mewbase.server.ServerOptions;
-import com.tesco.mewbase.server.impl.ConnectionImpl;
-import com.tesco.mewbase.server.impl.ServerImpl;
 import com.tesco.mewbase.server.impl.Transport;
 import com.tesco.mewbase.server.impl.TransportConnection;
 import io.vertx.core.Vertx;
@@ -17,9 +15,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 /**
- *
  * TCP transport
- *
+ * <p>
  * Created by tim on 21/11/16.
  */
 public class NetTransport implements Transport {
