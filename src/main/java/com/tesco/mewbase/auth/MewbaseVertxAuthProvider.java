@@ -1,7 +1,7 @@
 package com.tesco.mewbase.auth;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.server.impl.Codec;
+import com.tesco.mewbase.client.MewException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.AuthProvider;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ public class MewbaseVertxAuthProvider implements MewbaseAuthProvider {
     }
 
     @Override
-    public CompletableFuture<BsonObject> authenticate(BsonObject authInfo) {
+    public CompletableFuture<MewbaseUser> authenticate(BsonObject authInfo) {
         CompletableFuture cf = new CompletableFuture();
 
         JsonObject jsonAuthInfo = new JsonObject();
@@ -41,14 +41,11 @@ public class MewbaseVertxAuthProvider implements MewbaseAuthProvider {
         });
 
         authProvider.authenticate(jsonAuthInfo, vertxRes -> {
-            BsonObject result = new BsonObject();
             if (vertxRes.succeeded()) {
-                result.put(Codec.RESPONSE_OK, true);
+                cf.complete(new VertxUser(vertxRes.result()));
             } else {
-                result.put(Codec.RESPONSE_OK, false);
-                result.put(Codec.RESPONSE_ERRMSG, vertxRes.cause().getMessage());
+                cf.completeExceptionally(new MewException("Incorrect username/password"));
             }
-            cf.complete(result);
         });
 
         return cf;

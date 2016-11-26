@@ -1,5 +1,6 @@
 package com.tesco.mewbase.server;
 
+import com.tesco.mewbase.auth.DummyAuthProvider;
 import com.tesco.mewbase.auth.MewbaseAuthProvider;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import io.vertx.core.net.NetServerOptions;
@@ -21,7 +22,7 @@ public class ServerOptions {
     private String docsDir = DEFAULT_DOCS_DIR;
     private String[] binders;
 
-    private MewbaseAuthProvider authProvider;
+    private MewbaseAuthProvider authProvider = new DummyAuthProvider();
 
     public String[] getChannels() {
         return channels;

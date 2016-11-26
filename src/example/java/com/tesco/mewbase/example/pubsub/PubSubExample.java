@@ -28,7 +28,7 @@ public class PubSubExample {
     private void example() throws Exception {
 
         // Setup and start a server
-        ServerOptions options = new ServerOptions().setChannels(new String[]{"orders"}).setAuthProvider(new DummyAuthProvider());
+        ServerOptions options = new ServerOptions().setChannels(new String[]{"orders"});
         Server server = Server.newServer(options);
         server.start().get();
 

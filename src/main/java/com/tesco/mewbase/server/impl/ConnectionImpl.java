@@ -1,6 +1,7 @@
 package com.tesco.mewbase.server.impl;
 
 import com.tesco.mewbase.auth.MewbaseAuthProvider;
+import com.tesco.mewbase.auth.MewbaseUser;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
@@ -64,18 +65,21 @@ public class ConnectionImpl implements ServerFrameHandler {
 
         BsonObject value = (BsonObject) frame.getValue(Codec.CONNECT_AUTH_INFO);
 
-        CompletableFuture<BsonObject> cf = authProvider.authenticate(value);
+        CompletableFuture<MewbaseUser> cf = authProvider.authenticate(value);
 
-        cf.handle((authResp, ex) -> {
+        cf.handle((user, ex) -> {
             BsonObject response = new BsonObject();
+
 
             if (ex != null) {
                 buildErrorResponse(ex, response);
             } else {
-                if (authResp.getBoolean(Codec.RESPONSE_OK)) {
+                if (user != null) {
                     authenticated = true;
+                    response.put(Codec.RESPONSE_OK, true);
+                } else {
+                    response.put(Codec.RESPONSE_OK, false).put(Codec.RESPONSE_ERRMSG, "Failed to authenticate");
                 }
-                response = authResp;
             }
             writeResponse(Codec.RESPONSE_FRAME, response, getWriteSeq());
             return null;

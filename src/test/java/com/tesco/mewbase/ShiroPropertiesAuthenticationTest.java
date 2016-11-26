@@ -60,7 +60,7 @@ public class ShiroPropertiesAuthenticationTest extends AuthenticationTestBase {
         thrown.expect(ExecutionException.class);
 
         //TODO: When error messages and codes are centralized this should be changed
-        thrown.expectMessage("org.apache.shiro.authc.UnknownAccountException");
+        thrown.expectMessage("Incorrect username/password");
 
         BsonObject authInfo = new BsonObject().put("username", "error").put("password", "error");
         execSimplePubSub(context, authInfo);

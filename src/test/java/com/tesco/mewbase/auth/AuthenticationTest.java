@@ -21,7 +21,7 @@ public class AuthenticationTest extends AuthenticationTestBase {
     public void testFailedAuthentication(TestContext context) throws Exception {
         thrown.expect(ExecutionException.class);
         //TODO: When error messages and codes are centralized this should be changed
-        thrown.expectMessage("Not authenticated");
+        thrown.expectMessage("Incorrect username/password");
 
         BsonObject authInfo = new BsonObject().put("success", false);
         execSimplePubSub(context, authInfo);

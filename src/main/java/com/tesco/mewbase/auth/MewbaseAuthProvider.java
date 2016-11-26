@@ -26,8 +26,8 @@ public interface MewbaseAuthProvider {
      * </pre>
      *
      * @param authInfo the auth information
-     * @return a CompletableFuture containing the authentication result. This should at least contain {@link com.tesco.mewbase.server.impl.Codec} RESPONSE_OK
-     *         detailing the outcome of the authentication.
+     * @return a CompletableFuture containing a MewbaseUser where authorization operations can be performed
+     *         on it
      */
-    CompletableFuture<BsonObject> authenticate(BsonObject authInfo);
+    CompletableFuture<MewbaseUser> authenticate(BsonObject authInfo);
 }
