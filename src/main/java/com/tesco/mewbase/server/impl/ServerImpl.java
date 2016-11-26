@@ -4,8 +4,9 @@ import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.impl.lmdb.LmdbDocManager;
-import com.tesco.mewbase.function.ProjectionManager;
-import com.tesco.mewbase.function.impl.ProjectionManagerImpl;
+import com.tesco.mewbase.projection.Projection;
+import com.tesco.mewbase.projection.ProjectionManager;
+import com.tesco.mewbase.projection.impl.ProjectionManagerImpl;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
 import com.tesco.mewbase.log.impl.file.FileAccess;
@@ -40,19 +41,23 @@ public class ServerImpl implements Server {
     private final ProjectionManager projectionManager;
     private final Set<Transport> transports = new ConcurrentHashSet<>();
 
-    private static final String SYSTEM_BINDER_PREFIX = "_mb.";
+    public static final String SYSTEM_BINDER_PREFIX = "_mb.";
     public static final String DURABLE_SUBS_BINDER_NAME = SYSTEM_BINDER_PREFIX + "durableSubs";
     private static final String[] SYSTEM_BINDERS = new String[] {DURABLE_SUBS_BINDER_NAME};
 
     protected ServerImpl(Vertx vertx, ServerOptions serverOptions) {
         this.vertx = vertx;
+        if (vertx.isClustered()) {
+            // Usage of locks in projection manager disallows clustered vert.x
+            throw new IllegalStateException("Clustered Vert.x not supported");
+        }
         this.serverOptions = serverOptions;
         FileAccess faf = new AFFileAccess(vertx);
         FileLogManagerOptions sOptions = serverOptions.getFileLogManagerOptions();
         FileLogManagerOptions options = sOptions == null ? new FileLogManagerOptions() : sOptions;
         this.logManager = new FileLogManager(vertx, options, faf);
         this.docManager = new LmdbDocManager(serverOptions.getDocsDir(), vertx);
-        this.projectionManager = new ProjectionManagerImpl(docManager, logManager);
+        this.projectionManager = new ProjectionManagerImpl(this);
     }
 
     protected ServerImpl(ServerOptions serverOptions) {
@@ -99,16 +104,11 @@ public class ServerImpl implements Server {
     }
 
     @Override
-    public boolean registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
-                                      String binderName, Function<BsonObject, String> docIDSelector,
-                                      BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
+    public Projection registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
+                                         String binderName, Function<BsonObject, String> docIDSelector,
+                                         BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
 
         return projectionManager.registerProjection(name, channel, eventFilter, binderName, docIDSelector, projectionFunction);
-    }
-
-    @Override
-    public boolean unregisterProjection(String name) {
-        return projectionManager.unregisterProjection(name);
     }
 
     protected void removeConnection(ConnectionImpl connection) {
@@ -119,8 +119,12 @@ public class ServerImpl implements Server {
         return logManager.getLog(channel);
     }
 
-    protected DocManager docManager() {
+    public DocManager docManager() {
         return docManager;
+    }
+
+    public Vertx vertx() {
+        return vertx;
     }
 
     private CompletableFuture<Void> startTransports() {
