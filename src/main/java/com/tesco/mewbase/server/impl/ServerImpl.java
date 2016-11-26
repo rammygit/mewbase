@@ -4,6 +4,7 @@ import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.impl.lmdb.LmdbDocManager;
+import com.tesco.mewbase.projection.Projection;
 import com.tesco.mewbase.projection.ProjectionManager;
 import com.tesco.mewbase.projection.impl.ProjectionManagerImpl;
 import com.tesco.mewbase.log.Log;
@@ -103,16 +104,11 @@ public class ServerImpl implements Server {
     }
 
     @Override
-    public boolean registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
-                                      String binderName, Function<BsonObject, String> docIDSelector,
-                                      BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
+    public Projection registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
+                                         String binderName, Function<BsonObject, String> docIDSelector,
+                                         BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
 
         return projectionManager.registerProjection(name, channel, eventFilter, binderName, docIDSelector, projectionFunction);
-    }
-
-    @Override
-    public boolean unregisterProjection(String name) {
-        return projectionManager.unregisterProjection(name);
     }
 
     protected void removeConnection(ConnectionImpl connection) {

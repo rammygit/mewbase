@@ -43,4 +43,12 @@ public class ProjectionSubscription extends SubscriptionBase {
         }
         afterAcknowledge(pos);
     }
+
+    void pause() {
+        readStream.pause();
+    }
+
+    void resume() {
+        readStream.resume();
+    }
 }

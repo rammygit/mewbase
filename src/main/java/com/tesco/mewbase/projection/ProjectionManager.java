@@ -22,16 +22,9 @@ public interface ProjectionManager {
      * @param projectionFunction the projection to apply to the bson
      * @return true is the projection is installed successfully
      */
-    boolean registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
-                               String binderName, Function<BsonObject, String> docIDSelector,
-                               BiFunction<BsonObject, Delivery, BsonObject> projectionFunction);
+    Projection registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
+                                  String binderName, Function<BsonObject, String> docIDSelector,
+                                  BiFunction<BsonObject, Delivery, BsonObject> projectionFunction);
 
-    /**
-     * Removes the projection with the given name from the projection manager
-     *
-     * @param functionName the name of the projection to remove
-     * @return true if the projection is successfully removed
-     */
-    boolean unregisterProjection(String functionName);
 
 }

@@ -75,13 +75,13 @@ public abstract class SubscriptionBase {
     }
 
     // Unsubscribe deletes the durable subscription
-    protected void unsubscribe() {
+    public void unsubscribe() {
         if (subDescriptor.getDurableID() != null) {
             DocManager docManager = server.docManager();
             docManager.delete(ServerImpl.DURABLE_SUBS_BINDER_NAME, subDescriptor.getDurableID());
         }
     }
-
+    
     // This can be called on different threads depending on whether the frame is coming from file or direct
     private synchronized void handleEvent0(long pos, BsonObject frame) {
         if (ignoreFirst){

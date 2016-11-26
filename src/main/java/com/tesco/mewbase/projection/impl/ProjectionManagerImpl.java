@@ -5,6 +5,7 @@ import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.common.impl.DeliveryImpl;
+import com.tesco.mewbase.projection.Projection;
 import com.tesco.mewbase.projection.ProjectionManager;
 import com.tesco.mewbase.server.impl.Protocol;
 import com.tesco.mewbase.server.impl.ServerImpl;
@@ -30,7 +31,7 @@ public class ProjectionManagerImpl implements ProjectionManager {
 
     public static final String PROJECTION_STATE_FIELD = "_mb.lastSeqs";
 
-    private final Map<String, ProjectionHolder> projections = new HashMap<>();
+    private final Map<String, ProjectionImpl> projections = new HashMap<>();
 
     private final ServerImpl server;
 
@@ -39,34 +40,23 @@ public class ProjectionManagerImpl implements ProjectionManager {
     }
 
     @Override
-    public boolean registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
-                                      String binderName, Function<BsonObject, String> docIDSelector,
-                                      BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
+    public Projection registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
+                                         String binderName, Function<BsonObject, String> docIDSelector,
+                                         BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
         if (projections.containsKey(name)) {
-            return false;
+            throw new IllegalArgumentException("Projection " + name + " already registered");
         }
         log.trace("Registering projection " + name);
-        ProjectionHolder holder =
-                new ProjectionHolder(name, channel, binderName, eventFilter, docIDSelector, projectionFunction);
+        ProjectionImpl holder =
+                new ProjectionImpl(name, channel, binderName, eventFilter, docIDSelector, projectionFunction);
         projections.put(name, holder);
-        return true;
+        return holder;
     }
 
-    @Override
-    public synchronized boolean unregisterProjection(String name) {
-        ProjectionHolder holder = projections.remove(name);
-        if (holder != null) {
-            log.trace("Unregistering projection " + name);
-            holder.close();
-            return true;
-        } else {
-            return false;
-        }
-    }
 
-    private class ProjectionHolder {
+    private class ProjectionImpl implements Projection {
 
-        final String projectionName;
+        final String name;
         final String channel;
         final String binderName;
         final ProjectionSubscription subscription;
@@ -74,16 +64,16 @@ public class ProjectionManagerImpl implements ProjectionManager {
         final Function<BsonObject, String> docIDSelector;
         final BiFunction<BsonObject, Delivery, BsonObject> projectionFunction;
 
-        public ProjectionHolder(String projectionName, String channel, String binderName, Function<BsonObject, Boolean> eventFilter,
-                                Function<BsonObject, String> docIDSelector,
-                                BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
-            this.projectionName = projectionName;
+        public ProjectionImpl(String name, String channel, String binderName, Function<BsonObject, Boolean> eventFilter,
+                              Function<BsonObject, String> docIDSelector,
+                              BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
+            this.name = name;
             this.channel = channel;
             this.binderName = binderName;
             this.eventFilter = eventFilter;
             this.docIDSelector = docIDSelector;
             this.projectionFunction = projectionFunction;
-            SubDescriptor subDescriptor = new SubDescriptor().setChannel(channel).setDurableID(projectionName);
+            SubDescriptor subDescriptor = new SubDescriptor().setChannel(channel).setDurableID(name);
             this.subscription = new ProjectionSubscription(server, subDescriptor, this::handler);
         }
 
@@ -121,7 +111,7 @@ public class ProjectionManagerImpl implements ProjectionManager {
                 } else {
                     lastSeqs = doc.getBsonObject(PROJECTION_STATE_FIELD);
                     if (lastSeqs != null) {
-                        Long processedSeq = lastSeqs.getLong(projectionName);
+                        Long processedSeq = lastSeqs.getLong(name);
                         if (processedSeq != null) {
                             if (processedSeq >= seq) {
                                 // We've processed this one before, so ignore it
@@ -141,7 +131,7 @@ public class ProjectionManagerImpl implements ProjectionManager {
                 BsonObject updated = projectionFunction.apply(doc, delivery);
 
                 // Update the last sequence
-                lastSeqs.put(projectionName, seq);
+                lastSeqs.put(name, seq);
 
                 // Store the doc
                 CompletableFuture<Void> cfSaved = server.docManager().put(binderName, docID, updated);
@@ -162,15 +152,37 @@ public class ProjectionManagerImpl implements ProjectionManager {
 
             // 5. handle exceptions
             .exceptionally(t -> {
-                log.error("Failed in processing projection " + projectionName, t);
+                log.error("Failed in processing projection " + name, t);
                 return null;
             });
         }
 
-        void close() {
+        @Override
+        public String getName() {
+            return name;
+        }
+
+        @Override
+        public void pause() {
+            subscription.pause();
+        }
+
+        @Override
+        public void resume() {
+            subscription.resume();
+        }
+
+        @Override
+        public void unregister() {
+            projections.remove(name);
             subscription.close();
         }
 
+        @Override
+        public void delete() {
+            unregister();
+            subscription.unsubscribe();
+        }
     }
 
 }
