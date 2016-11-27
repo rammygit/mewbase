@@ -59,8 +59,7 @@ public class ServerTestBase extends MewbaseTestBase {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
                 .setFileLogManagerOptions(fileLogManagerOptions).setBinders(new String[]{TEST_BINDER1})
-                .setDocsDir(testFolder.newFolder().getPath())
-                .setAuthProvider(new DummyAuthProvider());
+                .setDocsDir(testFolder.newFolder().getPath());
     }
 
     protected ClientOptions createClientOptions() {

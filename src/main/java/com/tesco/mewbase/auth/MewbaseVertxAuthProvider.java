@@ -33,7 +33,7 @@ public class MewbaseVertxAuthProvider implements MewbaseAuthProvider {
 
     @Override
     public CompletableFuture<MewbaseUser> authenticate(BsonObject authInfo) {
-        CompletableFuture cf = new CompletableFuture();
+        CompletableFuture<MewbaseUser> cf = new CompletableFuture<>();
 
         JsonObject jsonAuthInfo = new JsonObject();
         authInfo.stream().forEach(entry -> {
@@ -44,7 +44,7 @@ public class MewbaseVertxAuthProvider implements MewbaseAuthProvider {
             if (vertxRes.succeeded()) {
                 cf.complete(new VertxUser(vertxRes.result()));
             } else {
-                cf.completeExceptionally(new MewException("Incorrect username/password"));
+                cf.completeExceptionally(vertxRes.cause());
             }
         });
 

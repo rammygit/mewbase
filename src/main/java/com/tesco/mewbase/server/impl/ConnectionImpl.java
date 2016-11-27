@@ -70,7 +70,6 @@ public class ConnectionImpl implements ServerFrameHandler {
         cf.handle((user, ex) -> {
             BsonObject response = new BsonObject();
 
-
             if (ex != null) {
                 buildErrorResponse(ex, response);
             } else {
