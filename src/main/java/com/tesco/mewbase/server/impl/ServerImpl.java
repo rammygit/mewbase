@@ -11,6 +11,7 @@ import com.tesco.mewbase.log.impl.file.FileLogManager;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.log.impl.file.faf.AFFileAccess;
 import com.tesco.mewbase.projection.Projection;
+import com.tesco.mewbase.projection.ProjectionBuilder;
 import com.tesco.mewbase.projection.ProjectionManager;
 import com.tesco.mewbase.projection.impl.ProjectionManagerImpl;
 import com.tesco.mewbase.server.Server;
@@ -103,12 +104,15 @@ public class ServerImpl implements Server {
         return CompletableFuture.allOf(all);
     }
 
-    @Override
     public Projection registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,
                                          String binderName, Function<BsonObject, String> docIDSelector,
                                          BiFunction<BsonObject, Delivery, BsonObject> projectionFunction) {
 
         return projectionManager.registerProjection(name, channel, eventFilter, binderName, docIDSelector, projectionFunction);
+    }
+
+    public ProjectionBuilder buildProjection(String name) {
+        return projectionManager.buildProjection(name);
     }
 
     protected void removeConnection(ConnectionImpl connection) {

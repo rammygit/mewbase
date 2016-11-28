@@ -26,15 +26,6 @@ public class FileLogManager implements LogManager {
     private final Map<String, FileLog> logs = new ConcurrentHashMap<>();
 
     public FileLogManager(Vertx vertx, FileLogManagerOptions options, FileAccess faf) {
-
-        if (options.getLogDir().contains("mewlog")) {
-            log.trace("****************************************** LOGS DIR");
-            try {
-                Thread.sleep(1000000);
-            } catch (Exception e) {
-            }
-            System.exit(1);
-        }
         this.vertx = vertx;
         this.logDir = new File(options.getLogDir());
         if (!logDir.exists()) {

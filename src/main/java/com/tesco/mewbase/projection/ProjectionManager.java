@@ -26,5 +26,7 @@ public interface ProjectionManager {
                                   String binderName, Function<BsonObject, String> docIDSelector,
                                   BiFunction<BsonObject, Delivery, BsonObject> projectionFunction);
 
+    ProjectionBuilder buildProjection(String name);
+
 
 }

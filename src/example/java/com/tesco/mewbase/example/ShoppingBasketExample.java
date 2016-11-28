@@ -32,16 +32,14 @@ public class ShoppingBasketExample {
         Server server = Server.newServer(options);
         server.start().get();
 
-        // Install a projection that will respond to add_item events and increase/decrease the quantity of the item in the basket
-        server.registerProjection(
-                "basket_add",                                           // projection name
-                "orders",                                               // channel name
-                ev -> ev.getString("eventType").equals("add_item"),     // event filter
-                "baskets",                                              // binder name
-                ev -> ev.getString("basketID"),                         // document id selector; how to obtain the doc id from the event bson
-                (basket, del) ->                                        // projection to run
-                        BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
-        );
+        // Register a projection that will respond to add_item events and increase/decrease the quantity of the item in the basket
+        server.buildProjection("maintain_basket")                             // projection name
+              .projecting("orders")                                           // channel name
+              .filteredBy(ev -> ev.getString("eventType").equals("add_item")) // event filter
+              .onto("baskets")                                                // binder name
+              .identifiedBy(ev -> ev.getString("basketID"))                   // document id selector; how to obtain the doc id from the event bson
+              .as((basket, del) ->                                            // projection function
+                BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))).register();
 
         // Create a client
         Client client = Client.newClient(new ClientOptions());
@@ -59,7 +57,6 @@ public class ShoppingBasketExample {
 
         // Now get the basket
         BsonObject basket = client.findByID("baskets", "basket1111").get();
-
 
         System.out.println("Basket is: " + basket);
     }

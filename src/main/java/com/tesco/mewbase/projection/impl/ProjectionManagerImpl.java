@@ -6,6 +6,7 @@ import com.tesco.mewbase.common.Delivery;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.common.impl.DeliveryImpl;
 import com.tesco.mewbase.projection.Projection;
+import com.tesco.mewbase.projection.ProjectionBuilder;
 import com.tesco.mewbase.projection.ProjectionManager;
 import com.tesco.mewbase.server.impl.Protocol;
 import com.tesco.mewbase.server.impl.ServerImpl;
@@ -53,6 +54,10 @@ public class ProjectionManagerImpl implements ProjectionManager {
         return holder;
     }
 
+    @Override
+    public ProjectionBuilder buildProjection(String name) {
+        return new ProjectionBuilderImpl(name, this);
+    }
 
     private class ProjectionImpl implements Projection {
 

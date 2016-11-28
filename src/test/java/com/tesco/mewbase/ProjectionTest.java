@@ -102,6 +102,18 @@ public class ProjectionTest extends ServerTestBase {
         waitUntilNumItems(10);
     }
 
+    @Test
+    public void testUsingBuilder() throws Exception {
+        server.buildProjection(TEST_PROJECTION_NAME1).projecting(TEST_CHANNEL_1).filteredBy(ev -> true)
+                .onto(TEST_BINDER1).identifiedBy(ev -> ev.getString("basketID"))
+                .as((basket, del) ->
+                                BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID")))
+                .register();
+        Producer prod = client.createProducer(TEST_CHANNEL_1);
+        prod.publish(new BsonObject().put("basketID", TEST_BASKET_ID).put("productID", "prod1").put("quantity", 10)).get();
+        waitUntilNumItems(10);
+    }
+
     private void testProjectionRestart(boolean duplicates) throws Exception {
 
         registerProjection();
