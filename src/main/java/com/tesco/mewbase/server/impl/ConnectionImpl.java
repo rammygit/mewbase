@@ -42,14 +42,6 @@ public class ConnectionImpl implements ServerFrameHandler {
     private long writeSeq;
     private long expectedRespNo;
 
-    public ConnectionImpl(ServerImpl server, NetSocket netSocket, Context context, DocManager docManager) {
-        netSocket.handler(new Codec(this).recordParser());
-        this.server = server;
-        this.socket = netSocket;
-        this.context = context;
-        this.docManager = docManager;
-    }
-
     public ConnectionImpl(ServerImpl server, NetSocket netSocket, Context context, DocManager docManager, MewbaseAuthProvider authProvider) {
         netSocket.handler(new Codec(this).recordParser());
         this.server = server;
@@ -71,13 +63,15 @@ public class ConnectionImpl implements ServerFrameHandler {
             BsonObject response = new BsonObject();
 
             if (ex != null) {
-                buildErrorResponse(ex, response);
+                response.put(Codec.RESPONSE_OK, false);
+                response.put(Codec.RESPONSE_ERRCODE, "ERR_AUTH_001");
+                response.put(Codec.RESPONSE_ERRMSG, ex.getMessage());
             } else {
                 if (user != null) {
                     authenticated = true;
                     response.put(Codec.RESPONSE_OK, true);
                 } else {
-                    response.put(Codec.RESPONSE_OK, false).put(Codec.RESPONSE_ERRMSG, "Failed to authenticate");
+                    throw new IllegalStateException("AuthProvider returned a null user");
                 }
             }
             writeResponse(Codec.RESPONSE_FRAME, response, getWriteSeq());
@@ -414,12 +408,6 @@ public class ConnectionImpl implements ServerFrameHandler {
         for (QueryState queryState : queryStates.values()) {
             queryState.close();
         }
-    }
-
-    protected void buildErrorResponse(Throwable exception, BsonObject response) {
-        response.put(Codec.RESPONSE_OK, false);
-        response.put(Codec.RESPONSE_ERRCODE, "ERR_AUTH_001");
-        response.put(Codec.RESPONSE_ERRMSG, exception.getMessage());
     }
 
     private static final class WriteHolder implements Comparable<WriteHolder> {
