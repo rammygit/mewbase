@@ -31,8 +31,7 @@ public class SSLPubSubTest extends ServerTestBase {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
 
         ServerOptions serverOptions = new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions)
-                .setAuthProvider(new DummyAuthProvider());
+                .setFileLogManagerOptions(fileLogManagerOptions);
 
         serverOptions.getNetServerOptions().setSsl(true).setPemKeyCertOptions(
                 new PemKeyCertOptions()

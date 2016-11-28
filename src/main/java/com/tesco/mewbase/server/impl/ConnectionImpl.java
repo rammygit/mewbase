@@ -64,17 +64,20 @@ public class ConnectionImpl implements ServerFrameHandler {
 
             if (ex != null) {
                 response.put(Codec.RESPONSE_OK, false);
-                response.put(Codec.RESPONSE_ERRCODE, "ERR_AUTH_001");
-                response.put(Codec.RESPONSE_ERRMSG, ex.getMessage());
+                response.put(Codec.RESPONSE_ERRMSG, "Authentication failed");
+                writeResponse(Codec.RESPONSE_FRAME, response, getWriteSeq());
+                logAndClose(ex.getMessage());
             } else {
                 if (user != null) {
                     authenticated = true;
                     response.put(Codec.RESPONSE_OK, true);
+                    writeResponse(Codec.RESPONSE_FRAME, response, getWriteSeq());
                 } else {
-                    throw new IllegalStateException("AuthProvider returned a null user");
+                    String nullUserMsg = "AuthProvider returned a null user";
+                    logAndClose(nullUserMsg);
+                    throw new IllegalStateException(nullUserMsg);
                 }
             }
-            writeResponse(Codec.RESPONSE_FRAME, response, getWriteSeq());
             return null;
         });
         // TODO version checking

@@ -10,8 +10,6 @@ public class DummyAuthProvider implements MewbaseAuthProvider {
     public CompletableFuture<MewbaseUser> authenticate(BsonObject authInfo) {
         CompletableFuture cf = new CompletableFuture();
 
-        cf.completedFuture(new DummyUser());
-
-        return cf;
+        return cf.completedFuture(new DummyUser());
     }
 }
