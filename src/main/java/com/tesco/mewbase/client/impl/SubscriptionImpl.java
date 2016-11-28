@@ -44,9 +44,11 @@ public class SubscriptionImpl implements Subscription {
     }
 
     @Override
-    public synchronized void close() {
-        client.doSubClose(id);
-        closed = true;
+    public void close() {
+        client.doSubClose(id); // Outside sync block to prevent deadlock
+        synchronized (this) {
+            closed = true;
+        }
     }
 
     @Override

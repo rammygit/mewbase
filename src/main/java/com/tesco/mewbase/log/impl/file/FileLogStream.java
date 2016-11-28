@@ -214,6 +214,10 @@ public class FileLogStream implements LogReadStream {
                     buffered.add(new BufferedRecord(fileStreamPos, bson));
                 } else {
                     handle0(fileStreamPos, bson);
+                    // The handler could have closed it
+                    if (closed) {
+                        return;
+                    }
                 }
             }
             if (fileStreamPos == lwep) {
@@ -274,6 +278,9 @@ public class FileLogStream implements LogReadStream {
     }
 
     private void moveToNextFile() {
+        if (closed) {
+            return;
+        }
         streamFile.close();
         streamFile = null;
         resetParser();
