@@ -19,6 +19,8 @@ public class AuthenticationTest extends AuthenticationTestBase {
 
     @Test
     public void testFailedAuthentication(TestContext context) throws Exception {
+        // FIXME - test specifics of exception
+
         thrown.expect(ExecutionException.class);
         //TODO: When error messages and codes are centralized this should be changed
         thrown.expectMessage("Authentication failed");
@@ -26,4 +28,6 @@ public class AuthenticationTest extends AuthenticationTestBase {
         BsonObject authInfo = new BsonObject().put("success", false);
         execSimplePubSub(context, authInfo);
     }
+
+
 }

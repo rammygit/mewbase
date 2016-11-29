@@ -1,7 +1,8 @@
-package com.tesco.mewbase.auth;
+package com.tesco.mewbase.auth.impl;
 
+import com.tesco.mewbase.auth.MewbaseAuthProvider;
+import com.tesco.mewbase.auth.MewbaseUser;
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.MewException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.AuthProvider;
 import org.slf4j.Logger;

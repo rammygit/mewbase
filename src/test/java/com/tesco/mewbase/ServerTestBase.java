@@ -1,7 +1,5 @@
 package com.tesco.mewbase;
 
-import com.tesco.mewbase.auth.DummyAuthProvider;
-import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Client;
 import com.tesco.mewbase.client.ClientOptions;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
@@ -22,36 +20,27 @@ public class ServerTestBase extends MewbaseTestBase {
 
     private final static Logger log = LoggerFactory.getLogger(PubSubTest.class);
 
-    private final static String CERT_PATH = "src/test/resources/server-cert.pem";
-    private final static String KEY_PATH = "src/test/resources/server-key.pem";
-
     protected Server server;
     protected Client client;
 
     @Override
     protected void setup(TestContext context) throws Exception {
         super.setup(context);
-        log.trace("in before");
         File logDir = testFolder.newFolder();
-        log.trace("Log dir is {}", logDir);
 
         ServerOptions serverOptions = createServerOptions(logDir);
         ClientOptions clientOptions = createClientOptions();
 
         server = Server.newServer(serverOptions);
-        CompletableFuture<Void> cfStart = server.start();
-        cfStart.get();
+        server.start().get();
 
         client = Client.newClient(vertx, clientOptions);
     }
 
     @Override
     protected void tearDown(TestContext context) throws Exception {
-        log.trace("in after");
         client.close().get();
-        log.trace("client closed");
         server.stop().get();
-        log.trace("server closed");
         super.tearDown(context);
     }
 

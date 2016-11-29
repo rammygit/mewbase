@@ -59,19 +59,21 @@ public class ConnectionImpl implements ServerFrameHandler {
 
         CompletableFuture<MewbaseUser> cf = authProvider.authenticate(value);
 
+        long writeSeq = getWriteSeq();
+
         cf.handle((user, ex) -> {
             BsonObject response = new BsonObject();
 
             if (ex != null) {
                 response.put(Codec.RESPONSE_OK, false);
                 response.put(Codec.RESPONSE_ERRMSG, "Authentication failed");
-                writeResponse(Codec.RESPONSE_FRAME, response, getWriteSeq());
+                writeResponse(Codec.RESPONSE_FRAME, response, writeSeq);
                 logAndClose(ex.getMessage());
             } else {
                 if (user != null) {
                     authenticated = true;
                     response.put(Codec.RESPONSE_OK, true);
-                    writeResponse(Codec.RESPONSE_FRAME, response, getWriteSeq());
+                    writeResponse(Codec.RESPONSE_FRAME, response, writeSeq);
                 } else {
                     String nullUserMsg = "AuthProvider returned a null user";
                     logAndClose(nullUserMsg);
@@ -384,7 +386,6 @@ public class ConnectionImpl implements ServerFrameHandler {
             writeResponse(frameName, resp, getWriteSeq());
             logAndClose("Not authenticated");
         }
-
         return authenticated;
     }
 

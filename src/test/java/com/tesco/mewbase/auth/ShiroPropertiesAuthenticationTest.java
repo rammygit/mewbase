@@ -1,7 +1,7 @@
-package com.tesco.mewbase;
+package com.tesco.mewbase.auth;
 
 import com.tesco.mewbase.auth.AuthenticationTestBase;
-import com.tesco.mewbase.auth.MewbaseVertxAuthProvider;
+import com.tesco.mewbase.auth.impl.MewbaseVertxAuthProvider;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Client;
 import com.tesco.mewbase.client.ClientOptions;
@@ -57,6 +57,7 @@ public class ShiroPropertiesAuthenticationTest extends AuthenticationTestBase {
 
     @Test
     public void testFailedAuthentication(TestContext context) throws Exception {
+        // FIXME: Test specifics of exception too
         thrown.expect(ExecutionException.class);
 
         //TODO: When error messages and codes are centralized this should be changed

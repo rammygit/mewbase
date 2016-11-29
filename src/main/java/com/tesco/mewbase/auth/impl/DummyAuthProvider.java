@@ -1,5 +1,7 @@
-package com.tesco.mewbase.auth;
+package com.tesco.mewbase.auth.impl;
 
+import com.tesco.mewbase.auth.MewbaseAuthProvider;
+import com.tesco.mewbase.auth.MewbaseUser;
 import com.tesco.mewbase.bson.BsonObject;
 
 import java.util.concurrent.CompletableFuture;
@@ -8,8 +10,6 @@ public class DummyAuthProvider implements MewbaseAuthProvider {
 
     @Override
     public CompletableFuture<MewbaseUser> authenticate(BsonObject authInfo) {
-        CompletableFuture cf = new CompletableFuture();
-
-        return cf.completedFuture(new DummyUser());
+        return CompletableFuture.completedFuture(new DummyUser());
     }
 }
