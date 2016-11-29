@@ -52,19 +52,13 @@ public class ShiroPropertiesAuthenticationTest extends AuthenticationTestBase {
     @Test
     public void testSuccessfulAuthentication(TestContext context) throws Exception {
         BsonObject authInfo = new BsonObject().put("username", "mew").put("password", "base");
-        execSimplePubSub(context, authInfo);
+        execSimplePubSub(true, context, authInfo);
     }
 
     @Test
     public void testFailedAuthentication(TestContext context) throws Exception {
-        // FIXME: Test specifics of exception too
-        thrown.expect(ExecutionException.class);
-
-        //TODO: When error messages and codes are centralized this should be changed
-        thrown.expectMessage("Authentication failed");
-
         BsonObject authInfo = new BsonObject().put("username", "error").put("password", "error");
-        execSimplePubSub(context, authInfo);
+        execSimplePubSub(false, context, authInfo);
     }
 
 }
