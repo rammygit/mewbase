@@ -2,10 +2,7 @@ package com.tesco.mewbase.auth;
 
 import com.tesco.mewbase.MewbaseTestBase;
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.Client;
-import com.tesco.mewbase.client.ClientDelivery;
-import com.tesco.mewbase.client.ClientOptions;
-import com.tesco.mewbase.client.Producer;
+import com.tesco.mewbase.client.*;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.Server;
@@ -20,7 +17,11 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class AuthenticationTestBase extends MewbaseTestBase {
 
@@ -77,21 +78,38 @@ public class AuthenticationTestBase extends MewbaseTestBase {
         client = Client.newClient(vertx, clientOptions);
     }
 
-    protected void execSimplePubSub(TestContext context, BsonObject authInfo) throws Exception {
+    protected Async execSimplePubSub(boolean success, TestContext context, BsonObject authInfo) throws Exception {
         setupAuthClient(authInfo);
         SubDescriptor descriptor = new SubDescriptor();
         descriptor.setChannel(TEST_CHANNEL_1);
 
         Producer prod = client.createProducer(TEST_CHANNEL_1);
-        Async async = context.async();
+        Async async = success ? context.async() : null;
 
         BsonObject sent = new BsonObject().put("foo", "bar");
 
         Consumer<ClientDelivery> handler = re -> async.complete();
 
-        client.subscribe(descriptor, handler).get();
+        try {
+            client.subscribe(descriptor, handler).get();
+            if (!success) {
+                context.fail("Should throw exception");
+            }
+            prod.publish(sent).get();
+        } catch (ExecutionException e) {
+            if (!success) {
+                Throwable cause = e.getCause();
+                assertTrue(cause instanceof MewException);
+                MewException mcause = (MewException)cause;
+                assertEquals("Authentication failed", mcause.getMessage());
+            } else {
+                context.fail("Exception received");
+            }
+        }
 
-        prod.publish(sent).get();
+
+
+        return async;
     }
 
 
