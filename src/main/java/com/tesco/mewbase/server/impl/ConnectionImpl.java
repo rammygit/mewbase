@@ -60,15 +60,15 @@ public class ConnectionImpl implements ServerFrameHandler {
         Integer sessID = frame.getInteger(Protocol.PUBLISH_SESSID);
         Integer requestID = frame.getInteger(Protocol.REQUEST_REQUEST_ID);
         if (channel == null) {
-            logAndClose("No channel in PUB");
+            missingField(Protocol.PUBLISH_CHANNEL, Protocol.PUBLISH_FRAME);
             return;
         }
         if (event == null) {
-            logAndClose("No event in PUB");
+            missingField(Protocol.PUBLISH_EVENT, Protocol.PUBLISH_FRAME);
             return;
         }
         if (requestID == null) {
-            logAndClose("No rID in PUB");
+            missingField(Protocol.REQUEST_REQUEST_ID, Protocol.PUBLISH_FRAME);
             return;
         }
         Log log = server.getLog(channel);
@@ -115,12 +115,12 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkAuthorised();
         String channel = frame.getString(Protocol.SUBSCRIBE_CHANNEL);
         if (channel == null) {
-            logAndClose("No channel in SUBSCRIBE");
+            missingField(Protocol.SUBSCRIBE_CHANNEL, Protocol.SUBSCRIBE_FRAME);
             return;
         }
         Integer requestID = frame.getInteger(Protocol.REQUEST_REQUEST_ID);
         if (requestID == null) {
-            logAndClose("No rID in SUBSCRIBE");
+            missingField(Protocol.REQUEST_REQUEST_ID, Protocol.SUBSCRIBE_FRAME);
             return;
         }
         Long startSeq = frame.getLong(Protocol.SUBSCRIBE_STARTPOS);
@@ -152,17 +152,17 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkAuthorised();
         Integer subID = frame.getInteger(Protocol.SUBCLOSE_SUBID);
         if (subID == null) {
-            logAndClose("No subID in SUBCLOSE");
+            missingField(Protocol.SUBCLOSE_SUBID, Protocol.SUBCLOSE_FRAME);
             return;
         }
         Integer requestID = frame.getInteger(Protocol.REQUEST_REQUEST_ID);
         if (requestID == null) {
-            logAndClose("No rID in SUBSCRIBE");
+            missingField(Protocol.REQUEST_REQUEST_ID, Protocol.SUBCLOSE_FRAME);
             return;
         }
         SubscriptionImpl subscription = subscriptionMap.remove(subID);
         if (subscription == null) {
-            logAndClose("Invalid subID in SUBCLOSE");
+            invalidField(Protocol.SUBCLOSE_SUBID, Protocol.SUBCLOSE_FRAME);
             return;
         }
         subscription.close();
@@ -178,17 +178,17 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkAuthorised();
         Integer subID = frame.getInteger(Protocol.UNSUBSCRIBE_SUBID);
         if (subID == null) {
-            logAndClose("No subID in UNSUBSCRIBE");
+            missingField(Protocol.UNSUBSCRIBE_SUBID, Protocol.UNSUBSCRIBE_FRAME);
             return;
         }
         Integer requestID = frame.getInteger(Protocol.REQUEST_REQUEST_ID);
         if (requestID == null) {
-            logAndClose("No rID in SUBSCRIBE");
+            missingField(Protocol.REQUEST_REQUEST_ID, Protocol.UNSUBSCRIBE_FRAME);
             return;
         }
         SubscriptionImpl subscription = subscriptionMap.remove(subID);
         if (subscription == null) {
-            logAndClose("Invalid subID in UNSUBSCRIBE");
+            invalidField(Protocol.UNSUBSCRIBE_SUBID, Protocol.UNSUBSCRIBE_FRAME);
             return;
         }
         subscription.close();
@@ -205,22 +205,22 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkAuthorised();
         Integer subID = frame.getInteger(Protocol.ACKEV_SUBID);
         if (subID == null) {
-            logAndClose("No subID in ACKEV");
+            missingField(Protocol.ACKEV_SUBID, Protocol.ACKEV_FRAME);
             return;
         }
         Integer bytes = frame.getInteger(Protocol.ACKEV_BYTES);
         if (bytes == null) {
-            logAndClose("No bytes in ACKEV");
+            missingField(Protocol.ACKEV_BYTES, Protocol.ACKEV_FRAME);
             return;
         }
         Long pos = frame.getLong(Protocol.ACKEV_POS);
         if (pos == null) {
-            logAndClose("No pos in ACKEV");
+            missingField(Protocol.ACKEV_POS, Protocol.ACKEV_FRAME);
             return;
         }
         SubscriptionImpl subscription = subscriptionMap.get(subID);
         if (subscription == null) {
-            logAndClose("Invalid subID in ACKEV");
+            invalidField(Protocol.ACKEV_SUBID, Protocol.ACKEV_FRAME);
             return;
         }
         subscription.handleAckEv(pos, bytes);
@@ -230,7 +230,11 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handleQuery(BsonObject frame) {
         checkContext();
         checkAuthorised();
-        int queryID = frame.getInteger(Protocol.QUERY_QUERYID);
+        Integer queryID = frame.getInteger(Protocol.QUERY_QUERYID);
+        if (queryID == null) {
+            missingField(Protocol.QUERY_QUERYID, Protocol.QUERY_FRAME);
+            return;
+        }
         String docID = frame.getString(Protocol.QUERY_DOCID);
         String binder = frame.getString(Protocol.QUERY_BINDER);
         BsonObject matcher = frame.getBsonObject(Protocol.QUERY_MATCHER);
@@ -254,17 +258,17 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkAuthorised();
         Integer queryID = frame.getInteger(Protocol.QUERYACK_QUERYID);
         if (queryID == null) {
-            logAndClose("No queryID in QueryAck");
-        } else {
-            Integer bytes = frame.getInteger(Protocol.QUERYACK_BYTES);
-            if (bytes == null) {
-                logAndClose("No bytes in QueryAck");
-                return;
-            }
-            QueryState queryState = queryStates.get(queryID);
-            if (queryState != null) {
-                queryState.handleAck(bytes);
-            }
+            missingField(Protocol.QUERYACK_QUERYID, Protocol.QUERYACK_FRAME);
+            return;
+        }
+        Integer bytes = frame.getInteger(Protocol.QUERYACK_BYTES);
+        if (bytes == null) {
+            missingField(Protocol.QUERYACK_BYTES, Protocol.QUERYACK_FRAME);
+            return;
+        }
+        QueryState queryState = queryStates.get(queryID);
+        if (queryState != null) {
+            queryState.handleAck(bytes);
         }
     }
 
@@ -296,11 +300,11 @@ public class ConnectionImpl implements ServerFrameHandler {
 
 
     protected void checkWrap(int i) {
-        // Sanity check - wrap around - won't happen but better to close connection that give incorrect behaviour
+        // Sanity check - wrap around - won't happen but better to close connection than give incorrect behaviour
         if (i == Integer.MIN_VALUE) {
             String msg = "int wrapped!";
-            logAndClose(msg);
-            throw new IllegalStateException(msg);
+            logger.error(msg);
+            close();
         }
     }
 
@@ -310,8 +314,13 @@ public class ConnectionImpl implements ServerFrameHandler {
         }
     }
 
-    protected void logAndClose(String errMsg) {
-        logger.warn(errMsg + ". connection will be closed");
+    protected void missingField(String fieldName, String frameType) {
+        logger.warn("protocol error: missing {} in {}. connection will be closed", fieldName, frameType);
+        close();
+    }
+
+    protected void invalidField(String fieldName, String frameType) {
+        logger.warn("protocol error: invalid {} in {}. connection will be closed", fieldName, frameType);
         close();
     }
 
