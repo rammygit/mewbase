@@ -59,7 +59,6 @@ public class QueryTest extends ServerTestBase {
         AtomicInteger cnt = new AtomicInteger();
         client.findMatching(TEST_BINDER1, new BsonObject(), qr -> {
             String expectedID = getID(cnt.getAndIncrement());
-            log.trace("Got doc {}", qr.document());
             context.assertEquals(expectedID, qr.document().getString("id"));
             if (cnt.get() == numDocs) {
                 context.assertTrue(qr.isLast());

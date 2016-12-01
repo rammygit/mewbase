@@ -13,7 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,12 +27,9 @@ public class ConnectionImpl implements ServerFrameHandler {
     private final TransportConnection transportConnection;
     private final Context context;
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
-    private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
     private final Map<Integer, QueryState> queryStates = new ConcurrentHashMap<>();
     private boolean authorised;
     private int subSeq;
-    private long writeSeq;
-    private long expectedRespNo;
 
     public ConnectionImpl(ServerImpl server, TransportConnection transportConnection, Context context, DocManager docManager) {
         Protocol protocol = new Protocol(this);
@@ -52,7 +48,7 @@ public class ConnectionImpl implements ServerFrameHandler {
         authorised = true;
         BsonObject resp = new BsonObject();
         resp.put(Protocol.RESPONSE_OK, true);
-        writeResponse(Protocol.RESPONSE_FRAME, resp, getWriteSeq());
+        writeResponse(Protocol.RESPONSE_FRAME, resp);
     }
 
     @Override
@@ -61,6 +57,8 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkAuthorised();
         String channel = frame.getString(Protocol.PUBLISH_CHANNEL);
         BsonObject event = frame.getBsonObject(Protocol.PUBLISH_EVENT);
+        Integer sessID = frame.getInteger(Protocol.PUBLISH_SESSID);
+        Integer requestID = frame.getInteger(Protocol.REQUEST_REQUEST_ID);
         if (channel == null) {
             logAndClose("No channel in PUB");
             return;
@@ -69,7 +67,10 @@ public class ConnectionImpl implements ServerFrameHandler {
             logAndClose("No event in PUB");
             return;
         }
-        long order = getWriteSeq();
+        if (requestID == null) {
+            logAndClose("No rID in PUB");
+            return;
+        }
         Log log = server.getLog(channel);
         BsonObject record = new BsonObject();
         record.put(Protocol.RECEV_TIMESTAMP, System.currentTimeMillis());
@@ -78,16 +79,24 @@ public class ConnectionImpl implements ServerFrameHandler {
 
         cf.handle((v, ex) -> {
             BsonObject resp = new BsonObject();
+            resp.put(Protocol.RESPONSE_REQUEST_ID, requestID);
             if (ex == null) {
                 resp.put(Protocol.RESPONSE_OK, true);
             } else {
                 // TODO error code
                 resp.put(Protocol.RESPONSE_OK, false).put(Protocol.RESPONSE_ERRMSG, "Failed to persist");
             }
-            writeResponse(Protocol.RESPONSE_FRAME, resp, order);
+            writeResponse(Protocol.RESPONSE_FRAME, resp);
             return null;
         });
     }
+
+    /*
+    TODO support a PUBLISH with no send ack - writes can be reordered in log so getting a send ACK for each
+    PUB in order may require reordering on the server which can slow things down.
+    In some cases, e.g. transactions may want to send a bunch of publishes then just get a single ack when the tx
+    is persisted
+     */
 
     @Override
     public void handleStartTx(BsonObject frame) {
@@ -116,6 +125,11 @@ public class ConnectionImpl implements ServerFrameHandler {
             logAndClose("No channel in SUBSCRIBE");
             return;
         }
+        Integer requestID = frame.getInteger(Protocol.REQUEST_REQUEST_ID);
+        if (requestID == null) {
+            logAndClose("No rID in SUBSCRIBE");
+            return;
+        }
         Long startSeq = frame.getLong(Protocol.SUBSCRIBE_STARTPOS);
         Long startTimestamp = frame.getLong(Protocol.SUBSCRIBE_STARTTIMESTAMP);
         String durableID = frame.getString(Protocol.SUBSCRIBE_DURABLEID);
@@ -132,20 +146,64 @@ public class ConnectionImpl implements ServerFrameHandler {
         SubscriptionImpl subscription = new SubscriptionImpl(this, subID, subDescriptor);
         subscriptionMap.put(subID, subscription);
         BsonObject resp = new BsonObject();
+        resp.put(Protocol.RESPONSE_REQUEST_ID, requestID);
         resp.put(Protocol.RESPONSE_OK, true);
         resp.put(Protocol.SUBRESPONSE_SUBID, subID);
-        writeResponse(Protocol.SUBRESPONSE_FRAME, resp, getWriteSeq());
+        writeResponse(Protocol.SUBRESPONSE_FRAME, resp);
         logger.trace("Subscribed channel: {} startSeq {}", channel, startSeq);
     }
 
     @Override
     public void handleSubClose(BsonObject frame) {
-        handleCloseUnsubscribeSub(frame, false);
+        checkContext();
+        checkAuthorised();
+        Integer subID = frame.getInteger(Protocol.SUBCLOSE_SUBID);
+        if (subID == null) {
+            logAndClose("No subID in SUBCLOSE");
+            return;
+        }
+        Integer requestID = frame.getInteger(Protocol.REQUEST_REQUEST_ID);
+        if (requestID == null) {
+            logAndClose("No rID in SUBSCRIBE");
+            return;
+        }
+        SubscriptionImpl subscription = subscriptionMap.remove(subID);
+        if (subscription == null) {
+            logAndClose("Invalid subID in SUBCLOSE");
+            return;
+        }
+        subscription.close();
+        BsonObject resp = new BsonObject();
+        resp.put(Protocol.RESPONSE_OK, true);
+        resp.put(Protocol.RESPONSE_REQUEST_ID, requestID);
+        writeResponse(Protocol.RESPONSE_FRAME, resp);
     }
 
     @Override
     public void handleUnsubscribe(BsonObject frame) {
-        handleCloseUnsubscribeSub(frame, true);
+        checkContext();
+        checkAuthorised();
+        Integer subID = frame.getInteger(Protocol.UNSUBSCRIBE_SUBID);
+        if (subID == null) {
+            logAndClose("No subID in UNSUBSCRIBE");
+            return;
+        }
+        Integer requestID = frame.getInteger(Protocol.REQUEST_REQUEST_ID);
+        if (requestID == null) {
+            logAndClose("No rID in SUBSCRIBE");
+            return;
+        }
+        SubscriptionImpl subscription = subscriptionMap.remove(subID);
+        if (subscription == null) {
+            logAndClose("Invalid subID in UNSUBSCRIBE");
+            return;
+        }
+        subscription.close();
+        subscription.unsubscribe();
+        BsonObject resp = new BsonObject();
+        resp.put(Protocol.RESPONSE_OK, true);
+        resp.put(Protocol.RESPONSE_REQUEST_ID, requestID);
+        writeResponse(Protocol.RESPONSE_FRAME, resp);
     }
 
     @Override
@@ -228,10 +286,10 @@ public class ConnectionImpl implements ServerFrameHandler {
         res.put(Protocol.QUERYRESULT_QUERYID, queryID);
         res.put(Protocol.QUERYRESULT_RESULT, doc);
         res.put(Protocol.QUERYRESULT_LAST, last);
-        return writeNonResponse(Protocol.QUERYRESULT_FRAME, res);
+        return writeResponse(Protocol.QUERYRESULT_FRAME, res);
     }
 
-    protected Buffer writeNonResponse(String frameName, BsonObject frame) {
+    protected Buffer writeResponse(String frameName, BsonObject frame) {
         Buffer buff = Protocol.encodeFrame(frameName, frame);
         // TODO compare performance of writing directly in all cases and via context
         Context curr = Vertx.currentContext();
@@ -243,43 +301,6 @@ public class ConnectionImpl implements ServerFrameHandler {
         return buff;
     }
 
-    protected void writeResponse(String frameName, BsonObject frame, long order) {
-        Buffer buff = Protocol.encodeFrame(frameName, frame);
-        // TODO compare performance of writing directly in all cases and via context
-        Context curr = Vertx.currentContext();
-        if (curr != context) {
-            context.runOnContext(v -> writeResponseOrdered(buff, order));
-        } else {
-            writeResponseOrdered(buff, order);
-        }
-    }
-
-    protected void writeResponseOrdered(Buffer buff, long order) {
-        checkContext();
-        // Writes can come in in the wrong order, we need to make sure they are written in the correct order
-        if (order == expectedRespNo) {
-            writeResponseOrdered0(buff);
-        } else {
-            // Out of order
-            pq.add(new WriteHolder(order, buff));
-        }
-        while (true) {
-            WriteHolder head = pq.peek();
-            if (head != null && head.order == expectedRespNo) {
-                pq.poll();
-                writeResponseOrdered0(head.buff);
-            } else {
-                break;
-            }
-        }
-    }
-
-    protected long getWriteSeq() {
-        long seq = writeSeq;
-        writeSeq++;
-        checkWrap(writeSeq);
-        return seq;
-    }
 
     protected void checkWrap(int i) {
         // Sanity check - wrap around - won't happen but better to close connection that give incorrect behaviour
@@ -288,21 +309,6 @@ public class ConnectionImpl implements ServerFrameHandler {
             logAndClose(msg);
             throw new IllegalStateException(msg);
         }
-    }
-
-    protected void checkWrap(long l) {
-        // Sanity check - wrap around - won't happen but better to close connection that give incorrect behaviour
-        if (l == Long.MIN_VALUE) {
-            String msg = "long wrapped!";
-            logAndClose(msg);
-            throw new IllegalStateException(msg);
-        }
-    }
-
-    protected void writeResponseOrdered0(Buffer buff) {
-        transportConnection.write(buff);
-        expectedRespNo++;
-        checkWrap(expectedRespNo);
     }
 
     protected void checkAuthorised() {
@@ -339,43 +345,5 @@ public class ConnectionImpl implements ServerFrameHandler {
     protected ServerImpl server() {
         return server;
     }
-
-    private void handleCloseUnsubscribeSub(BsonObject frame, boolean unsubscribe) {
-        checkContext();
-        checkAuthorised();
-        Integer subID = frame.getInteger(Protocol.UNSUBSCRIBE_SUBID);
-        if (subID == null) {
-            logAndClose("No subID in UNSUBSCRIBE");
-            return;
-        }
-        SubscriptionImpl subscription = subscriptionMap.remove(subID);
-        if (subscription == null) {
-            logAndClose("Invalid subID in UNSUBSCRIBE");
-            return;
-        }
-        subscription.close();
-        if (unsubscribe) {
-            subscription.unsubscribe();
-        }
-        BsonObject resp = new BsonObject();
-        resp.put(Protocol.RESPONSE_OK, true);
-        writeResponse(Protocol.RESPONSE_FRAME, resp, getWriteSeq());
-    }
-
-    private static final class WriteHolder implements Comparable<WriteHolder> {
-        final long order;
-        final Buffer buff;
-
-        WriteHolder(long order, Buffer buff) {
-            this.order = order;
-            this.buff = buff;
-        }
-
-        @Override
-        public int compareTo(WriteHolder other) {
-            return Long.compare(this.order, other.order);
-        }
-    }
-
 
 }

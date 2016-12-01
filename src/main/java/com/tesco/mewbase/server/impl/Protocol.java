@@ -18,6 +18,9 @@ import org.slf4j.LoggerFactory;
  */
 public class Protocol {
 
+    public static final String FRAME_TYPE_FIELD = "type";
+    public static final String FRAME_FRAME_FIELD = "frame";
+
     // Frame types
 
     public static final String RESPONSE_FRAME = "RESPONSE";
@@ -39,6 +42,9 @@ public class Protocol {
 
     // Frame fields
 
+    public static final String REQUEST_REQUEST_ID = "rID";
+
+    public static final String RESPONSE_REQUEST_ID = "rID";
     public static final String RESPONSE_OK = "ok";
     public static final String RESPONSE_ERRMSG = "errMsg";
     public static final String RESPONSE_ERRCODE = "errCode";
@@ -67,7 +73,7 @@ public class Protocol {
 
     public static final String UNSUBSCRIBE_SUBID = "subID";
 
-    public static final String CLOSESUB_SUBID = "subID";
+    public static final String SUBCLOSE_SUBID = "subID";
 
     public static final String RECEV_SUBID = "subID";
     public static final String RECEV_TIMESTAMP = "timestamp";
@@ -101,7 +107,6 @@ public class Protocol {
         parser = RecordParser.newFixed(4, null);
         Handler<Buffer> handler = new Handler<Buffer>() {
             int size = -1;
-
             public void handle(Buffer buff) {
                 if (size == -1) {
                     size = buff.getIntLE(0) - 4;
@@ -129,8 +134,8 @@ public class Protocol {
     }
 
     private void handleBson(int size, BsonObject bson) {
-        String type = bson.getString("type");
-        BsonObject frame = bson.getBsonObject("frame");
+        String type = bson.getString(FRAME_TYPE_FIELD);
+        BsonObject frame = bson.getBsonObject(FRAME_FRAME_FIELD);
         switch (type) {
             case RESPONSE_FRAME:
                 frameHandler.handleResponse(frame);
@@ -187,7 +192,7 @@ public class Protocol {
 
     public static Buffer encodeFrame(String frameType, BsonObject frame) {
         BsonObject env = new BsonObject();
-        env.put("type", frameType).put("frame", frame);
+        env.put(FRAME_TYPE_FIELD, frameType).put(FRAME_FRAME_FIELD, frame);
         return env.encode();
     }
 }

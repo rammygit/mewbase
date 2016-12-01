@@ -30,7 +30,7 @@ public class SubscriptionImpl extends SubscriptionBase {
         frame = frame.copy();
         frame.put(Protocol.RECEV_SUBID, id);
         frame.put(Protocol.RECEV_POS, pos);
-        Buffer buff = connection.writeNonResponse(Protocol.RECEV_FRAME, frame);
+        Buffer buff = connection.writeResponse(Protocol.RECEV_FRAME, frame);
         unackedBytes += buff.length();
         if (unackedBytes > MAX_UNACKED_BYTES) {
             readStream.pause();

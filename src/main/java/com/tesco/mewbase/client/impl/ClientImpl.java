@@ -29,10 +29,10 @@ public class ClientImpl implements Client, ClientFrameHandler {
     private final static Logger log = LoggerFactory.getLogger(ClientImpl.class);
 
     private final AtomicInteger sessionSeq = new AtomicInteger();
-    private final AtomicInteger nextQueryId = new AtomicInteger();
+    private final AtomicInteger requestIDSequence = new AtomicInteger();
     private final Map<Integer, ProducerImpl> producerMap = new ConcurrentHashMap<>();
     private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
-    private final Queue<Consumer<BsonObject>> respQueue = new ConcurrentLinkedQueue<>();
+    private final Map<Integer, Consumer<BsonObject>> responseHandlers = new ConcurrentHashMap<>();
     private final Map<Integer, Consumer<QueryResult>> queryResultHandlers = new ConcurrentHashMap<>();
     private final Vertx vertx;
     private final NetClient netClient;
@@ -79,8 +79,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
         frame.put(Protocol.SUBSCRIBE_STARTTIMESTAMP, descriptor.getStartTimestamp());
         frame.put(Protocol.SUBSCRIBE_DURABLEID, descriptor.getDurableID());
         frame.put(Protocol.SUBSCRIBE_MATCHER, descriptor.getMatcher());
-        Buffer buffer = Protocol.encodeFrame(Protocol.SUBSCRIBE_FRAME, frame);
-        write(cf, buffer, resp -> {
+        write(cf, Protocol.SUBSCRIBE_FRAME, frame, resp -> {
             boolean ok = resp.getBoolean(Protocol.RESPONSE_OK);
             if (ok) {
                 int subID = resp.getInteger(Protocol.SUBRESPONSE_SUBID);
@@ -121,11 +120,10 @@ public class ClientImpl implements Client, ClientFrameHandler {
     }
 
     private void writeQuery(BsonObject frame, Consumer<QueryResult> resultHandler, CompletableFuture cf) {
-        int queryID = nextQueryId.getAndIncrement();
+        int queryID = requestIDSequence.getAndIncrement();
         frame.put(Protocol.QUERY_QUERYID, queryID);
-        Buffer buffer = Protocol.encodeFrame(Protocol.QUERY_FRAME, frame);
         queryResultHandlers.put(queryID, resultHandler);
-        write(cf, buffer, null);
+        write(cf, Protocol.QUERY_FRAME, frame);
     }
 
 
@@ -162,7 +160,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     @Override
     public void handleQueryResult(int size, BsonObject resp) {
-        int rQueryID = resp.getInteger(Protocol.QUERYRESULT_QUERYID);
+        Integer rQueryID = resp.getInteger(Protocol.QUERYRESULT_QUERYID);
         Consumer<QueryResult> qrh = queryResultHandlers.get(rQueryID);
         if (qrh == null) {
             throw new IllegalStateException("Can't find query result handler");
@@ -204,7 +202,11 @@ public class ClientImpl implements Client, ClientFrameHandler {
         if (connecting) {
             connectResponse.accept(frame);
         } else {
-            Consumer<BsonObject> respHandler = respQueue.poll();
+            Integer requestID = frame.getInteger(Protocol.RESPONSE_REQUEST_ID);
+            if (requestID == null) {
+                throw new IllegalStateException("No request id in response: " + frame);
+            }
+            Consumer<BsonObject> respHandler = responseHandlers.remove(requestID);
             if (respHandler == null) {
                 throw new IllegalStateException("Unexpected response");
             }
@@ -212,8 +214,18 @@ public class ClientImpl implements Client, ClientFrameHandler {
         }
     }
 
-    // Must be synchronized to prevent interleaving
-    protected synchronized void write(CompletableFuture cf, Buffer buff, Consumer<BsonObject> respHandler) {
+    protected synchronized void write(CompletableFuture cf, String frameType, BsonObject frame) {
+        write(cf, frameType, frame, fr -> {});
+    }
+
+    protected synchronized void write(CompletableFuture cf, String frameType, BsonObject frame,
+                                      Consumer<BsonObject> respHandler) {
+        if (respHandler != null) {
+            Integer requestID = requestIDSequence.getAndIncrement();
+            frame.put(Protocol.RESPONSE_REQUEST_ID, requestID);
+            responseHandlers.put(requestID, respHandler);
+        }
+        Buffer buff = Protocol.encodeFrame(frameType, frame);
         if (connecting || netSocket == null) {
             if (!connecting) {
                 connect(cf);
@@ -221,9 +233,6 @@ public class ClientImpl implements Client, ClientFrameHandler {
             bufferedWrites.add(buff);
         } else {
             netSocket.write(buff);
-        }
-        if (respHandler != null) {
-            respQueue.add(respHandler);
         }
     }
 
@@ -248,22 +257,16 @@ public class ClientImpl implements Client, ClientFrameHandler {
         subscriptionMap.remove(subID);
         BsonObject frame = new BsonObject();
         frame.put(Protocol.UNSUBSCRIBE_SUBID, subID);
-        Buffer buffer = Protocol.encodeFrame(Protocol.UNSUBSCRIBE_FRAME, frame);
         CompletableFuture cf = new CompletableFuture();
-        write(cf, buffer, resp -> {
-            // Currently do nothing
-        });
+        write(cf, Protocol.UNSUBSCRIBE_FRAME, frame);
     }
 
     protected void doSubClose(int subID) {
         subscriptionMap.remove(subID);
         BsonObject frame = new BsonObject();
-        frame.put(Protocol.UNSUBSCRIBE_SUBID, subID);
-        Buffer buffer = Protocol.encodeFrame(Protocol.UNSUBSCRIBE_FRAME, frame);
+        frame.put(Protocol.SUBCLOSE_SUBID, subID);
         CompletableFuture cf = new CompletableFuture();
-        write(cf, buffer, resp -> {
-            // Currently do nothing
-        });
+        write(cf, Protocol.SUBCLOSE_FRAME, frame);
     }
 
     protected void doAckEv(int subID, long pos, int sizeBytes) {
@@ -289,8 +292,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
         frame.put(Protocol.PUBLISH_CHANNEL, channel);
         frame.put(Protocol.PUBLISH_SESSID, producerID);
         frame.put(Protocol.PUBLISH_EVENT, event);
-        Buffer buffer = Protocol.encodeFrame(Protocol.PUBLISH_FRAME, frame);
-        write(cf, buffer, resp -> {
+        write(cf, Protocol.PUBLISH_FRAME, frame, resp -> {
             boolean ok = resp.getBoolean(Protocol.RESPONSE_OK);
             if (ok) {
                 cf.complete(null);
