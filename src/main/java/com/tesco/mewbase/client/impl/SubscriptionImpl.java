@@ -38,9 +38,11 @@ public class SubscriptionImpl implements Subscription {
     }
 
     @Override
-    public synchronized void unsubscribe() {
-        client.doUnsubscribe(id);
-        closed = true;
+    public void unsubscribe() {
+        client.doUnsubscribe(id);  // Outside sync block to prevent deadlock
+        synchronized (this) {
+            closed = true;
+        }
     }
 
     @Override
