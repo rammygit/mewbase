@@ -134,6 +134,7 @@ public class ProjectionManagerImpl implements ProjectionManager {
                         }
                         Delivery delivery = new DeliveryImpl(channel, frame.getLong(Protocol.RECEV_TIMESTAMP),
                                 seq, frame.getBsonObject(Protocol.RECEV_EVENT));
+
                         BsonObject updated = projectionFunction.apply(doc, delivery);
 
                         // Update the last sequence

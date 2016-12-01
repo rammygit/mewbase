@@ -10,6 +10,7 @@ import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
 import com.tesco.mewbase.server.impl.ServerImpl;
 import io.vertx.ext.unit.TestContext;
+import io.vertx.ext.unit.junit.Repeat;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -56,9 +57,10 @@ public class ProjectionTest extends ServerTestBase {
         Projection projection = registerProjection();
 
         sendEvents(10);
-        projection.unregister();
 
         waitUntilNumItems(10);
+
+        projection.unregister();
 
         sendEvents(10);
         Thread.sleep(500);
@@ -66,8 +68,6 @@ public class ProjectionTest extends ServerTestBase {
         // Still 10 as projection unregistered
         BsonObject basket = client.findByID(TEST_BINDER1, TEST_BASKET_ID).get();
         assertEquals(10, (int)basket.getBsonObject("products").getInteger("prod1"));
-
-        sendEvents(10);
 
         // Reregister
         registerProjection();
@@ -142,7 +142,6 @@ public class ProjectionTest extends ServerTestBase {
             // We reset the durable seq last acked so we get redeliveries - the duplicate detection should
             // ignore them
             BsonObject lastSeqs = client.findByID(ServerImpl.DURABLE_SUBS_BINDER_NAME, TEST_PROJECTION_NAME1).get();
-            log.trace("lastSeqs are: " + lastSeqs);
             lastSeqs.put("lastAcked", 0);
             ((ServerImpl)server).docManager().put(ServerImpl.DURABLE_SUBS_BINDER_NAME, TEST_PROJECTION_NAME1, lastSeqs).get();
         }
@@ -165,8 +164,7 @@ public class ProjectionTest extends ServerTestBase {
 
     private Projection registerProjection() {
         return server.registerProjection(TEST_PROJECTION_NAME1, TEST_CHANNEL_1, ev -> true, TEST_BINDER1, ev -> ev.getString("basketID"),
-                (basket, del) ->
-                        BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
+                (basket, del) -> BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))
         );
     }
 
