@@ -12,6 +12,7 @@ import io.vertx.core.parsetools.RecordParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,12 +27,12 @@ public class ConnectionImpl implements ServerFrameHandler {
     private final ServerImpl server;
     private final TransportConnection transportConnection;
     private final Context context;
-    private final Map<Integer, SubscriptionImpl> subscriptionMap = new ConcurrentHashMap<>();
-    private final Map<Integer, QueryState> queryStates = new ConcurrentHashMap<>();
+    private final Map<Integer, SubscriptionImpl> subscriptionMap = new HashMap<>();
+    private final Map<Integer, QueryState> queryStates = new HashMap<>();
     private boolean authorised;
     private int subSeq;
 
-    public ConnectionImpl(ServerImpl server, TransportConnection transportConnection, Context context, DocManager docManager) {
+    public ConnectionImpl(ServerImpl server, TransportConnection transportConnection, Context context) {
         Protocol protocol = new Protocol(this);
         RecordParser recordParser = protocol.recordParser();
         transportConnection.handler(recordParser::handle);
@@ -323,10 +324,12 @@ public class ConnectionImpl implements ServerFrameHandler {
     }
 
     protected void removeQueryState(int queryID) {
+        checkContext();
         queryStates.remove(queryID);
     }
 
     protected void close() {
+        checkContext();
         authorised = false;
         transportConnection.close();
         server.removeConnection(this);
