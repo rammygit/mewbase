@@ -215,7 +215,8 @@ public class ClientImpl implements Client, ClientFrameHandler {
     }
 
     protected synchronized void write(CompletableFuture cf, String frameType, BsonObject frame) {
-        write(cf, frameType, frame, fr -> {});
+        write(cf, frameType, frame, fr -> {
+        });
     }
 
     protected synchronized void write(CompletableFuture cf, String frameType, BsonObject frame,

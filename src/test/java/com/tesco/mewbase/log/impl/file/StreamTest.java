@@ -5,7 +5,6 @@ import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.log.LogReadStream;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
-import io.vertx.ext.unit.junit.Repeat;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -72,7 +71,7 @@ public class StreamTest extends LogTestBase {
         test_stream(testContext, numObjects, fileSize, FileLogManagerOptions.DEFAULT_READ_BUFFER_SIZE, objLen,
                 4, objLen * (numObjects / 5), objLen);
     }
-    
+
     @Test
     public void test_stream_five_files_fill_both_exactly(TestContext testContext) throws Exception {
         int fileSize = objLen * numObjects / 5;

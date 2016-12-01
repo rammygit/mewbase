@@ -34,12 +34,12 @@ public class ShoppingBasketExample {
 
         // Register a projection that will respond to add_item events and increase/decrease the quantity of the item in the basket
         server.buildProjection("maintain_basket")                             // projection name
-              .projecting("orders")                                           // channel name
-              .filteredBy(ev -> ev.getString("eventType").equals("add_item")) // event filter
-              .onto("baskets")                                                // binder name
-              .identifiedBy(ev -> ev.getString("basketID"))                   // document id selector; how to obtain the doc id from the event bson
-              .as((basket, del) ->                                            // projection function
-                BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))).register();
+                .projecting("orders")                                           // channel name
+                .filteredBy(ev -> ev.getString("eventType").equals("add_item")) // event filter
+                .onto("baskets")                                                // binder name
+                .identifiedBy(ev -> ev.getString("basketID"))                   // document id selector; how to obtain the doc id from the event bson
+                .as((basket, del) ->                                            // projection function
+                        BsonPath.add(basket, del.event().getInteger("quantity"), "products", del.event().getString("productID"))).register();
 
         // Create a client
         Client client = Client.newClient(new ClientOptions());

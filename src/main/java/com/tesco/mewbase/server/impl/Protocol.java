@@ -107,6 +107,7 @@ public class Protocol {
         parser = RecordParser.newFixed(4, null);
         Handler<Buffer> handler = new Handler<Buffer>() {
             int size = -1;
+
             public void handle(Buffer buff) {
                 if (size == -1) {
                     size = buff.getIntLE(0) - 4;

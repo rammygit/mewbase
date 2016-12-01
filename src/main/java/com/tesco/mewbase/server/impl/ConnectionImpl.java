@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by tim on 23/09/16.
@@ -91,7 +90,7 @@ public class ConnectionImpl implements ServerFrameHandler {
             return null;
         });
     }
-    
+
     @Override
     public void handleStartTx(BsonObject frame) {
         checkContext();

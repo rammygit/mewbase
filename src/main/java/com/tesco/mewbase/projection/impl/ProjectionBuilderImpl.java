@@ -76,6 +76,6 @@ public class ProjectionBuilderImpl implements ProjectionBuilder {
         }
 
         return projectionManager.registerProjection(projectionName, channelName, eventFilter, binderName,
-                                                    docIDSelector, projectionFunction);
+                docIDSelector, projectionFunction);
     }
 }

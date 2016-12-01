@@ -53,7 +53,7 @@ public class AFBasicFile implements BasicFile {
         AsyncResCF<Void> ar = new AsyncResCF<>();
         af.flush(res -> {
             if (res.succeeded()) {
-               af.close(ar);
+                af.close(ar);
             } else {
                 ar.completeExceptionally(res.cause());
             }
