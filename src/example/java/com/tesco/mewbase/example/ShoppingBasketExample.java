@@ -1,6 +1,5 @@
 package com.tesco.mewbase.example;
 
-import com.tesco.mewbase.auth.DummyAuthProvider;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.bson.BsonPath;
 import com.tesco.mewbase.client.Client;

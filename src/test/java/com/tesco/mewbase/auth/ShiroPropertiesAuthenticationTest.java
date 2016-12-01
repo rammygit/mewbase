@@ -1,6 +1,5 @@
 package com.tesco.mewbase.auth;
 
-import com.tesco.mewbase.auth.AuthenticationTestBase;
 import com.tesco.mewbase.auth.impl.MewbaseVertxAuthProvider;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Client;
@@ -20,7 +19,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.util.concurrent.ExecutionException;
 
 @RunWith(VertxUnitRunner.class)
 public class ShiroPropertiesAuthenticationTest extends AuthenticationTestBase {
