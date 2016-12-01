@@ -9,14 +9,14 @@ import java.util.function.Function;
  * Created by tim on 30/09/16.
  */
 public interface DocManager {
-    
+
     String ID_FIELD = "id";
 
     /**
      * Get a document in a named binder matching the filter
      *
      * @param binder  name of binder to put the document to
-     * @param matcher matching function for documents
+     * @param matcher matching projection for documents
      */
     DocReadStream getMatching(String binder, Function<BsonObject, Boolean> matcher);
 

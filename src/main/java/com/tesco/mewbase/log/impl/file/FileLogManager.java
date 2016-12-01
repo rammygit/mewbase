@@ -4,6 +4,8 @@ import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
 import io.vertx.core.Vertx;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Map;
@@ -14,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created by tim on 07/10/16.
  */
 public class FileLogManager implements LogManager {
+
+    private final static Logger log = LoggerFactory.getLogger(FileLogManager.class);
 
     private final Vertx vertx;
     private final FileAccess faf;

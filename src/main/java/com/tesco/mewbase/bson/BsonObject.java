@@ -774,6 +774,8 @@ public class BsonObject implements Iterable<Map.Entry<String, Object>> {
                 sb.append("\"");
                 sb.append(entry.getValue().toString());
                 sb.append("\"");
+            } else if (entry.getValue() == null) {
+                sb.append("<null>");
             } else {
                 sb.append(entry.getValue().toString());
             }

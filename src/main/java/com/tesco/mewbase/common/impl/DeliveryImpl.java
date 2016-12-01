@@ -8,15 +8,15 @@ import com.tesco.mewbase.common.Delivery;
  */
 public class DeliveryImpl implements Delivery {
 
-    private final String channel;
-    private final long timestamp;
-    private final long sequenceNumber;
-    private final BsonObject event;
+    protected final String channel;
+    protected final long timestamp;
+    protected final long channelPos;
+    protected final BsonObject event;
 
-    public DeliveryImpl(String channel, long timestamp, long sequenceNumber, BsonObject event) {
+    public DeliveryImpl(String channel, long timestamp, long channelPos, BsonObject event) {
         this.channel = channel;
         this.timestamp = timestamp;
-        this.sequenceNumber = sequenceNumber;
+        this.channelPos = channelPos;
         this.event = event;
     }
 
@@ -32,7 +32,7 @@ public class DeliveryImpl implements Delivery {
 
     @Override
     public long channelPos() {
-        return sequenceNumber;
+        return channelPos;
     }
 
     @Override

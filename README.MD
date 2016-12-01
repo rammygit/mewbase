@@ -43,10 +43,10 @@ pieces of technology - a messaging system and a database.
 ## Introducing mewbase
 
 Mewbase provides an engine that functions as a high performance streaming event store but also
- allows you to run persistent *functions* in the engine that listen to raw events and maintain multiple *views* of
+ allows you to run persistent *functions* in the engine that listen to raw events and maintain multiple *projections* of
  the event data.
  
-The views can then be queried in similar way to how you would with a document or graph database.
+The projections can then be queried in similar way to how you would with a document or graph database.
 
 So you can think of mewbase as combining the following:
 

@@ -23,9 +23,8 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.tesco.mewbase.client.MewException;
 import de.undercouch.bson4jackson.BsonFactory;
-import io.vertx.core.json.DecodeException;
-import io.vertx.core.json.EncodeException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,20 +55,20 @@ public class Bson {
         mapper.registerModule(module);
     }
 
-    public static void encode(Object obj, OutputStream outputStream) throws EncodeException {
+    public static void encode(Object obj, OutputStream outputStream) {
         try {
             mapper.writeValue(outputStream, obj);
         } catch (Exception e) {
-            throw new EncodeException("Failed to encode as BSON: " + e.getMessage());
+            throw new MewException(e);
         }
     }
 
 
-    public static <T> T decodeValue(InputStream inputStream, Class<T> clazz) throws DecodeException {
+    public static <T> T decodeValue(InputStream inputStream, Class<T> clazz) {
         try {
             return mapper.readValue(inputStream, clazz);
         } catch (Exception e) {
-            throw new DecodeException("Failed to decode BSON:" + e.getMessage());
+            throw new MewException(e);
         }
     }
 

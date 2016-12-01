@@ -11,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Created by tim on 28/10/16.
@@ -22,11 +21,19 @@ public class ServerTestBase extends MewbaseTestBase {
 
     protected Server server;
     protected Client client;
+    protected File logDir;
+    protected File docsDir;
 
     @Override
     protected void setup(TestContext context) throws Exception {
         super.setup(context);
-        File logDir = testFolder.newFolder();
+
+        log.trace("in before");
+        logDir = testFolder.newFolder();
+        log.trace("Log dir is {}", logDir);
+
+        docsDir = testFolder.newFolder();
+        log.trace("Docs dir is {}", docsDir);
 
         ServerOptions serverOptions = createServerOptions(logDir);
         ClientOptions clientOptions = createClientOptions();
@@ -48,7 +55,7 @@ public class ServerTestBase extends MewbaseTestBase {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
                 .setFileLogManagerOptions(fileLogManagerOptions).setBinders(new String[]{TEST_BINDER1})
-                .setDocsDir(testFolder.newFolder().getPath());
+                .setDocsDir(docsDir.getPath());
     }
 
     protected ClientOptions createClientOptions() {
