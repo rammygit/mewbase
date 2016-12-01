@@ -90,14 +90,7 @@ public class ConnectionImpl implements ServerFrameHandler {
             return null;
         });
     }
-
-    /*
-    TODO support a PUBLISH with no send ack - writes can be reordered in log so getting a send ACK for each
-    PUB in order may require reordering on the server which can slow things down.
-    In some cases, e.g. transactions may want to send a bunch of publishes then just get a single ack when the tx
-    is persisted
-     */
-
+    
     @Override
     public void handleStartTx(BsonObject frame) {
         checkContext();
