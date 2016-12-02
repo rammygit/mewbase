@@ -37,7 +37,8 @@ public class PubSubExample {
         // Subscribe to a channel
         SubDescriptor descriptor = new SubDescriptor().setChannel("orders");
         client.subscribe(descriptor, del -> {
-            System.out.println("Received event: " + del.event().getString("foo"));
+            System.
+                    out.println("Received event: " + del.event().getString("foo"));
         });
 
         // Publish to the channel

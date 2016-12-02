@@ -1,5 +1,7 @@
 package com.tesco.mewbase.server;
 
+import com.tesco.mewbase.auth.impl.NoAuthAuthProvider;
+import com.tesco.mewbase.auth.MewbaseAuthProvider;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import io.vertx.core.net.NetServerOptions;
 
@@ -19,6 +21,7 @@ public class ServerOptions {
     private NetServerOptions netServerOptions = new NetServerOptions().setPort(DEFAULT_PORT).setHost(DEFAULT_HOST);
     private String docsDir = DEFAULT_DOCS_DIR;
     private String[] binders;
+    private MewbaseAuthProvider authProvider = new NoAuthAuthProvider();
 
     public String[] getChannels() {
         return channels;
@@ -65,6 +68,15 @@ public class ServerOptions {
         return this;
     }
 
+    public MewbaseAuthProvider getAuthProvider() {
+        return authProvider;
+    }
+
+    public ServerOptions setAuthProvider(MewbaseAuthProvider authProvider) {
+        this.authProvider = authProvider;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -80,7 +92,8 @@ public class ServerOptions {
             return false;
         if (docsDir != null ? !docsDir.equals(that.docsDir) : that.docsDir != null) return false;
         // Probably incorrect - comparing Object[] arrays with Arrays.equals
-        return Arrays.equals(binders, that.binders);
+        if (!Arrays.equals(binders, that.binders)) return false;
+        return authProvider != null ? authProvider.equals(that.authProvider) : that.authProvider == null;
 
     }
 
@@ -91,6 +104,7 @@ public class ServerOptions {
         result = 31 * result + (netServerOptions != null ? netServerOptions.hashCode() : 0);
         result = 31 * result + (docsDir != null ? docsDir.hashCode() : 0);
         result = 31 * result + Arrays.hashCode(binders);
+        result = 31 * result + (authProvider != null ? authProvider.hashCode() : 0);
         return result;
     }
 }

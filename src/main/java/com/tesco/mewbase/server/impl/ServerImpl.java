@@ -140,7 +140,8 @@ public class ServerImpl implements Server {
     }
 
     private void connectHandler(TransportConnection transportConnection) {
-        connections.add(new ConnectionImpl(this, transportConnection, Vertx.currentContext()));
+        connections.add(new ConnectionImpl(this, transportConnection, Vertx.currentContext(),
+                serverOptions.getAuthProvider()));
     }
 
     private CompletableFuture<Void> stopTransports() {

@@ -51,8 +51,7 @@ public class Protocol {
 
     public static final String SUBRESPONSE_SUBID = "subID";
 
-    public static final String CONNECT_USERNAME = "username";
-    public static final String CONNECT_PASSWORD = "password";
+    public static final String CONNECT_AUTH_INFO = "authInfo";
     public static final String CONNECT_VERSION = "version";
 
     public static final String PUBLISH_CHANNEL = "channel";

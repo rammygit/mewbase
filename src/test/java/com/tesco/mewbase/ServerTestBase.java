@@ -19,8 +19,6 @@ public class ServerTestBase extends MewbaseTestBase {
 
     private final static Logger log = LoggerFactory.getLogger(PubSubTest.class);
 
-    private final static String CERT_PATH = "src/test/resources/server-cert.pem";
-    private final static String KEY_PATH = "src/test/resources/server-key.pem";
     protected Server server;
     protected Client client;
     protected File logDir;
@@ -29,6 +27,7 @@ public class ServerTestBase extends MewbaseTestBase {
     @Override
     protected void setup(TestContext context) throws Exception {
         super.setup(context);
+
         log.trace("in before");
         logDir = testFolder.newFolder();
         log.trace("Log dir is {}", logDir);
@@ -47,11 +46,8 @@ public class ServerTestBase extends MewbaseTestBase {
 
     @Override
     protected void tearDown(TestContext context) throws Exception {
-        log.trace("in after");
         client.close().get();
-        log.trace("client closed");
         server.stop().get();
-        log.trace("server closed");
         super.tearDown(context);
     }
 
