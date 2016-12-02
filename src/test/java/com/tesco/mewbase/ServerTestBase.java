@@ -27,20 +27,12 @@ public class ServerTestBase extends MewbaseTestBase {
     @Override
     protected void setup(TestContext context) throws Exception {
         super.setup(context);
-
-        log.trace("in before");
         logDir = testFolder.newFolder();
-        log.trace("Log dir is {}", logDir);
-
         docsDir = testFolder.newFolder();
-        log.trace("Docs dir is {}", docsDir);
-
         ServerOptions serverOptions = createServerOptions(logDir);
         ClientOptions clientOptions = createClientOptions();
-
         server = Server.newServer(serverOptions);
         server.start().get();
-
         client = Client.newClient(vertx, clientOptions);
     }
 

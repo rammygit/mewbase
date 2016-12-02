@@ -34,7 +34,7 @@ public class ShiroPropertiesAuthenticationTest extends AuthenticationTestBase {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
 
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions)
+                .setFileLogManagerOptions(fileLogManagerOptions).setDocsDir(docsDir.getPath())
                 .setAuthProvider(new MewbaseVertxAuthProvider(createShiroAuthProvider()));
     }
 

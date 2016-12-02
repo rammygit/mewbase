@@ -33,15 +33,15 @@ public class AuthenticationTestBase extends MewbaseTestBase {
     protected Server server;
     protected Client client;
 
+    protected File logDir;
+    protected File docsDir;
+
     @Override
     protected void setup(TestContext context) throws Exception {
         super.setup(context);
-        log.trace("in before");
-        File logDir = testFolder.newFolder();
-        log.trace("Log dir is {}", logDir);
-
+        logDir = testFolder.newFolder();
+        docsDir = testFolder.newFolder();
         ServerOptions serverOptions = createServerOptions(logDir);
-
         server = Server.newServer(serverOptions);
         CompletableFuture<Void> cfStart = server.start();
         cfStart.get();
@@ -49,11 +49,8 @@ public class AuthenticationTestBase extends MewbaseTestBase {
 
     @Override
     protected void tearDown(TestContext context) throws Exception {
-        log.trace("in after");
         client.close().get();
-        log.trace("client closed");
         server.stop().get();
-        log.trace("server closed");
         super.tearDown(context);
     }
 
@@ -61,7 +58,7 @@ public class AuthenticationTestBase extends MewbaseTestBase {
         FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
                 .setFileLogManagerOptions(fileLogManagerOptions).setBinders(new String[]{TEST_BINDER1})
-                .setDocsDir(testFolder.newFolder().getPath())
+                .setDocsDir(docsDir.getPath())
                 .setAuthProvider(createAuthProvider());
     }
 
