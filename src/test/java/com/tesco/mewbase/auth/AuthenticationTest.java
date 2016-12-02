@@ -7,6 +7,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 
+/*
+ TODO
+
+ More tests needed:
+
+ * we need to test authentication on all protocol frames, not just the ones used in a simple pubsubtest
+ * test that authentication applies to only one connection and is cancelled when connection is closed
+ * etc
+ *
+
+ */
 @RunWith(VertxUnitRunner.class)
 public class AuthenticationTest extends AuthenticationTestBase {
 

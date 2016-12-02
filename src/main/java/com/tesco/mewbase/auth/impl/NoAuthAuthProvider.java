@@ -6,7 +6,10 @@ import com.tesco.mewbase.bson.BsonObject;
 
 import java.util.concurrent.CompletableFuture;
 
-public class DummyAuthProvider implements MewbaseAuthProvider {
+/**
+ * The default auth provider implementation that does not enforce any authentication
+ */
+public class NoAuthAuthProvider implements MewbaseAuthProvider {
 
     @Override
     public CompletableFuture<MewbaseUser> authenticate(BsonObject authInfo) {

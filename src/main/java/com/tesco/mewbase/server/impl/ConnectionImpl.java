@@ -36,7 +36,8 @@ public class ConnectionImpl implements ServerFrameHandler {
     private boolean authenticated;
     private int subSeq;
 
-    public ConnectionImpl(ServerImpl server, TransportConnection transportConnection, Context context, MewbaseAuthProvider authProvider) {
+    public ConnectionImpl(ServerImpl server, TransportConnection transportConnection, Context context,
+                          MewbaseAuthProvider authProvider) {
         Protocol protocol = new Protocol(this);
         RecordParser recordParser = protocol.recordParser();
         transportConnection.handler(recordParser::handle);
@@ -56,12 +57,11 @@ public class ConnectionImpl implements ServerFrameHandler {
 
         cf.handle((user, ex) -> {
             BsonObject response = new BsonObject();
-
             if (ex != null) {
                 response.put(Protocol.RESPONSE_OK, false);
                 response.put(Protocol.RESPONSE_ERRMSG, "Authentication failed");
                 writeResponse(Protocol.RESPONSE_FRAME, response);
-                exception(ex.getMessage());
+                logAndClose(ex.getMessage());
             } else {
                 if (user != null) {
                     authenticated = true;
@@ -69,7 +69,7 @@ public class ConnectionImpl implements ServerFrameHandler {
                     writeResponse(Protocol.RESPONSE_FRAME, response);
                 } else {
                     String nullUserMsg = "AuthProvider returned a null user";
-                    exception(nullUserMsg);
+                    logAndClose(nullUserMsg);
                     throw new IllegalStateException(nullUserMsg);
                 }
             }
@@ -81,8 +81,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handlePublish(BsonObject frame) {
         checkContext();
-
-        if (!checkAuthenticated(Protocol.RESPONSE_FRAME)) {
+        if (!checkAuthenticated()) {
             return;
         }
 
@@ -127,7 +126,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handleStartTx(BsonObject frame) {
         checkContext();
 
-        if (!checkAuthenticated(Protocol.RESPONSE_FRAME)) {
+        if (!checkAuthenticated()) {
             return;
         }
     }
@@ -136,7 +135,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handleCommitTx(BsonObject frame) {
         checkContext();
 
-        if (!checkAuthenticated(Protocol.RESPONSE_FRAME)) {
+        if (!checkAuthenticated()) {
             return;
         }
     }
@@ -145,7 +144,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     public void handleAbortTx(BsonObject frame) {
         checkContext();
 
-        if (!checkAuthenticated(Protocol.RESPONSE_FRAME)) {
+        if (!checkAuthenticated()) {
             return;
         }
     }
@@ -196,7 +195,9 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleSubClose(BsonObject frame) {
         checkContext();
-        checkAuthenticated(Protocol.SUBCLOSE_FRAME);
+        if (!checkAuthenticated(Protocol.SUBCLOSE_FRAME)) {
+            return;
+        }
         Integer subID = frame.getInteger(Protocol.SUBCLOSE_SUBID);
         if (subID == null) {
             missingField(Protocol.SUBCLOSE_SUBID, Protocol.SUBCLOSE_FRAME);
@@ -222,8 +223,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleUnsubscribe(BsonObject frame) {
         checkContext();
-
-        if (!checkAuthenticated(Protocol.UNSUBSCRIBE_FRAME)) {
+        if (!checkAuthenticated()) {
             return;
         }
 
@@ -253,8 +253,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleAckEv(BsonObject frame) {
         checkContext();
-
-        if (!checkAuthenticated(Protocol.ACKEV_FRAME)) {
+        if (!checkAuthenticated()) {
             return;
         }
 
@@ -284,8 +283,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleQuery(BsonObject frame) {
         checkContext();
-
-        if (!checkAuthenticated(Protocol.QUERY_FRAME)) {
+        if (!checkAuthenticated()) {
             return;
         }
 
@@ -314,8 +312,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handleQueryAck(BsonObject frame) {
         checkContext();
-
-        if (!checkAuthenticated(Protocol.QUERYACK_FRAME)) {
+        if (!checkAuthenticated()) {
             return;
         }
 
@@ -338,7 +335,7 @@ public class ConnectionImpl implements ServerFrameHandler {
     @Override
     public void handlePing(BsonObject frame) {
         checkContext();
-        if (!checkAuthenticated(Protocol.PING_FRAME)) {
+        if (!checkAuthenticated()) {
             return;
         }
     }
@@ -363,7 +360,6 @@ public class ConnectionImpl implements ServerFrameHandler {
         return buff;
     }
 
-
     protected void checkWrap(int i) {
         // Sanity check - wrap around - won't happen but better to close connection than give incorrect behaviour
         if (i == Integer.MIN_VALUE) {
@@ -373,13 +369,17 @@ public class ConnectionImpl implements ServerFrameHandler {
         }
     }
 
+    protected boolean checkAuthenticated() {
+        return checkAuthenticated(Protocol.RESPONSE_FRAME);
+    }
+
     protected boolean checkAuthenticated(String frameName) {
         if (!authenticated) {
             BsonObject resp = new BsonObject();
             resp.put(Protocol.RESPONSE_OK, false);
             resp.put(Protocol.RESPONSE_ERRMSG, "Not authenticated!");
             writeResponse(frameName, resp);
-            exception("Not authenticated");
+            logAndClose("Not authenticated");
         }
         return authenticated;
     }
@@ -394,8 +394,8 @@ public class ConnectionImpl implements ServerFrameHandler {
         close();
     }
 
-    protected void exception(String exceptionMessage) {
-        logger.error("exception occurred: {}", exceptionMessage);
+    protected void logAndClose(String exceptionMessage) {
+        logger.error("{}, Connection will be closed", exceptionMessage);
         close();
     }
 

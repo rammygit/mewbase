@@ -11,7 +11,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface MewbaseAuthProvider {
 
-
     /**
      * Authenticate a user.
      * <p>

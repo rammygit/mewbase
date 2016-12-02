@@ -107,8 +107,6 @@ public class AuthenticationTestBase extends MewbaseTestBase {
             }
         }
 
-
-
         return async;
     }
 

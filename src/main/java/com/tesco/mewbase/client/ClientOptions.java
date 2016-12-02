@@ -43,6 +43,16 @@ public class ClientOptions {
         return this;
     }
 
+
+    public BsonObject getAuthInfo() {
+        return authInfo;
+    }
+
+    public ClientOptions setAuthInfo(BsonObject authInfo) {
+        this.authInfo = authInfo;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -72,12 +82,4 @@ public class ClientOptions {
                 '}';
     }
 
-    public BsonObject getAuthInfo() {
-        return authInfo;
-    }
-
-    public ClientOptions setAuthInfo(BsonObject authInfo) {
-        this.authInfo = authInfo;
-        return this;
-    }
 }
