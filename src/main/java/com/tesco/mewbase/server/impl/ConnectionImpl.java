@@ -3,6 +3,7 @@ package com.tesco.mewbase.server.impl;
 import com.tesco.mewbase.auth.MewbaseAuthProvider;
 import com.tesco.mewbase.auth.MewbaseUser;
 import com.tesco.mewbase.bson.BsonObject;
+import com.tesco.mewbase.client.Client;
 import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.doc.DocManager;
 import com.tesco.mewbase.doc.DocReadStream;
@@ -18,6 +19,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static com.tesco.mewbase.client.Client.ERR_AUTHENTICATION_FAILED;
+import static com.tesco.mewbase.client.Client.ERR_NO_SUCH_CHANNEL;
+
 /**
  * Created by tim on 23/09/16.
  */
@@ -32,7 +36,6 @@ public class ConnectionImpl implements ServerFrameHandler {
     private final Map<Integer, QueryState> queryStates = new HashMap<>();
 
     private MewbaseAuthProvider authProvider;
-
     private boolean authenticated;
     private int subSeq;
 
@@ -52,15 +55,14 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkContext();
 
         BsonObject value = (BsonObject) frame.getValue(Protocol.CONNECT_AUTH_INFO);
-
         CompletableFuture<MewbaseUser> cf = authProvider.authenticate(value);
 
         cf.handle((user, ex) -> {
+
+            checkContext();
             BsonObject response = new BsonObject();
             if (ex != null) {
-                response.put(Protocol.RESPONSE_OK, false);
-                response.put(Protocol.RESPONSE_ERRMSG, "Authentication failed");
-                writeResponse(Protocol.RESPONSE_FRAME, response);
+                sendErrorResponse(ERR_AUTHENTICATION_FAILED, "Authentication failed");
                 logAndClose(ex.getMessage());
             } else {
                 if (user != null) {
@@ -103,21 +105,25 @@ public class ConnectionImpl implements ServerFrameHandler {
             return;
         }
         Log log = server.getLog(channel);
+        if (log == null) {
+            sendErrorResponse(ERR_NO_SUCH_CHANNEL, "no such channel " + channel, requestID);
+            return;
+        }
         BsonObject record = new BsonObject();
         record.put(Protocol.RECEV_TIMESTAMP, System.currentTimeMillis());
         record.put(Protocol.RECEV_EVENT, event);
         CompletableFuture<Long> cf = log.append(record);
 
         cf.handle((v, ex) -> {
-            BsonObject resp = new BsonObject();
-            resp.put(Protocol.RESPONSE_REQUEST_ID, requestID);
             if (ex == null) {
+                BsonObject resp = new BsonObject();
+                resp.put(Protocol.RESPONSE_REQUEST_ID, requestID);
                 resp.put(Protocol.RESPONSE_OK, true);
+                writeResponse(Protocol.RESPONSE_FRAME, resp);
             } else {
-                // TODO error code
-                resp.put(Protocol.RESPONSE_OK, false).put(Protocol.RESPONSE_ERRMSG, "Failed to persist");
+                sendErrorResponse(Client.ERR_FAILED_TO_PERSIST, "failed to persist", requestID);
             }
-            writeResponse(Protocol.RESPONSE_FRAME, resp);
+
             return null;
         });
     }
@@ -177,8 +183,8 @@ public class ConnectionImpl implements ServerFrameHandler {
         checkWrap(subSeq);
         Log log = server.getLog(channel);
         if (log == null) {
-            // TODO send error back to client
-            throw new IllegalStateException("No such channel " + channel);
+            sendErrorResponse(ERR_NO_SUCH_CHANNEL, "no such channel " + channel, requestID);
+            return;
         }
         SubscriptionImpl subscription = new SubscriptionImpl(this, subID, subDescriptor);
         subscriptionMap.put(subID, subscription);
@@ -188,8 +194,6 @@ public class ConnectionImpl implements ServerFrameHandler {
         resp.put(Protocol.SUBRESPONSE_SUBID, subID);
         writeResponse(Protocol.SUBRESPONSE_FRAME, resp);
         logger.trace("Subscribed channel: {} startSeq {}", channel, startSeq);
-
-
     }
 
     @Override
@@ -399,9 +403,25 @@ public class ConnectionImpl implements ServerFrameHandler {
         close();
     }
 
+    protected void sendErrorResponse(int errCode, String errMsg) {
+        sendErrorResponse(errCode, errMsg, null);
+    }
+
+    protected void sendErrorResponse(int errCode, String errMsg, Integer requestID) {
+        BsonObject resp = new BsonObject();
+        if (requestID != null) {
+            resp.put(Protocol.RESPONSE_REQUEST_ID, requestID);
+        }
+        resp.put(Protocol.RESPONSE_OK, false);
+        resp.put(Protocol.RESPONSE_ERRCODE, errCode);
+        resp.put(Protocol.RESPONSE_ERRMSG, errMsg);
+        writeResponse(Protocol.RESPONSE_FRAME, resp);
+    }
+
     // Sanity check - this should always be executed using the correct context
     protected void checkContext() {
         if (Vertx.currentContext() != context) {
+            logger.trace("Wrong context!! " + Thread.currentThread() + " expected " + context, new Exception());
             throw new IllegalStateException("Wrong context!");
         }
     }

@@ -86,7 +86,7 @@ public class DurableSubTest extends ServerTestBase {
             ServerOptions serverOptions = createServerOptions(logDir);
             ClientOptions clientOptions = createClientOptions();
 
-            server = Server.newServer(serverOptions);
+            server = Server.newServer(vertx, serverOptions);
             server.start().get();
 
             client = Client.newClient(vertx, clientOptions);

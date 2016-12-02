@@ -6,6 +6,7 @@ import com.tesco.mewbase.projection.Projection;
 import com.tesco.mewbase.projection.ProjectionBuilder;
 import com.tesco.mewbase.server.spi.ServerFactory;
 import io.vertx.core.ServiceHelper;
+import io.vertx.core.Vertx;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
@@ -18,6 +19,10 @@ public interface Server {
 
     static Server newServer(ServerOptions serverOptions) {
         return factory.newServer(serverOptions);
+    }
+
+    static Server newServer(Vertx vertx, ServerOptions serverOptions) {
+        return factory.newServer(vertx, serverOptions);
     }
 
     Projection registerProjection(String name, String channel, Function<BsonObject, Boolean> eventFilter,

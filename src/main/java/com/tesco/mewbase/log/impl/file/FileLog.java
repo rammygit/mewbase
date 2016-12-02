@@ -463,7 +463,7 @@ public class FileLog implements Log {
             }
         });
         if (files == null) {
-            throw new MewException("Failed to list files in dir {}", logDir.toString());
+            throw new MewException("Failed to list files in dir " + logDir.toString());
         }
 
         Arrays.sort(files, (f1, f2) -> f1.compareTo(f2));
@@ -485,7 +485,6 @@ public class FileLog implements Log {
             }
         }
     }
-
 
     private String getFileName(int i) {
         return channel + "-" + i + ".log";

@@ -7,6 +7,7 @@ import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
+import com.tesco.mewbase.server.impl.Protocol;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -42,7 +43,7 @@ public class AuthenticationTestBase extends MewbaseTestBase {
         logDir = testFolder.newFolder();
         docsDir = testFolder.newFolder();
         ServerOptions serverOptions = createServerOptions(logDir);
-        server = Server.newServer(serverOptions);
+        server = Server.newServer(vertx, serverOptions);
         CompletableFuture<Void> cfStart = server.start();
         cfStart.get();
     }
@@ -99,6 +100,7 @@ public class AuthenticationTestBase extends MewbaseTestBase {
                 assertTrue(cause instanceof MewException);
                 MewException mcause = (MewException)cause;
                 assertEquals("Authentication failed", mcause.getMessage());
+                assertEquals(Client.ERR_AUTHENTICATION_FAILED, mcause.getErrorCode());
             } else {
                 context.fail("Exception received");
             }

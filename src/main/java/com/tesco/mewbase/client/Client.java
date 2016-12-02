@@ -23,6 +23,13 @@ public interface Client {
         return factory.newClient(vertx, options);
     }
 
+    // Error codes
+
+    int ERR_AUTHENTICATION_FAILED = 1;
+    int ERR_NOT_AUTHORISED = 2;
+    int ERR_NO_SUCH_CHANNEL = 3;
+    int ERR_FAILED_TO_PERSIST = 4;
+
     ClientFactory factory = ServiceHelper.loadFactory(ClientFactory.class);
 
     CompletableFuture<BsonObject> findByID(String binderName, String id);

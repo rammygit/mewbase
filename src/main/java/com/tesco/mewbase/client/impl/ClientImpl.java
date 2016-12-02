@@ -87,11 +87,12 @@ public class ClientImpl implements Client, ClientFrameHandler {
                 subscriptionMap.put(subID, sub);
                 cf.complete(sub);
             } else {
-                cf.completeExceptionally(new MewException(resp.getString(Protocol.RESPONSE_ERRMSG), resp.getString(Protocol.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(responseToException(resp));
             }
         });
         return cf;
     }
+
 
     @Override
     public CompletableFuture<Void> publish(String channel, BsonObject event) {
@@ -298,7 +299,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
             if (ok) {
                 cf.complete(null);
             } else {
-                cf.completeExceptionally(new MewException(resp.getString(Protocol.RESPONSE_ERRMSG), resp.getString(Protocol.RESPONSE_ERRCODE)));
+                cf.completeExceptionally(responseToException(resp));
             }
         });
         return cf;
@@ -306,6 +307,11 @@ public class ClientImpl implements Client, ClientFrameHandler {
 
     protected void removeProducer(int producerID) {
         producerMap.remove(producerID);
+    }
+
+    private MewException responseToException(BsonObject resp) {
+        return new MewException(resp.getString(Protocol.RESPONSE_ERRMSG),
+                resp.getInteger(Protocol.RESPONSE_ERRCODE));
     }
 
     private synchronized void sendConnect(CompletableFuture cfConnect, NetSocket ns) {
@@ -337,7 +343,7 @@ public class ClientImpl implements Client, ClientFrameHandler {
             }
         } else {
             cfConnect.completeExceptionally(new MewException(resp.getString(Protocol.RESPONSE_ERRMSG),
-                    resp.getString(Protocol.RESPONSE_ERRCODE)));
+                    resp.getInteger(Protocol.RESPONSE_ERRCODE)));
         }
     }
 
