@@ -6,6 +6,7 @@ import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.impl.file.faf.AFFileAccess;
 import com.tesco.mewbase.util.AsyncResCF;
+import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.unit.TestContext;
 
@@ -28,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 public class LogTestBase extends MewbaseTestBase {
 
     protected FileAccess faf;
-    protected FileLogManagerOptions options;
+    protected ServerOptions options;
     protected FileLogManager flm;
     protected Log log;
     protected File logDir;
@@ -51,8 +52,8 @@ public class LogTestBase extends MewbaseTestBase {
         }
     }
 
-    protected FileLogManagerOptions getOptions() {
-        return new FileLogManagerOptions().setLogDir(logDir.getPath());
+    protected ServerOptions getOptions() {
+        return new ServerOptions().setLogDir(logDir.getPath());
     }
 
     protected void startLog() throws Exception {
@@ -62,7 +63,7 @@ public class LogTestBase extends MewbaseTestBase {
         startLog(options, TEST_CHANNEL_1);
     }
 
-    protected void startLog(FileLogManagerOptions options, String channel) throws Exception {
+    protected void startLog(ServerOptions options, String channel) throws Exception {
         flm = new FileLogManager(vertx, options, faf);
         flm.createLog(TEST_CHANNEL_1).thenCompose(l -> flm.createLog(TEST_CHANNEL_2)).get();
         log = flm.getLog(channel);

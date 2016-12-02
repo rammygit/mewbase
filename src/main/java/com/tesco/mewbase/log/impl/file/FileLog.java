@@ -6,6 +6,7 @@ import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.util.AsyncResCF;
+import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.ConcurrentHashSet;
@@ -43,7 +44,7 @@ public class FileLog implements Log {
     private final Vertx vertx;
     private final FileAccess faf;
     private final String channel;
-    private final FileLogManagerOptions options;
+    private final ServerOptions options;
     private final Set<FileLogStream> fileLogStreams = new ConcurrentHashSet<>();
 
     private BasicFile currWriteFile;
@@ -57,7 +58,7 @@ public class FileLog implements Log {
     private long expectedSeq;
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
 
-    public FileLog(Vertx vertx, FileAccess faf, FileLogManagerOptions options, String channel) {
+    public FileLog(Vertx vertx, FileAccess faf, ServerOptions options, String channel) {
         this.vertx = vertx;
         this.channel = channel;
         this.options = options;

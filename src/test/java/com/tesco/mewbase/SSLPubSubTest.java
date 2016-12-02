@@ -5,7 +5,6 @@ import com.tesco.mewbase.client.ClientDelivery;
 import com.tesco.mewbase.client.ClientOptions;
 import com.tesco.mewbase.client.Producer;
 import com.tesco.mewbase.common.SubDescriptor;
-import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.PemKeyCertOptions;
@@ -27,10 +26,11 @@ public class SSLPubSubTest extends ServerTestBase {
 
     @Override
     protected ServerOptions createServerOptions(File logDir) {
-        FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
+    	ServerOptions fileLogManagerOptions = new ServerOptions().setLogDir(logDir.getPath());
 
-        ServerOptions serverOptions = new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions).setDocsDir(docsDir.getPath());
+        ServerOptions serverOptions = new ServerOptions()
+                .setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
+                .setDocsDir(docsDir.getPath());
 
         serverOptions.getNetServerOptions().setSsl(true).setPemKeyCertOptions(
                 new PemKeyCertOptions()
