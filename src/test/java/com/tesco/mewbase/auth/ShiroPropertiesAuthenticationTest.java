@@ -4,7 +4,6 @@ import com.tesco.mewbase.auth.impl.MewbaseVertxAuthProvider;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.Client;
 import com.tesco.mewbase.client.ClientOptions;
-import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.shiro.PropertiesProviderConstants;
@@ -31,10 +30,9 @@ public class ShiroPropertiesAuthenticationTest extends AuthenticationTestBase {
     }
 
     protected ServerOptions createServerOptions(File logDir) {
-        FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
-
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions).setDocsDir(docsDir.getPath())
+                .setBinders(new String[]{TEST_BINDER1})
+                .setLogDir(logDir.getPath()).setDocsDir(docsDir.getPath())
                 .setAuthProvider(new MewbaseVertxAuthProvider(createShiroAuthProvider()));
     }
 

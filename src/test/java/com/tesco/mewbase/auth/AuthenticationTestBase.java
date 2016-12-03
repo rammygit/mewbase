@@ -4,10 +4,8 @@ import com.tesco.mewbase.MewbaseTestBase;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.*;
 import com.tesco.mewbase.common.SubDescriptor;
-import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.Server;
 import com.tesco.mewbase.server.ServerOptions;
-import com.tesco.mewbase.server.impl.Protocol;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -56,9 +54,9 @@ public class AuthenticationTestBase extends MewbaseTestBase {
     }
 
     protected ServerOptions createServerOptions(File logDir) throws Exception {
-        FileLogManagerOptions fileLogManagerOptions = new FileLogManagerOptions().setLogDir(logDir.getPath());
         return new ServerOptions().setChannels(new String[]{TEST_CHANNEL_1, TEST_CHANNEL_2})
-                .setFileLogManagerOptions(fileLogManagerOptions).setBinders(new String[]{TEST_BINDER1})
+                .setBinders(new String[]{TEST_BINDER1})
+                .setLogDir(logDir.getPath())
                 .setDocsDir(docsDir.getPath())
                 .setAuthProvider(createAuthProvider());
     }
