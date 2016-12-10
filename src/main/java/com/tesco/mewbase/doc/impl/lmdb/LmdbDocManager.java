@@ -268,6 +268,7 @@ public class LmdbDocManager implements DocManager {
         }
 
         void close() {
+            env.sync(true);
             db.close();
             env.close();
             closed = true;

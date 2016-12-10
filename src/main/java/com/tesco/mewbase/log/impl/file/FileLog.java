@@ -6,6 +6,7 @@ import com.tesco.mewbase.common.SubDescriptor;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogReadStream;
 import com.tesco.mewbase.util.AsyncResCF;
+import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.impl.ConcurrentHashSet;
@@ -43,7 +44,7 @@ public class FileLog implements Log {
     private final Vertx vertx;
     private final FileAccess faf;
     private final String channel;
-    private final FileLogManagerOptions options;
+    private final ServerOptions options;
     private final Set<FileLogStream> fileLogStreams = new ConcurrentHashSet<>();
 
     private BasicFile currWriteFile;
@@ -57,8 +58,7 @@ public class FileLog implements Log {
     private long expectedSeq;
     private final PriorityQueue<WriteHolder> pq = new PriorityQueue<>();
 
-
-    public FileLog(Vertx vertx, FileAccess faf, FileLogManagerOptions options, String channel) {
+    public FileLog(Vertx vertx, FileAccess faf, ServerOptions options, String channel) {
         this.vertx = vertx;
         this.channel = channel;
         this.options = options;
@@ -288,6 +288,7 @@ public class FileLog implements Log {
         info.put("fileNumber", fileNumber);
         info.put("headPos", headPos);
         info.put("fileHeadPos", filePos);
+        info.put("lastWrittenPos", lastWrittenPos.get());
         info.put("shutdown", shutdown);
         saveFileInfo(info);
     }
@@ -312,6 +313,14 @@ public class FileLog implements Log {
                     throw new MewException("Invalid log info file, negative headPos");
                 }
                 this.headPos = hPos;
+                Integer lwPos = info.getInteger("lastWrittenPos");
+                if (lwPos == null) {
+                    throw new MewException("Invalid log info file, no lastWrittenPos");
+                }
+                if (lwPos < 0) {
+                    throw new MewException("Invalid log info file, negative lastWrittenPos");
+                }
+                this.lastWrittenPos.set(lwPos);
                 Integer fhPos = info.getInteger("fileHeadPos");
                 if (fhPos == null) {
                     throw new MewException("Invalid log info file, no fileHeadPos");
@@ -455,7 +464,7 @@ public class FileLog implements Log {
             }
         });
         if (files == null) {
-            throw new MewException("Failed to list files in dir {}", logDir.toString());
+            throw new MewException("Failed to list files in dir " + logDir.toString());
         }
 
         Arrays.sort(files, (f1, f2) -> f1.compareTo(f2));
@@ -477,7 +486,6 @@ public class FileLog implements Log {
             }
         }
     }
-
 
     private String getFileName(int i) {
         return channel + "-" + i + ".log";

@@ -16,7 +16,10 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Created by tim on 23/09/16.
  */
-public class Codec {
+public class Protocol {
+
+    public static final String FRAME_TYPE_FIELD = "type";
+    public static final String FRAME_FRAME_FIELD = "frame";
 
     // Frame types
 
@@ -28,6 +31,7 @@ public class Codec {
     public static final String ABORTTX_FRAME = "ABORTTX";
     public static final String SUBSCRIBE_FRAME = "SUBSCRIBE";
     public static final String UNSUBSCRIBE_FRAME = "UNSUBSCRIBE";
+    public static final String SUBCLOSE_FRAME = "SUBCLOSE";
     public static final String SUBRESPONSE_FRAME = "SUBRESPONSE";
     public static final String RECEV_FRAME = "RECEV";
     public static final String ACKEV_FRAME = "ACKEV";
@@ -38,14 +42,16 @@ public class Codec {
 
     // Frame fields
 
+    public static final String REQUEST_REQUEST_ID = "rID";
+
+    public static final String RESPONSE_REQUEST_ID = "rID";
     public static final String RESPONSE_OK = "ok";
     public static final String RESPONSE_ERRMSG = "errMsg";
     public static final String RESPONSE_ERRCODE = "errCode";
 
     public static final String SUBRESPONSE_SUBID = "subID";
 
-    public static final String CONNECT_USERNAME = "username";
-    public static final String CONNECT_PASSWORD = "password";
+    public static final String CONNECT_AUTH_INFO = "authInfo";
     public static final String CONNECT_VERSION = "version";
 
     public static final String PUBLISH_CHANNEL = "channel";
@@ -66,6 +72,8 @@ public class Codec {
 
     public static final String UNSUBSCRIBE_SUBID = "subID";
 
+    public static final String SUBCLOSE_SUBID = "subID";
+
     public static final String RECEV_SUBID = "subID";
     public static final String RECEV_TIMESTAMP = "timestamp";
     public static final String RECEV_POS = "pos";
@@ -73,6 +81,7 @@ public class Codec {
 
     public static final String ACKEV_SUBID = "subID";
     public static final String ACKEV_BYTES = "bytes";
+    public static final String ACKEV_POS = "pos";
 
     // Query stuff
     public static final String QUERY_QUERYID = "queryID";
@@ -87,12 +96,12 @@ public class Codec {
     public static final String QUERYACK_QUERYID = "queryID";
     public static final String QUERYACK_BYTES = "bytes";
 
-    private final static Logger log = LoggerFactory.getLogger(Codec.class);
+    private final static Logger log = LoggerFactory.getLogger(Protocol.class);
 
     private final FrameHandler frameHandler;
     private final RecordParser parser;
 
-    public Codec(FrameHandler frameHandler) {
+    public Protocol(FrameHandler frameHandler) {
         this.frameHandler = frameHandler;
         parser = RecordParser.newFixed(4, null);
         Handler<Buffer> handler = new Handler<Buffer>() {
@@ -125,8 +134,8 @@ public class Codec {
     }
 
     private void handleBson(int size, BsonObject bson) {
-        String type = bson.getString("type");
-        BsonObject frame = bson.getBsonObject("frame");
+        String type = bson.getString(FRAME_TYPE_FIELD);
+        BsonObject frame = bson.getBsonObject(FRAME_FRAME_FIELD);
         switch (type) {
             case RESPONSE_FRAME:
                 frameHandler.handleResponse(frame);
@@ -148,6 +157,9 @@ public class Codec {
                 break;
             case SUBSCRIBE_FRAME:
                 frameHandler.handleSubscribe(frame);
+                break;
+            case SUBCLOSE_FRAME:
+                frameHandler.handleSubClose(frame);
                 break;
             case UNSUBSCRIBE_FRAME:
                 frameHandler.handleUnsubscribe(frame);
@@ -180,7 +192,7 @@ public class Codec {
 
     public static Buffer encodeFrame(String frameType, BsonObject frame) {
         BsonObject env = new BsonObject();
-        env.put("type", frameType).put("frame", frame);
+        env.put(FRAME_TYPE_FIELD, frameType).put(FRAME_FRAME_FIELD, frame);
         return env.encode();
     }
 }

@@ -39,6 +39,11 @@ public interface ClientFrameHandler extends FrameHandler {
     }
 
     @Override
+    default void handleSubClose(BsonObject frame) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     default void handleUnsubscribe(BsonObject frame) {
         throw new UnsupportedOperationException();
     }

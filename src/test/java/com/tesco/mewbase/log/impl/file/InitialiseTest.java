@@ -3,6 +3,7 @@ package com.tesco.mewbase.log.impl.file;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.log.Log;
+import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
 import org.junit.Test;
@@ -13,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.UUID;
 
-import static com.tesco.mewbase.log.impl.file.FileLogManagerOptions.DEFAULT_MAX_LOG_CHUNK_SIZE;
+import static com.tesco.mewbase.server.ServerOptions.DEFAULT_MAX_LOG_CHUNK_SIZE;
 import static org.junit.Assert.*;
 
 /**
@@ -30,7 +31,7 @@ public class InitialiseTest extends LogTestBase {
         String subDir = UUID.randomUUID().toString();
         File dir = new File(ftestDir, subDir);
         assertFalse(dir.exists());
-        options = new FileLogManagerOptions().setLogDir(dir.getPath());
+        options = new ServerOptions().setLogDir(dir.getPath());
         startLog(options, TEST_CHANNEL_1);
         assertTrue(dir.exists());
     }
@@ -55,13 +56,12 @@ public class InitialiseTest extends LogTestBase {
         File ld = new File(ftestDir, subDir);
         assertFalse(ld.exists());
         logDir = ld;
-        options = new FileLogManagerOptions().setLogDir(ld.getPath());
+        options = new ServerOptions().setLogDir(ld.getPath());
         startLog(options, TEST_CHANNEL_1);
         verifyInitialFiles(ld, TEST_CHANNEL_1);
     }
 
     private void verifyInitialFiles(File logDir, String channel) throws Exception {
-        logger.trace("Verifying initial files in logdir {}", logDir);
         verifyInfoFile(channel);
 
         File logFile = new File(logDir, channel + "-0.log");
@@ -139,7 +139,7 @@ public class InitialiseTest extends LogTestBase {
         assertFalse(logFile.exists());
 
         // Now change info file to non zero fileHeadPos
-        saveInfo(0, 23, 23, false);
+        saveInfo(0, 23, 23, 0, false);
 
         // Start should now fail
         try {
@@ -164,7 +164,7 @@ public class InitialiseTest extends LogTestBase {
         assertFalse(logFile.exists());
 
         // Now change info file to non zero fileHeadPos
-        saveInfo(1, 0, 0, false);
+        saveInfo(1, 0, 0, 0, false);
 
         // Start should now fail
         try {
@@ -179,21 +179,28 @@ public class InitialiseTest extends LogTestBase {
     @Test
     public void test_start_with_negative_file_number(TestContext testContext) throws Exception {
         test_start_with_invalid_info_file(testContext, () -> {
-            saveInfo(-1, 0, 0, false);
+            saveInfo(-1, 0, 0, 0, false);
         });
     }
 
     @Test
     public void test_start_with_negative_file_head_pos(TestContext testContext) throws Exception {
         test_start_with_invalid_info_file(testContext, () -> {
-            saveInfo(0, -1, 0, false);
+            saveInfo(0, -1, 0, 0, false);
         });
     }
 
     @Test
     public void test_start_with_negative_head_pos(TestContext testContext) throws Exception {
         test_start_with_invalid_info_file(testContext, () -> {
-            saveInfo(0, 0, -1, false);
+            saveInfo(0, 0, -1, 0, false);
+        });
+    }
+
+    @Test
+    public void test_start_with_negative_last_written_pos(TestContext testContext) throws Exception {
+        test_start_with_invalid_info_file(testContext, () -> {
+            saveInfo(0, 0, 0, -1, false);
         });
     }
 
@@ -204,6 +211,7 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("headPos", 0);
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
         });
@@ -215,6 +223,19 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("fileNumber", 0);
             info.put("headPos", 0);
+            info.put("lastWrittenPos", 0);
+            info.put("shutdown", false);
+            saveFileInfo(info);
+        });
+    }
+
+    @Test
+    public void test_start_with_missing_last_written_pos(TestContext testContext) throws Exception {
+        test_start_with_invalid_info_file(testContext, () -> {
+            BsonObject info = new BsonObject();
+            info.put("fileNumber", 0);
+            info.put("headPos", 0);
+            info.put("fileHeadPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
         });
@@ -226,6 +247,7 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("fileNumber", 0);
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
         });
@@ -238,6 +260,7 @@ public class InitialiseTest extends LogTestBase {
             info.put("fileNumber", 0);
             info.put("headPos", 0);
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             saveFileInfo(info);
         });
     }
@@ -248,6 +271,7 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("fileNumber", "XYZ");
             info.put("headPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("fileHeadPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
@@ -260,6 +284,20 @@ public class InitialiseTest extends LogTestBase {
             BsonObject info = new BsonObject();
             info.put("fileNumber", 0);
             info.put("headPos", 0);
+            info.put("lastWrittenPos", 0);
+            info.put("fileHeadPos", "XYZ");
+            info.put("shutdown", false);
+            saveFileInfo(info);
+        });
+    }
+
+    @Test
+    public void test_start_with_invalid_last_written_pos(TestContext testContext) throws Exception {
+        test_start_with_invalid_info_file(testContext, () -> {
+            BsonObject info = new BsonObject();
+            info.put("fileNumber", 0);
+            info.put("headPos", 0);
+            info.put("lastWrittenPos", "XYZ");
             info.put("fileHeadPos", "XYZ");
             info.put("shutdown", false);
             saveFileInfo(info);
@@ -273,6 +311,7 @@ public class InitialiseTest extends LogTestBase {
             info.put("fileNumber", 0);
             info.put("headPos", "XYZ");
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("shutdown", false);
             saveFileInfo(info);
         });
@@ -285,6 +324,7 @@ public class InitialiseTest extends LogTestBase {
             info.put("fileNumber", 0);
             info.put("headPos", 0);
             info.put("fileHeadPos", 0);
+            info.put("lastWrittenPos", 0);
             info.put("shutdown", "XYZ");
             saveFileInfo(info);
         });
@@ -292,7 +332,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_start_max_record_size_too_large(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setMaxRecordSize(DEFAULT_MAX_LOG_CHUNK_SIZE + 1);
+        options = new ServerOptions().setMaxRecordSize(DEFAULT_MAX_LOG_CHUNK_SIZE + 1).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");
@@ -303,7 +343,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_start_preallocate_size_too_large(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setPreallocateSize(DEFAULT_MAX_LOG_CHUNK_SIZE + 1);
+        options = new ServerOptions().setPreallocateSize(DEFAULT_MAX_LOG_CHUNK_SIZE + 1).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");
@@ -314,7 +354,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_start_max_record_size_too_small(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setMaxRecordSize(0);
+        options = new ServerOptions().setMaxRecordSize(0).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");
@@ -325,7 +365,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_max_log_chunk_size_too_small(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setMaxLogChunkSize(0);
+        options = new ServerOptions().setMaxLogChunkSize(0).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");
@@ -336,7 +376,7 @@ public class InitialiseTest extends LogTestBase {
 
     @Test
     public void test_start_negative_preallocate_size(TestContext testContext) throws Exception {
-        options = new FileLogManagerOptions().setPreallocateSize(-1);
+        options = new ServerOptions().setPreallocateSize(-1).setLogDir(logDir.getPath());
         try {
             startLog();
             fail("should throw exception");

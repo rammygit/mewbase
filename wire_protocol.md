@@ -43,18 +43,20 @@ Generic response
 Fields:
 
 * `ok` - mandatory, boolean. `true` for success, `false` for failure
+* `rID` - mandatory, integer. Unique id of request - used for correlating responses.
 * `errCode` - optional, string. Error code or key in case of failure
 * `errMsg` - optional, string. Error message in case of failure
 
 
-### EMIT
+### PUBLISH
 
-Emit an event to the server for storage.
+Publish an event to the server for storage.
 
 Fields
 
 * `channel` - mandatory - string. The name of the channel to emit to.
 * `event` - mandatory - BSONObject. The event itself.
+* `rID` - mandatory, integer. Unique id of request - used for correlating responses.
 * `sessID` - optional - int32. unique id of the producer scoped to the connection. Used to group transactional emits
 
 Events must not be more than X megabytes in size or they will be rejected.
@@ -69,6 +71,7 @@ Start a transaction.
 Fields
 
 * `sessID` - mandatory - int32. The session id to start a transaction for.
+* `rID` - mandatory, integer. Unique id of request - used for correlating responses.
 
 The server will respond with a RESPONSE frame.
 
@@ -81,6 +84,7 @@ Commit a transaction.
 Fields
 
 * `sessID` - mandatory - int32. The session id to commit a transaction for.
+* `rID` - mandatory, integer. Unique id of request - used for correlating responses.
 
 The server will respond with a RESPONSE frame.
 
@@ -93,6 +97,7 @@ Abort a transaction.
 Fields
 
 * `sessID` - mandatory - int32. The session id to abort a transaction for.
+* `rID` - mandatory, integer. Unique id of request - used for correlating responses.
 
 The server will respond with a RESPONSE frame.
 
@@ -105,6 +110,7 @@ Subscribe to events from a stream
 Fields
 
 * `channel` - mandatory - string. The name of the channel to subscribe from, e.g. `com.tesco.basket`
+* `rID` - mandatory, integer. Unique id of request - used for correlating responses.
 * `startPos` - optional - int64. The position in the channel to start subscribing from
 * `startTimestamp` - optional - int64. The earliest timestamp of events in the stream to start from subscribing from.
 * `durableID` - optional - string. Unique id for a durable subscription. If provided then the server will look-up and
@@ -121,6 +127,7 @@ Like a RESPONSE but sent in response to a SUBSCRIBE request - contains an additi
 Fields:
 
 * `ok` - mandatory, boolean. `true` for success, `false` for failure
+* `rID` - mandatory, integer. Unique id of request - used for correlating responses.
 * `errCode` - optional, string. Error code or key in case of failure
 * `errMsg` - optional, string. Error message in case of failure
 * `subID` - optional, int32. Unique ID of subscription scoped to connection in case of success
@@ -132,6 +139,16 @@ Unsubscribe a subscription
 Fields
 
 * `subID` - mandatory - int32. The id of the subscription to unsubscribe
+* `rID` - mandatory, integer. Unique id of request - used for correlating responses.
+
+### SUBCLOSE
+
+Close a subscription
+
+Fields
+
+* `subID` - mandatory - int32. The id of the subscription to unsubscribe
+* `rID` - mandatory, integer. Unique id of request - used for correlating responses.
 
 ### RECEV
  

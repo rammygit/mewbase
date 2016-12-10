@@ -3,7 +3,10 @@ package com.tesco.mewbase.log.impl.file;
 import com.tesco.mewbase.client.MewException;
 import com.tesco.mewbase.log.Log;
 import com.tesco.mewbase.log.LogManager;
+import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.Vertx;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Map;
@@ -15,13 +18,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class FileLogManager implements LogManager {
 
+    private final static Logger log = LoggerFactory.getLogger(FileLogManager.class);
+
     private final Vertx vertx;
     private final FileAccess faf;
     private final File logDir;
-    private final FileLogManagerOptions options;
     private final Map<String, FileLog> logs = new ConcurrentHashMap<>();
+    private final ServerOptions options;
 
-    public FileLogManager(Vertx vertx, FileLogManagerOptions options, FileAccess faf) {
+    public FileLogManager(Vertx vertx, ServerOptions options, FileAccess faf) {
         this.vertx = vertx;
         this.logDir = new File(options.getLogDir());
         if (!logDir.exists()) {

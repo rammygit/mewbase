@@ -1,9 +1,7 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.bson.BsonObject;
-import com.tesco.mewbase.client.ClientDelivery;
-import com.tesco.mewbase.client.Producer;
-import com.tesco.mewbase.client.Subscription;
+import com.tesco.mewbase.client.*;
 import com.tesco.mewbase.common.SubDescriptor;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
@@ -14,9 +12,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  * Created by tim on 26/09/16.
@@ -25,6 +28,37 @@ import java.util.function.Consumer;
 public class PubSubTest extends ServerTestBase {
 
     private final static Logger log = LoggerFactory.getLogger(PubSubTest.class);
+
+    @Test
+    public void testPublishNonExistentChannel() throws Exception {
+        String channel = "nosuchchannel";
+        Producer prod = client.createProducer(channel);
+        try {
+            prod.publish(new BsonObject()).get();
+            fail("Should throw exception");
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            assertTrue(cause instanceof MewException);
+            MewException mcause = (MewException)cause;
+            assertEquals("no such channel " + channel, mcause.getMessage());
+            assertEquals(Client.ERR_NO_SUCH_CHANNEL, mcause.getErrorCode());
+        }
+    }
+
+    @Test
+    public void testSubscribeNonExistentChannel() throws Exception {
+        String channel = "nosuchchannel";
+        try {
+            client.subscribe(new SubDescriptor().setChannel(channel), del -> {}).get();
+            fail("Should throw exception");
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            assertTrue(cause instanceof MewException);
+            MewException mcause = (MewException)cause;
+            assertEquals("no such channel " + channel, mcause.getMessage());
+            assertEquals(Client.ERR_NO_SUCH_CHANNEL, mcause.getErrorCode());
+        }
+    }
 
     @Test
     //@Repeat(value = 10000)

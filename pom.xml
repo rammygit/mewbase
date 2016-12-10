@@ -14,7 +14,16 @@
             <artifactId>vertx-core</artifactId>
             <version>3.3.3</version>
         </dependency>
-
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-auth-common</artifactId>
+            <version>3.3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-auth-shiro</artifactId>
+            <version>3.3.3</version>
+        </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
@@ -71,7 +80,6 @@
             <version>1.7.21</version>
             <scope>test</scope>
         </dependency>
-
 
     </dependencies>
 

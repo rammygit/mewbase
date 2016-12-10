@@ -3,7 +3,7 @@ package com.tesco.mewbase.client.impl;
 import com.tesco.mewbase.bson.BsonObject;
 import com.tesco.mewbase.client.ClientDelivery;
 import com.tesco.mewbase.client.Subscription;
-import com.tesco.mewbase.server.impl.Codec;
+import com.tesco.mewbase.server.impl.Protocol;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ public class SubscriptionImpl implements Subscription {
     private final Consumer<ClientDelivery> handler;
     private final Context ctx;
     private final Queue<ClientDelivery> buffered = new LinkedList<>();
-    private boolean unsubscribed;
+    private boolean closed;
     private boolean paused;
 
     public SubscriptionImpl(int id, String channel, ClientImpl client, Consumer<ClientDelivery> handler) {
@@ -38,9 +38,19 @@ public class SubscriptionImpl implements Subscription {
     }
 
     @Override
-    public synchronized void unsubscribe() {
-        client.doUnsubscribe(id);
-        unsubscribed = true;
+    public void unsubscribe() {
+        client.doUnsubscribe(id);  // Outside sync block to prevent deadlock
+        synchronized (this) {
+            closed = true;
+        }
+    }
+
+    @Override
+    public void close() {
+        client.doSubClose(id); // Outside sync block to prevent deadlock
+        synchronized (this) {
+            closed = true;
+        }
     }
 
     @Override
@@ -68,12 +78,12 @@ public class SubscriptionImpl implements Subscription {
     }
 
     protected synchronized void handleRecevFrame(int size, BsonObject frame) {
-        if (unsubscribed) {
+        if (closed) {
             return;
         }
         checkContext();
-        ClientDelivery delivery = new ClientDeliveryImpl(channel, frame.getLong(Codec.RECEV_TIMESTAMP),
-                frame.getLong(Codec.RECEV_POS), frame.getBsonObject(Codec.RECEV_EVENT), this, size);
+        ClientDelivery delivery = new ClientDeliveryImpl(channel, frame.getLong(Protocol.RECEV_TIMESTAMP),
+                frame.getLong(Protocol.RECEV_POS), frame.getBsonObject(Protocol.RECEV_EVENT), this, size);
         if (!paused) {
             handler.accept(delivery);
         } else {
@@ -81,8 +91,8 @@ public class SubscriptionImpl implements Subscription {
         }
     }
 
-    protected void acknowledge(int sizeBytes) {
-        client.doAckEv(id, sizeBytes);
+    protected void acknowledge(long pos, int sizeBytes) {
+        client.doAckEv(id, pos, sizeBytes);
     }
 
     // Sanity check - this should always be executed using the connection's context

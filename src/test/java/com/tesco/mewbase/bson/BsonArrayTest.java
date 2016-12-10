@@ -19,8 +19,8 @@
 package com.tesco.mewbase.bson;
 
 import com.tesco.mewbase.TestUtils;
+import com.tesco.mewbase.client.MewException;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.json.DecodeException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -858,7 +858,7 @@ public class BsonArrayTest {
         try {
             new BsonArray(invalid);
             fail();
-        } catch (DecodeException e) {
+        } catch (MewException e) {
             // OK
         }
     }

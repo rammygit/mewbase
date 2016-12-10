@@ -28,7 +28,7 @@ public class QueryTest extends ServerTestBase {
     @Override
     protected void setup(TestContext context) throws Exception {
         super.setup(context);
-        installInsertFunction();
+        installInsertProjection();
         prod = client.createProducer(TEST_CHANNEL_1);
     }
 
@@ -59,7 +59,6 @@ public class QueryTest extends ServerTestBase {
         AtomicInteger cnt = new AtomicInteger();
         client.findMatching(TEST_BINDER1, new BsonObject(), qr -> {
             String expectedID = getID(cnt.getAndIncrement());
-            log.trace("Got doc {}", qr.document());
             context.assertEquals(expectedID, qr.document().getString("id"));
             if (cnt.get() == numDocs) {
                 context.assertTrue(qr.isLast());
@@ -108,8 +107,8 @@ public class QueryTest extends ServerTestBase {
     }
 
 
-    protected void installInsertFunction() {
-        server.installFunction("testfunc", TEST_CHANNEL_1, ev -> true, TEST_BINDER1, ev -> ev.getString("id"),
+    protected void installInsertProjection() {
+        server.registerProjection("testproj", TEST_CHANNEL_1, ev -> true, TEST_BINDER1, ev -> ev.getString("id"),
                 (basket, del) -> del.event());
     }
 

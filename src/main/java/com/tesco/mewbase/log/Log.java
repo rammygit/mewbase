@@ -10,7 +10,6 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Log {
 
-    // TODO make this into lambda
     LogReadStream subscribe(SubDescriptor subDescriptor);
 
     CompletableFuture<Long> append(BsonObject obj);

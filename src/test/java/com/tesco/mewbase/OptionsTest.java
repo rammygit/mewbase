@@ -1,7 +1,6 @@
 package com.tesco.mewbase;
 
 import com.tesco.mewbase.client.ClientOptions;
-import com.tesco.mewbase.log.impl.file.FileLogManagerOptions;
 import com.tesco.mewbase.server.ServerOptions;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.NetServerOptions;
@@ -20,6 +19,7 @@ import static org.junit.Assert.*;
 public class OptionsTest extends MewbaseTestBase {
 
     private final static Logger log = LoggerFactory.getLogger(OptionsTest.class);
+    private static final int fsize = 4*1024;
 
     @Test
     public void testClientOptions() throws Exception {
@@ -45,20 +45,34 @@ public class OptionsTest extends MewbaseTestBase {
 
         ServerOptions options = new ServerOptions();
         assertEquals(new NetServerOptions().setPort(ServerOptions.DEFAULT_PORT), options.getNetServerOptions());
-        assertEquals(new FileLogManagerOptions(), options.getFileLogManagerOptions());
-
         NetServerOptions netServerOptions2 = new NetServerOptions();
         options.setNetServerOptions(netServerOptions2);
         assertSame(netServerOptions2, options.getNetServerOptions());
 
-        FileLogManagerOptions fileLogManagerOptions2 = new FileLogManagerOptions();
-        options.setFileLogManagerOptions(fileLogManagerOptions2);
-        assertSame(fileLogManagerOptions2, options.getFileLogManagerOptions());
+        options.setDocsDir("foo");
+        assertSame("foo", options.getDocsDir());
 
         String[] channels = new String[]{"foo", "bar"};
         assertNull(options.getChannels());
         options.setChannels(channels);
-        assertSame(channels, channels);
-    }
+        assertSame(channels, options.getChannels());
 
+        String[] binders = new String[]{"foo", "bar"};
+        assertNull(options.getBinders());
+        options.setBinders(binders);
+        assertSame(binders, options.getBinders());
+
+        options.setDocsDir("foo");
+        assertSame("foo", options.getDocsDir());
+
+        options.setMaxLogChunkSize(fsize);
+        options.setMaxRecordSize(fsize);
+        options.setPreallocateSize(fsize);
+        options.setMaxRecordSize(fsize);
+
+        assert(options.getMaxLogChunkSize() == fsize);
+        assert(options.getPreallocateSize() == fsize);
+        assert(options.getMaxRecordSize() == fsize);
+        assert(options.getReadBufferSize() == fsize);
+    }
 }
